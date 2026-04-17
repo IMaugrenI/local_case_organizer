@@ -8,6 +8,7 @@ from pathlib import Path
 class WorkspacePaths:
     repo_root: Path
     data_dir: Path
+    inbox_dir: Path
     originals_dir: Path
     working_dir: Path
     register_dir: Path
@@ -27,6 +28,7 @@ def get_workspace_paths(repo_root: Path | None = None) -> WorkspacePaths:
     return WorkspacePaths(
         repo_root=root,
         data_dir=data_dir,
+        inbox_dir=data_dir / "inbox",
         originals_dir=data_dir / "originals",
         working_dir=data_dir / "working",
         register_dir=data_dir / "register",
@@ -41,6 +43,7 @@ def create_local_workspace(repo_root: Path | None = None) -> WorkspacePaths:
     paths = get_workspace_paths(repo_root)
     for path in [
         paths.data_dir,
+        paths.inbox_dir,
         paths.originals_dir,
         paths.working_dir,
         paths.register_dir,
@@ -57,6 +60,7 @@ def describe_workspace(paths: WorkspacePaths) -> dict[str, str]:
     return {
         "repo_root": str(paths.repo_root),
         "data_dir": str(paths.data_dir),
+        "inbox_dir": str(paths.inbox_dir),
         "originals_dir": str(paths.originals_dir),
         "working_dir": str(paths.working_dir),
         "register_dir": str(paths.register_dir),
