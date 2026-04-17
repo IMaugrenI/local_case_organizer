@@ -13,7 +13,7 @@ Equivalent entry points:
 - PowerShell: `pwsh ./scripts/start_here.ps1`
 - macOS: `./scripts/start_here.command`
 
-That path runs setup and status in the expected order.
+That path runs setup and opens the local browser UI.
 
 ## Primary command path
 
@@ -21,6 +21,7 @@ Run all commands from the repository root.
 
 ```bash
 python run.py setup
+python run.py ui
 python run.py check
 python run.py status
 python run.py doctor
@@ -53,6 +54,20 @@ Creates ignored local folders:
 - `exports/`
 - `logs/`
 - `workspace/`
+
+### `python run.py ui`
+Starts the local browser UI on your machine.
+
+The UI offers large buttons for:
+
+- prepare workspace
+- import inbox files
+- build register
+- build timeline
+- build export package
+- open inbox folder
+- open exports folder
+- run doctor
 
 ### `python run.py check`
 Prints current repository and local workspace status as JSON.
@@ -106,7 +121,7 @@ Current V1 export bundle may include:
 
 ## Safety markers
 
-- SAFE: `start_here`, `setup`, `check`, `status`, `doctor`, `import`, `build-register`, `build-timeline`, `export-package`
+- SAFE: `start_here`, `setup`, `ui`, `check`, `status`, `doctor`, `import`, `build-register`, `build-timeline`, `export-package`
 - ADVANCED: `import --source /path/to/files`
 - DESTRUCTIVE: none in the current public V1 path
 
