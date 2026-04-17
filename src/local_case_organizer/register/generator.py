@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from local_case_organizer.paths import create_local_workspace, get_workspace_paths
+from local_case_organizer.register.store import EDITABLE_REGISTER_FIELDS, REGISTER_FIELDS, read_register_rows
 
 
 @dataclass(frozen=True)
@@ -69,12 +70,24 @@ def _load_provenance_index(register_dir: Path) -> dict[str, dict[str, str]]:
 
 
 
+def _load_existing_register_index() -> dict[str, dict[str, str]]:
+    rows = read_register_rows()
+    index: dict[str, dict[str, str]] = {}
+    for row in rows:
+        key = row.get("file_id") or row.get("relative_path")
+        if key:
+            index[key] = row
+    return index
+
+
+
 def build_document_register() -> Path:
     create_local_workspace()
     paths = get_workspace_paths()
     files = _iter_original_files(paths.originals_dir)
     output_path = paths.register_dir / "document_register.csv"
     provenance_index = _load_provenance_index(paths.register_dir)
+    existing_index = _load_existing_register_index()
 
     rows: list[RegisterRow] = []
     generated_at = datetime.now(UTC).isoformat()
@@ -87,6 +100,9 @@ def build_document_register() -> Path:
         batch_id = provenance["batch_id"] if provenance and provenance.get("sha256") == file_hash else ""
         imported_at = provenance["imported_at_utc"] if provenance and provenance.get("sha256") == file_hash else generated_at
 
+        existing = existing_index.get(file_id) or existing_index.get(relative_path) or {}
+        editable = {field: existing.get(field, "") for field in EDITABLE_REGISTER_FIELDS}
+
         rows.append(
             RegisterRow(
                 file_id=file_id,
@@ -97,31 +113,15 @@ def build_document_register() -> Path:
                 suffix=file_path.suffix.lower(),
                 size_bytes=file_path.stat().st_size,
                 imported_at_utc=imported_at,
-                review_status="unreviewed",
-                document_group="",
-                selected_for_export="no",
-                note="",
+                review_status=editable.get("review_status") or "unreviewed",
+                document_group=editable.get("document_group") or "",
+                selected_for_export=editable.get("selected_for_export") or "no",
+                note=editable.get("note") or "",
             )
         )
 
     with output_path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(
-            handle,
-            fieldnames=[
-                "file_id",
-                "batch_id",
-                "sha256",
-                "original_name",
-                "relative_path",
-                "suffix",
-                "size_bytes",
-                "imported_at_utc",
-                "review_status",
-                "document_group",
-                "selected_for_export",
-                "note",
-            ],
-        )
+        writer = csv.DictWriter(handle, fieldnames=REGISTER_FIELDS)
         writer.writeheader()
         for row in rows:
             writer.writerow(row.__dict__)
