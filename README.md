@@ -46,7 +46,7 @@ This repository is meant to stay technically honest:
 - preserve originals without silent modification
 - create stable file IDs
 - store hashes and import metadata
-- separate originals, working copies, register data, and exports
+- separate inbox, originals, working copies, register data, and exports
 - generate a document register
 - generate a timeline table
 - generate export-ready case packages
@@ -66,6 +66,8 @@ python run.py setup
 python run.py check
 python run.py status
 python run.py doctor
+python run.py import
+python run.py import --source /path/to/files
 python run.py build-register
 python run.py build-timeline
 python run.py export-package
@@ -73,17 +75,18 @@ python run.py export-package
 
 Thin wrapper availability:
 
-- Linux: `scripts/setup.sh`, `scripts/check.sh`, `scripts/status.sh`, `scripts/doctor.sh`
-- PowerShell: `scripts/setup.ps1`, `scripts/check.ps1`, `scripts/status.ps1`, `scripts/doctor.ps1`
-- macOS: `scripts/setup.command`, `scripts/check.command`, `scripts/status.command`, `scripts/doctor.command`
+- Linux: `scripts/setup.sh`, `scripts/check.sh`, `scripts/status.sh`, `scripts/doctor.sh`, `scripts/import.sh`
+- PowerShell: `scripts/setup.ps1`, `scripts/check.ps1`, `scripts/status.ps1`, `scripts/doctor.ps1`, `scripts/import.ps1`
+- macOS: `scripts/setup.command`, `scripts/check.command`, `scripts/status.command`, `scripts/doctor.command`, `scripts/import.command`
 
 What these currently do:
 
 - `setup` prepares ignored local folders such as `data/`, `exports/`, and `logs/`
 - `check` prints repo and local workspace status
-- `status` prints a concise summary of local files and export packages
+- `status` prints a concise summary of local files, import batches, and export packages
 - `doctor` runs local runtime and writeability checks
-- `build-register` scans `data/originals/` and creates `data/register/document_register.csv`
+- `import` ingests files from `data/inbox/` or a chosen source path and writes import manifests
+- `build-register` scans imported originals and creates `data/register/document_register.csv`
 - `build-timeline` creates `data/register/timeline.csv`
 - `export-package` creates a timestamped neutral export bundle under `exports/`
 
@@ -91,10 +94,23 @@ What these currently do:
 
 1. clone the repository locally
 2. run `python run.py setup`
-3. place private test files in `data/originals/`
-4. run `python run.py build-register`
-5. run `python run.py build-timeline`
-6. run `python run.py export-package`
+3. place private test files in `data/inbox/` or use `python run.py import --source /path/to/files`
+4. run `python run.py import`
+5. run `python run.py build-register`
+6. run `python run.py build-timeline`
+7. run `python run.py export-package`
+
+## What import adds
+
+The import step is now the provenance anchor for V1.
+
+Each import creates:
+
+- a timestamped batch under `data/originals/`
+- a batch-specific `import_manifest_*.csv`
+- an aggregate `provenance.csv`
+
+This lets the later document register keep stable file IDs instead of regenerating them blindly on every run.
 
 ## Planned structure
 
@@ -116,6 +132,6 @@ profiles/default/
 
 ## Status
 
-Early V1 scaffold with a working Python-first command path.
+Early V1 scaffold with a working Python-first command path and a first provenance-aware import layer.
 
 The first goal is a clean, truthful repo shape before feature growth.
