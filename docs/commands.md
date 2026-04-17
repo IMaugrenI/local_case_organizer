@@ -58,14 +58,19 @@ Creates ignored local folders:
 ### `python run.py ui`
 Starts the local browser UI on your machine.
 
-The UI offers large buttons for:
+The UI offers large buttons and browser editors for:
 
 - prepare workspace
+- upload files to the inbox
 - import inbox files
 - build register
+- edit register rows
 - build timeline
+- edit timeline rows
+- edit entities / people / institutions
 - build export package
 - open inbox folder
+- open register folder
 - open exports folder
 - run doctor
 
@@ -73,7 +78,7 @@ The UI offers large buttons for:
 Prints current repository and local workspace status as JSON.
 
 ### `python run.py status`
-Prints a concise summary of inbox files, imported originals, import batches, register files, and export packages.
+Prints a concise summary of inbox files, imported originals, import batches, register files, selected export rows, entity rows, and export packages.
 
 ### `python run.py doctor`
 Runs local environment and writeability checks.
@@ -111,13 +116,16 @@ Current V1 fields:
 Creates a starter `data/register/timeline.csv` template.
 
 ### `python run.py export-package`
-Builds a timestamped export folder in `exports/` and copies current register files into it.
+Builds a timestamped export folder in `exports/` and prepares a ZIP handoff output.
 
 Current V1 export bundle may include:
 
 - `document_register.csv`
 - `timeline.csv`
 - `provenance.csv`
+- selected original files marked with `selected_for_export = yes`
+- `export_manifest.json`
+- a matching `.zip` archive next to the export folder
 
 ## Safety markers
 
