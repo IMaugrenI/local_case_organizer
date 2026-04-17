@@ -4,6 +4,35 @@ Local, cloud-free tool for organizing sensitive case documents into structured d
 
 This repository is a neutral public core for local case organization work. It is designed for people who need to turn chaotic document collections into a cleaner, reviewable dossier without pushing data into a cloud service.
 
+## Use this repo in the simplest way
+
+If you want the shortest safe path, start here:
+
+### Linux
+
+```bash
+bash scripts/start_here.sh
+```
+
+### Windows PowerShell
+
+```powershell
+pwsh ./scripts/start_here.ps1
+```
+
+### macOS
+
+```bash
+./scripts/start_here.command
+```
+
+That path runs:
+
+1. setup
+2. status
+
+A beginner guide is available in `docs/00_beginner_quickstart.md`.
+
 ## Positioning
 
 `local_case_organizer` is not a law firm system, not a court tool, and not a legal advice engine.
@@ -75,9 +104,9 @@ python run.py export-package
 
 Thin wrapper availability:
 
-- Linux: `scripts/setup.sh`, `scripts/check.sh`, `scripts/status.sh`, `scripts/doctor.sh`, `scripts/import.sh`
+- Linux: `scripts/setup.sh`, `scripts/check.sh`, `scripts/status.sh`, `scripts/doctor.sh`, `scripts/import.sh`, `scripts/start_here.sh`
 - PowerShell: `scripts/setup.ps1`, `scripts/check.ps1`, `scripts/status.ps1`, `scripts/doctor.ps1`, `scripts/import.ps1`
-- macOS: `scripts/setup.command`, `scripts/check.command`, `scripts/status.command`, `scripts/doctor.command`, `scripts/import.command`
+- macOS: `scripts/setup.command`, `scripts/check.command`, `scripts/status.command`, `scripts/doctor.command`, `scripts/import.command`, `scripts/start_here.command`
 
 What these currently do:
 
@@ -111,6 +140,15 @@ Each import creates:
 - an aggregate `provenance.csv`
 
 This lets the later document register keep stable file IDs instead of regenerating them blindly on every run.
+
+## What success looks like
+
+A successful first run means:
+
+- your local workspace exists
+- `data/inbox/` is ready for dropped files
+- status can see your local folders cleanly
+- later imports produce stable batch and provenance data
 
 ## Planned structure
 
