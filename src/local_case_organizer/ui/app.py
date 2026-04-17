@@ -13,6 +13,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
+from local_case_organizer.entities.store import ENTITY_FIELDS, read_entity_rows, write_entity_rows
 from local_case_organizer.export.builder import build_export_package
 from local_case_organizer.imports.ingest import import_sources
 from local_case_organizer.paths import create_local_workspace, describe_workspace, get_workspace_paths
@@ -161,6 +162,8 @@ HTML = """<!doctype html>
         ['Import batches', data.import_batches ?? 0],
         ['Register files', data.register_files ?? 0],
         ['Export packages', data.export_packages ?? 0],
+        ['Selected for export', data.selected_export_count ?? 0],
+        ['Entities', data.entity_count ?? 0],
       ];
       for (const [label, value] of items) {
         const el = document.createElement('div');
@@ -427,21 +430,30 @@ def _recent_inbox_files(inbox_dir: Path, limit: int = 8) -> list[str]:
 
 
 
+def _selected_export_count() -> int:
+    rows = read_register_rows()
+    return sum(1 for row in rows if str(row.get("selected_for_export", "")).lower() == "yes")
+
+
+
 def _next_step_message() -> str:
     workspace_paths = get_workspace_paths()
     inbox_files = _count_files(workspace_paths.inbox_dir)
     import_batches = _count_directories(workspace_paths.originals_dir)
-    register_files = _count_files(workspace_paths.register_dir)
+    register_rows = len(read_register_rows())
+    selected_for_export = _selected_export_count()
     export_packages = _count_directories(workspace_paths.exports_dir)
     if inbox_files > 0:
         return "Next step: use 'Import inbox files' to move your waiting files into a tracked import batch."
     if import_batches == 0:
         return "Next step: add files through the upload area or open the inbox folder and place files there."
-    if register_files == 0:
+    if register_rows == 0:
         return "Next step: use 'Build register' to create your document register."
+    if selected_for_export == 0:
+        return "Next step: mark the important register rows with 'selected_for_export = yes' so the handoff package knows what to include."
     if export_packages == 0:
-        return "Next step: edit the register or timeline and then create your first export package."
-    return "Your workspace already has imports, register data, timeline data, and exports. Use the buttons below for the next update cycle."
+        return "Next step: create your first export package."
+    return "Your workspace already has imports, working tables, and exports. Use the browser tables to keep the dossier current."
 
 
 
@@ -456,6 +468,8 @@ def _status_payload() -> dict[str, object]:
             "original_file_count": _count_files(paths.originals_dir),
             "import_batches": _count_directories(paths.originals_dir),
             "register_files": _count_files(paths.register_dir),
+            "selected_export_count": _selected_export_count(),
+            "entity_count": len(read_entity_rows()),
             "export_packages": _count_directories(paths.exports_dir),
         },
         "paths": describe_workspace(paths),
@@ -550,6 +564,11 @@ def _timeline_data_payload() -> dict[str, object]:
 
 
 
+def _entity_data_payload() -> dict[str, object]:
+    return {"fields": ENTITY_FIELDS, "rows": read_entity_rows()}
+
+
+
 def _save_register_payload(handler: BaseHTTPRequestHandler) -> dict[str, object]:
     body = _read_json_body(handler)
     rows = body.get("rows", [])
@@ -567,6 +586,16 @@ def _save_timeline_payload(handler: BaseHTTPRequestHandler) -> dict[str, object]
         rows = []
     path = write_timeline_rows(rows)
     return {"saved_timeline_path": str(path), "saved_rows": len(rows)}
+
+
+
+def _save_entities_payload(handler: BaseHTTPRequestHandler) -> dict[str, object]:
+    body = _read_json_body(handler)
+    rows = body.get("rows", [])
+    if not isinstance(rows, list):
+        rows = []
+    path = write_entity_rows(rows)
+    return {"saved_entities_path": str(path), "saved_rows": len(rows)}
 
 
 
@@ -600,6 +629,9 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
             if parsed.path == "/api/timeline-data":
                 self._send(200, "application/json; charset=utf-8", _json_bytes(_timeline_data_payload()))
                 return
+            if parsed.path == "/api/entity-data":
+                self._send(200, "application/json; charset=utf-8", _json_bytes(_entity_data_payload()))
+                return
             self._send(404, "application/json; charset=utf-8", _json_bytes({"error": "not found"}))
 
         def do_POST(self) -> None:
@@ -618,8 +650,15 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
                 payload = _save_register_payload(self)
             elif parsed.path == "/api/save-timeline":
                 payload = _save_timeline_payload(self)
+            elif parsed.path == "/api/save-entities":
+                payload = _save_entities_payload(self)
             elif parsed.path == "/api/export-package":
-                payload = {"export_dir": str(build_export_package())}
+                export_dir = build_export_package()
+                payload = {
+                    "export_dir": str(export_dir),
+                    "zip_path": str(export_dir.with_suffix('.zip')),
+                    "manifest_path": str(export_dir / 'export_manifest.json'),
+                }
             elif parsed.path == "/api/open-inbox":
                 payload = _open_path_in_file_manager(get_workspace_paths().inbox_dir)
             elif parsed.path == "/api/open-register":
