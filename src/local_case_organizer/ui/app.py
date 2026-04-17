@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 
 from local_case_organizer.entities.store import ENTITY_FIELDS, read_entity_rows, write_entity_rows
 from local_case_organizer.export.builder import build_export_package
+from local_case_organizer.export.history import read_export_history
 from local_case_organizer.imports.ingest import import_sources
 from local_case_organizer.paths import create_local_workspace, describe_workspace, get_workspace_paths
 from local_case_organizer.register.generator import build_document_register
@@ -147,6 +148,15 @@ HTML = """<!doctype html>
       <div id=\"entity-editor\" class=\"hint\">Entities will appear here.</div>
     </div>
 
+    <h2 class=\"section-title\">Export history</h2>
+    <div class=\"editor\">
+      <div class=\"editor-actions\">
+        <button onclick=\"loadExportHistory()\">Load export history</button>
+      </div>
+      <div class=\"hint\">Recent export packages, matching ZIP archives, and manifest files are shown here.</div>
+      <div id=\"export-history\" class=\"hint\">Export history will appear here.</div>
+    </div>
+
     <h2 class=\"section-title\">Recent inbox files</h2>
     <div class=\"file-list\"><div id=\"recent-files\">Loading recent files...</div></div>
 
@@ -215,6 +225,20 @@ HTML = """<!doctype html>
         : 'Known file IDs will appear here after the register is loaded.';
       document.getElementById('timeline-file-hints').innerHTML = html;
       document.getElementById('entity-file-hints').innerHTML = html;
+    }
+
+    function renderExportHistory(items) {
+      const root = document.getElementById('export-history');
+      if (!items || items.length === 0) {
+        root.textContent = 'No export packages found yet.';
+        return;
+      }
+      let html = '<table><thead><tr><th>export_dir</th><th>zip_name</th><th>manifest_name</th><th>selected_originals_count</th></tr></thead><tbody>';
+      for (const item of items) {
+        html += `<tr><td>${escapeHtml(item.export_dir || '')}</td><td>${escapeHtml(item.zip_name || '')}</td><td>${escapeHtml(item.manifest_name || '')}</td><td>${escapeHtml(item.selected_originals_count || '')}</td></tr>`;
+      }
+      html += '</tbody></table>';
+      root.innerHTML = html;
     }
 
     function buildRegisterTable() {
@@ -439,6 +463,13 @@ HTML = """<!doctype html>
       await refreshStatus();
     }
 
+    async function loadExportHistory() {
+      const response = await fetch('/api/export-history');
+      const data = await response.json();
+      renderExportHistory(data.rows || []);
+      appendLog('Export history loaded.');
+    }
+
     async function refreshStatus() {
       const response = await fetch('/api/status');
       const data = await response.json();
@@ -480,6 +511,7 @@ HTML = """<!doctype html>
       await loadRegister();
       await loadTimeline();
       await loadEntities();
+      await loadExportHistory();
     }
 
     refreshAll();
@@ -704,6 +736,11 @@ def _entity_data_payload() -> dict[str, object]:
 
 
 
+def _export_history_payload() -> dict[str, object]:
+    return {"rows": read_export_history()}
+
+
+
 def _save_register_payload(handler: BaseHTTPRequestHandler) -> dict[str, object]:
     body = _read_json_body(handler)
     rows = body.get("rows", [])
@@ -766,6 +803,9 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
                 return
             if parsed.path == "/api/entity-data":
                 self._send(200, "application/json; charset=utf-8", _json_bytes(_entity_data_payload()))
+                return
+            if parsed.path == "/api/export-history":
+                self._send(200, "application/json; charset=utf-8", _json_bytes(_export_history_payload()))
                 return
             self._send(404, "application/json; charset=utf-8", _json_bytes({"error": "not found"}))
 
