@@ -1,3 +1,4 @@
 #!/bin/bash
 cd "$(dirname "$0")/.."
-bash scripts/start_here.sh
+python3 run.py setup
+python3 run.py ui
