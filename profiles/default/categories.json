@@ -1,0 +1,22 @@
+{
+  "document_groups": [
+    "communication",
+    "contracts",
+    "finance",
+    "authorities",
+    "media",
+    "other"
+  ],
+  "timeline_statuses": [
+    "draft",
+    "reviewed",
+    "open_question",
+    "ready_for_handoff"
+  ],
+  "review_statuses": [
+    "unreviewed",
+    "reviewed",
+    "flagged",
+    "selected_for_export"
+  ]
+}
