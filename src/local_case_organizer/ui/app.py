@@ -63,6 +63,8 @@ HTML = """<!doctype html>
     input[type=text], textarea, select { width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; font: inherit; background: white; }
     textarea { min-height: 72px; resize: vertical; }
     .two-col { display: grid; grid-template-columns: 1fr; gap: 20px; }
+    .chip-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .chip { background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe; border-radius: 999px; padding: 4px 10px; font-size: 12px; }
     @media (min-width: 1100px) { .two-col { grid-template-columns: 1fr 1fr; } }
   </style>
 </head>
@@ -127,6 +129,7 @@ HTML = """<!doctype html>
             <button class=\"secondary\" onclick=\"saveTimeline()\">Save timeline changes</button>
           </div>
           <div class=\"hint\">Use <code>linked_file_ids</code> to connect timeline events to file IDs from the register.</div>
+          <div id=\"timeline-file-hints\" class=\"hint\">Known file IDs will appear here after the register is loaded.</div>
           <div id=\"timeline-editor\" class=\"hint\">Timeline will appear here.</div>
         </div>
       </div>
@@ -140,6 +143,7 @@ HTML = """<!doctype html>
         <button class=\"secondary\" onclick=\"saveEntities()\">Save entity changes</button>
       </div>
       <div class=\"hint\">Use <code>linked_file_ids</code> to connect people, institutions, or companies to file IDs from the register.</div>
+      <div id=\"entity-file-hints\" class=\"hint\">Known file IDs will appear here after the register is loaded.</div>
       <div id=\"entity-editor\" class=\"hint\">Entities will appear here.</div>
     </div>
 
@@ -204,10 +208,20 @@ HTML = """<!doctype html>
       document.getElementById('next-step').textContent = text;
     }
 
+    function renderKnownFileHints() {
+      const labels = registerRows.map(row => `${row.file_id || ''} — ${row.original_name || ''}`).filter(Boolean);
+      const html = labels.length
+        ? `<div class=\"chip-list\">${labels.map(label => `<span class=\"chip\">${escapeHtml(label)}</span>`).join('')}</div>`
+        : 'Known file IDs will appear here after the register is loaded.';
+      document.getElementById('timeline-file-hints').innerHTML = html;
+      document.getElementById('entity-file-hints').innerHTML = html;
+    }
+
     function buildRegisterTable() {
       const root = document.getElementById('register-editor');
       if (!registerRows.length) {
         root.textContent = 'No register rows available yet. Build the register first.';
+        renderKnownFileHints();
         return;
       }
       const html = ['<table><thead><tr>'];
@@ -227,7 +241,7 @@ HTML = """<!doctype html>
         html.push(`<td><input type=\"text\" data-register-row=\"${index}\" data-field=\"document_group\" value=\"${escapeHtml(row.document_group || '')}\"></td>`);
         html.push(`<td><select data-register-row=\"${index}\" data-field=\"selected_for_export\">` +
           ['no','yes'].map(v => `<option value=\"${v}\" ${row.selected_for_export === v ? 'selected' : ''}>${v}</option>`).join('') +
-          '</select></td>`);
+          '</select></td>');
         html.push(`<td class=\"readonly\">${escapeHtml(row.linked_timeline_event_ids || '')}</td>`);
         html.push(`<td class=\"readonly\">${escapeHtml(row.linked_entity_ids || '')}</td>`);
         html.push(`<td><textarea data-register-row=\"${index}\" data-field=\"note\">${escapeHtml(row.note || '')}</textarea></td>`);
@@ -235,6 +249,7 @@ HTML = """<!doctype html>
       });
       html.push('</tbody></table>');
       root.innerHTML = html.join('');
+      renderKnownFileHints();
     }
 
     function buildTimelineTable() {
