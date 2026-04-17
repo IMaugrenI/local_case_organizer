@@ -9,6 +9,8 @@ python run.py setup
 python run.py check
 python run.py status
 python run.py doctor
+python run.py import
+python run.py import --source /path/to/files
 python run.py build-register
 python run.py build-timeline
 python run.py export-package
@@ -20,15 +22,16 @@ The runtime truth is `python run.py ...`.
 
 Thin wrappers are available for the primary operator commands:
 
-- Linux: `scripts/setup.sh`, `scripts/check.sh`, `scripts/status.sh`, `scripts/doctor.sh`
-- PowerShell: `scripts/setup.ps1`, `scripts/check.ps1`, `scripts/status.ps1`, `scripts/doctor.ps1`
-- macOS: `scripts/setup.command`, `scripts/check.command`, `scripts/status.command`, `scripts/doctor.command`
+- Linux: `scripts/setup.sh`, `scripts/check.sh`, `scripts/status.sh`, `scripts/doctor.sh`, `scripts/import.sh`
+- PowerShell: `scripts/setup.ps1`, `scripts/check.ps1`, `scripts/status.ps1`, `scripts/doctor.ps1`, `scripts/import.ps1`
+- macOS: `scripts/setup.command`, `scripts/check.command`, `scripts/status.command`, `scripts/doctor.command`, `scripts/import.command`
 
 ## Command notes
 
 ### `python run.py setup`
 Creates ignored local folders:
 
+- `data/inbox/`
 - `data/originals/`
 - `data/working/`
 - `data/register/`
@@ -40,10 +43,21 @@ Creates ignored local folders:
 Prints current repository and local workspace status as JSON.
 
 ### `python run.py status`
-Prints a concise summary of local originals, register files, and export packages.
+Prints a concise summary of inbox files, imported originals, import batches, register files, and export packages.
 
 ### `python run.py doctor`
 Runs local environment and writeability checks.
+
+### `python run.py import`
+Imports files from `data/inbox/` into a timestamped batch under `data/originals/`.
+
+### `python run.py import --source /path/to/files`
+Imports directly from a selected file or folder path.
+
+Each import writes:
+
+- a batch-specific `import_manifest_*.csv`
+- an aggregate `provenance.csv`
 
 ### `python run.py build-register`
 Scans `data/originals/` and writes `data/register/document_register.csv`.
@@ -51,6 +65,7 @@ Scans `data/originals/` and writes `data/register/document_register.csv`.
 Current V1 fields:
 
 - `file_id`
+- `batch_id`
 - `sha256`
 - `original_name`
 - `relative_path`
@@ -58,6 +73,8 @@ Current V1 fields:
 - `size_bytes`
 - `imported_at_utc`
 - `review_status`
+- `document_group`
+- `selected_for_export`
 - `note`
 
 ### `python run.py build-timeline`
@@ -65,6 +82,12 @@ Creates a starter `data/register/timeline.csv` template.
 
 ### `python run.py export-package`
 Builds a timestamped export folder in `exports/` and copies current register files into it.
+
+Current V1 export bundle may include:
+
+- `document_register.csv`
+- `timeline.csv`
+- `provenance.csv`
 
 ## Local testing rule
 
