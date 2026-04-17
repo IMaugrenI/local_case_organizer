@@ -26,10 +26,10 @@ pwsh ./scripts/start_here.ps1
 ./scripts/start_here.command
 ```
 
-That path runs:
+That path now runs:
 
 1. setup
-2. status
+2. local browser UI
 
 A beginner guide is available in `docs/00_beginner_quickstart.md`.
 
@@ -79,6 +79,7 @@ This repository is meant to stay technically honest:
 - generate a document register
 - generate a timeline table
 - generate export-ready case packages
+- offer a local browser front door so normal users do not need to live in the terminal
 
 ## Public vs. private split
 
@@ -92,6 +93,7 @@ Primary runtime entrypoint:
 
 ```bash
 python run.py setup
+python run.py ui
 python run.py check
 python run.py status
 python run.py doctor
@@ -105,12 +107,13 @@ python run.py export-package
 Thin wrapper availability:
 
 - Linux: `scripts/setup.sh`, `scripts/check.sh`, `scripts/status.sh`, `scripts/doctor.sh`, `scripts/import.sh`, `scripts/start_here.sh`
-- PowerShell: `scripts/setup.ps1`, `scripts/check.ps1`, `scripts/status.ps1`, `scripts/doctor.ps1`, `scripts/import.ps1`
+- PowerShell: `scripts/setup.ps1`, `scripts/check.ps1`, `scripts/status.ps1`, `scripts/doctor.ps1`, `scripts/import.ps1`, `scripts/start_here.ps1`
 - macOS: `scripts/setup.command`, `scripts/check.command`, `scripts/status.command`, `scripts/doctor.command`, `scripts/import.command`, `scripts/start_here.command`
 
 What these currently do:
 
 - `setup` prepares ignored local folders such as `data/`, `exports/`, and `logs/`
+- `ui` starts the local browser interface
 - `check` prints repo and local workspace status
 - `status` prints a concise summary of local files, import batches, and export packages
 - `doctor` runs local runtime and writeability checks
@@ -122,12 +125,10 @@ What these currently do:
 ## Local-only testing flow
 
 1. clone the repository locally
-2. run `python run.py setup`
-3. place private test files in `data/inbox/` or use `python run.py import --source /path/to/files`
-4. run `python run.py import`
-5. run `python run.py build-register`
-6. run `python run.py build-timeline`
-7. run `python run.py export-package`
+2. run `bash scripts/start_here.sh` or the matching PowerShell/macOS launcher
+3. the browser UI opens locally
+4. drop private files into `data/inbox/` or use the inbox folder button from the UI
+5. use the large UI buttons for import, register, timeline, and export
 
 ## What import adds
 
@@ -146,8 +147,9 @@ This lets the later document register keep stable file IDs instead of regenerati
 A successful first run means:
 
 - your local workspace exists
+- the local browser UI opens
 - `data/inbox/` is ready for dropped files
-- status can see your local folders cleanly
+- the UI can see your local status cleanly
 - later imports produce stable batch and provenance data
 
 ## Planned structure
@@ -166,10 +168,11 @@ profiles/default/
 3. file ID + hash manifest
 4. register and timeline generation
 5. export package builder
-6. optional local-only helper features later
+6. local browser front door
+7. optional local-only helper features later
 
 ## Status
 
-Early V1 scaffold with a working Python-first command path and a first provenance-aware import layer.
+Early V1 scaffold with a working Python-first command path, a first provenance-aware import layer, and a local browser UI.
 
 The first goal is a clean, truthful repo shape before feature growth.
