@@ -114,7 +114,7 @@ HTML = """<!doctype html>
             <button onclick=\"loadRegister()\">Load register</button>
             <button class=\"secondary\" onclick=\"saveRegister()\">Save register changes</button>
           </div>
-          <div class=\"hint\">Editable fields are review status, document group, export selection, and note.</div>
+          <div class=\"hint\">Editable fields are review status, document group, export selection, and note. The right-hand columns show where a file already appears in the timeline or entities table.</div>
           <div id=\"register-editor\" class=\"hint\">Register will appear here.</div>
         </div>
       </div>
@@ -126,7 +126,7 @@ HTML = """<!doctype html>
             <button onclick=\"addTimelineRow()\">Add timeline row</button>
             <button class=\"secondary\" onclick=\"saveTimeline()\">Save timeline changes</button>
           </div>
-          <div class=\"hint\">You can edit dates, titles, linked file IDs, people, summary, and status directly here.</div>
+          <div class=\"hint\">Use <code>linked_file_ids</code> to connect timeline events to file IDs from the register.</div>
           <div id=\"timeline-editor\" class=\"hint\">Timeline will appear here.</div>
         </div>
       </div>
@@ -139,7 +139,7 @@ HTML = """<!doctype html>
         <button onclick=\"addEntityRow()\">Add entity row</button>
         <button class=\"secondary\" onclick=\"saveEntities()\">Save entity changes</button>
       </div>
-      <div class=\"hint\">Use this table for people, institutions, companies, or other named entities linked to your case files.</div>
+      <div class=\"hint\">Use <code>linked_file_ids</code> to connect people, institutions, or companies to file IDs from the register.</div>
       <div id=\"entity-editor\" class=\"hint\">Entities will appear here.</div>
     </div>
 
@@ -211,7 +211,7 @@ HTML = """<!doctype html>
         return;
       }
       const html = ['<table><thead><tr>'];
-      const visibleFields = ['file_id','original_name','relative_path','review_status','document_group','selected_for_export','note'];
+      const visibleFields = ['file_id','original_name','relative_path','review_status','document_group','selected_for_export','linked_timeline_event_ids','linked_entity_ids','note'];
       for (const field of visibleFields) {
         html.push(`<th>${field}</th>`);
       }
@@ -227,7 +227,9 @@ HTML = """<!doctype html>
         html.push(`<td><input type=\"text\" data-register-row=\"${index}\" data-field=\"document_group\" value=\"${escapeHtml(row.document_group || '')}\"></td>`);
         html.push(`<td><select data-register-row=\"${index}\" data-field=\"selected_for_export\">` +
           ['no','yes'].map(v => `<option value=\"${v}\" ${row.selected_for_export === v ? 'selected' : ''}>${v}</option>`).join('') +
-          '</select></td>');
+          '</select></td>`);
+        html.push(`<td class=\"readonly\">${escapeHtml(row.linked_timeline_event_ids || '')}</td>`);
+        html.push(`<td class=\"readonly\">${escapeHtml(row.linked_entity_ids || '')}</td>`);
         html.push(`<td><textarea data-register-row=\"${index}\" data-field=\"note\">${escapeHtml(row.note || '')}</textarea></td>`);
         html.push('</tr>');
       });
@@ -523,6 +525,29 @@ def _selected_export_count() -> int:
 
 
 
+def _split_link_values(value: str) -> list[str]:
+    return [item.strip() for item in str(value).split(',') if item.strip()]
+
+
+
+def _register_link_maps() -> tuple[dict[str, list[str]], dict[str, list[str]]]:
+    timeline_map: dict[str, list[str]] = {}
+    entity_map: dict[str, list[str]] = {}
+
+    for row in read_timeline_rows():
+        event_id = str(row.get("event_id", "")).strip()
+        for file_id in _split_link_values(str(row.get("linked_file_ids", ""))):
+            timeline_map.setdefault(file_id, []).append(event_id)
+
+    for row in read_entity_rows():
+        entity_id = str(row.get("entity_id", "")).strip()
+        for file_id in _split_link_values(str(row.get("linked_file_ids", ""))):
+            entity_map.setdefault(file_id, []).append(entity_id)
+
+    return timeline_map, entity_map
+
+
+
 def _next_step_message() -> str:
     workspace_paths = get_workspace_paths()
     inbox_files = _count_files(workspace_paths.inbox_dir)
@@ -641,7 +666,15 @@ def _read_json_body(handler: BaseHTTPRequestHandler) -> dict[str, object]:
 
 
 def _register_data_payload() -> dict[str, object]:
-    return {"fields": REGISTER_FIELDS, "rows": read_register_rows()}
+    timeline_map, entity_map = _register_link_maps()
+    rows: list[dict[str, str]] = []
+    for row in read_register_rows():
+        file_id = str(row.get("file_id", "")).strip()
+        enriched = dict(row)
+        enriched["linked_timeline_event_ids"] = ", ".join(timeline_map.get(file_id, []))
+        enriched["linked_entity_ids"] = ", ".join(entity_map.get(file_id, []))
+        rows.append(enriched)
+    return {"fields": REGISTER_FIELDS + ["linked_timeline_event_ids", "linked_entity_ids"], "rows": rows}
 
 
 
