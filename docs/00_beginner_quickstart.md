@@ -30,19 +30,18 @@ pwsh ./scripts/start_here.ps1
 
 ## What happens
 
-The start-here path does two safe first steps:
+The start-here path now does two simple things:
 
 1. prepares the local folders you need
-2. shows your current local status
+2. opens the local browser UI
 
-After that, your normal next path is:
+Inside the browser UI you can then use large buttons for:
 
-```bash
-python run.py import
-python run.py build-register
-python run.py build-timeline
-python run.py export-package
-```
+- prepare workspace
+- import inbox files
+- build register
+- build timeline
+- build export package
 
 ## What success looks like
 
@@ -50,7 +49,8 @@ You should end up with:
 
 - a ready local workspace
 - an inbox folder for dropped files
-- a simple status summary
+- a local browser UI on your machine
+- a simple button-driven workflow
 
 ## If something fails
 
