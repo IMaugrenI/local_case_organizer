@@ -13,6 +13,7 @@ from local_case_organizer.imports.ingest import import_sources
 from local_case_organizer.paths import create_local_workspace, describe_workspace, get_workspace_paths
 from local_case_organizer.register.generator import build_document_register
 from local_case_organizer.timeline.generator import build_timeline_template
+from local_case_organizer.ui.app import run_ui
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -26,6 +27,11 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("check", help="Show repository and local workspace status")
     subparsers.add_parser("status", help="Show a concise local workspace summary")
     subparsers.add_parser("doctor", help="Run local environment and writeability checks")
+
+    ui_parser = subparsers.add_parser("ui", help="Start the local browser UI")
+    ui_parser.add_argument("--host", type=str, default="127.0.0.1", help="UI host address")
+    ui_parser.add_argument("--port", type=int, default=8765, help="UI port")
+    ui_parser.add_argument("--no-browser", action="store_true", help="Do not open the browser automatically")
 
     import_parser = subparsers.add_parser("import", help="Import files from data/inbox or a chosen source path")
     import_parser.add_argument("--source", type=str, default=None, help="Optional file or folder path to import")
@@ -91,8 +97,8 @@ def cmd_setup() -> int:
     payload = {
         "created": describe_workspace(paths),
         "next_steps": [
-            "place private files in data/inbox/ or use python run.py import --source /path/to/files",
-            "run python run.py import",
+            "start the browser UI with python run.py ui",
+            "or place private files in data/inbox/ and run python run.py import",
             "run python run.py build-register",
             "run python run.py build-timeline",
             "run python run.py export-package",
@@ -152,6 +158,11 @@ def cmd_doctor() -> int:
 
 
 
+def cmd_ui(host: str, port: int, no_browser: bool) -> int:
+    return run_ui(host=host, port=port, open_browser=not no_browser)
+
+
+
 def cmd_import(source: str | None) -> int:
     payload = import_sources(source)
     print(json.dumps(payload, indent=2))
@@ -192,6 +203,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_status()
     if args.command == "doctor":
         return cmd_doctor()
+    if args.command == "ui":
+        return cmd_ui(args.host, args.port, args.no_browser)
     if args.command == "import":
         return cmd_import(args.source)
     if args.command == "build-register":
