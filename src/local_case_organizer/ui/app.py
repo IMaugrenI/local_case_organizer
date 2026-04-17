@@ -132,6 +132,17 @@ HTML = """<!doctype html>
       </div>
     </div>
 
+    <h2 class=\"section-title\">Entities / people / institutions</h2>
+    <div class=\"editor\">
+      <div class=\"editor-actions\">
+        <button onclick=\"loadEntities()\">Load entities</button>
+        <button onclick=\"addEntityRow()\">Add entity row</button>
+        <button class=\"secondary\" onclick=\"saveEntities()\">Save entity changes</button>
+      </div>
+      <div class=\"hint\">Use this table for people, institutions, companies, or other named entities linked to your case files.</div>
+      <div id=\"entity-editor\" class=\"hint\">Entities will appear here.</div>
+    </div>
+
     <h2 class=\"section-title\">Recent inbox files</h2>
     <div class=\"file-list\"><div id=\"recent-files\">Loading recent files...</div></div>
 
@@ -147,6 +158,8 @@ HTML = """<!doctype html>
     let registerFields = [];
     let timelineRows = [];
     let timelineFields = [];
+    let entityRows = [];
+    let entityFields = [];
 
     function appendLog(text) {
       const log = document.getElementById('log');
@@ -249,6 +262,33 @@ HTML = """<!doctype html>
       root.innerHTML = html.join('');
     }
 
+    function buildEntityTable() {
+      const root = document.getElementById('entity-editor');
+      if (!entityRows.length) {
+        root.textContent = 'No entity rows available yet. Add your first row.';
+        return;
+      }
+      const html = ['<table><thead><tr>'];
+      for (const field of entityFields) {
+        html.push(`<th>${field}</th>`);
+      }
+      html.push('</tr></thead><tbody>');
+      entityRows.forEach((row, index) => {
+        html.push('<tr>');
+        entityFields.forEach(field => {
+          const value = row[field] || '';
+          if (field === 'notes') {
+            html.push(`<td><textarea data-entity-row=\"${index}\" data-field=\"${field}\">${escapeHtml(value)}</textarea></td>`);
+          } else {
+            html.push(`<td><input type=\"text\" data-entity-row=\"${index}\" data-field=\"${field}\" value=\"${escapeHtml(value)}\"></td>`);
+          }
+        });
+        html.push('</tr>');
+      });
+      html.push('</tbody></table>');
+      root.innerHTML = html.join('');
+    }
+
     function escapeHtml(value) {
       return String(value)
         .replaceAll('&', '&amp;')
@@ -270,6 +310,14 @@ HTML = """<!doctype html>
         const rowIndex = Number(el.getAttribute('data-timeline-row'));
         const field = el.getAttribute('data-field');
         timelineRows[rowIndex][field] = el.value;
+      });
+    }
+
+    function syncEntitiesFromInputs() {
+      document.querySelectorAll('[data-entity-row]').forEach(el => {
+        const rowIndex = Number(el.getAttribute('data-entity-row'));
+        const field = el.getAttribute('data-field');
+        entityRows[rowIndex][field] = el.value;
       });
     }
 
@@ -336,6 +384,44 @@ HTML = """<!doctype html>
       await refreshStatus();
     }
 
+    async function loadEntities() {
+      const response = await fetch('/api/entity-data');
+      const data = await response.json();
+      entityFields = data.fields || [];
+      entityRows = data.rows || [];
+      buildEntityTable();
+      appendLog('Entities loaded.');
+    }
+
+    function addEntityRow() {
+      if (!entityFields.length) {
+        entityFields = ['entity_id','entity_name','entity_type','linked_file_ids','notes'];
+      }
+      const nextId = `ENT-${String(entityRows.length + 1).padStart(6, '0')}`;
+      entityRows.push({
+        entity_id: nextId,
+        entity_name: '',
+        entity_type: '',
+        linked_file_ids: '',
+        notes: '',
+      });
+      buildEntityTable();
+      appendLog(`Added entity row ${nextId}.`);
+    }
+
+    async function saveEntities() {
+      syncEntitiesFromInputs();
+      const response = await fetch('/api/save-entities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rows: entityRows }),
+      });
+      const data = await response.json();
+      appendLog(JSON.stringify(data, null, 2));
+      await loadEntities();
+      await refreshStatus();
+    }
+
     async function refreshStatus() {
       const response = await fetch('/api/status');
       const data = await response.json();
@@ -376,6 +462,7 @@ HTML = """<!doctype html>
       await refreshStatus();
       await loadRegister();
       await loadTimeline();
+      await loadEntities();
     }
 
     refreshAll();
