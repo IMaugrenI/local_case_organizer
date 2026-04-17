@@ -35,12 +35,15 @@ The start-here path now does two simple things:
 1. prepares the local folders you need
 2. opens the local browser UI
 
-Inside the browser UI you can then use large buttons for:
+Inside the browser UI you can then use the main safe actions for:
 
-- prepare workspace
+- upload files to the inbox
 - import inbox files
 - build register
+- edit register fields
 - build timeline
+- edit timeline rows
+- edit entities / people / institutions
 - build export package
 
 ## What success looks like
@@ -51,6 +54,17 @@ You should end up with:
 - an inbox folder for dropped files
 - a local browser UI on your machine
 - a simple button-driven workflow
+- a dossier package with a ZIP handoff output
+
+## Simple normal path
+
+- upload or drop files into the inbox
+- import the inbox files
+- build the register
+- review the important files and mark `selected_for_export = yes`
+- build or edit the timeline
+- add important people or institutions in the entities table
+- build the export package
 
 ## If something fails
 
