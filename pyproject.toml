@@ -18,6 +18,9 @@ classifiers = [
   "Operating System :: OS Independent"
 ]
 
+[project.scripts]
+local-case-organizer = "local_case_organizer.cli:main"
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 
