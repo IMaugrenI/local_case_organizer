@@ -1,5 +1,20 @@
 # Commands
 
+## Fastest beginner path
+
+If you want the shortest safe path:
+
+```bash
+bash scripts/start_here.sh
+```
+
+Equivalent entry points:
+
+- PowerShell: `pwsh ./scripts/start_here.ps1`
+- macOS: `./scripts/start_here.command`
+
+That path runs setup and status in the expected order.
+
 ## Primary command path
 
 Run all commands from the repository root.
@@ -22,9 +37,9 @@ The runtime truth is `python run.py ...`.
 
 Thin wrappers are available for the primary operator commands:
 
-- Linux: `scripts/setup.sh`, `scripts/check.sh`, `scripts/status.sh`, `scripts/doctor.sh`, `scripts/import.sh`
-- PowerShell: `scripts/setup.ps1`, `scripts/check.ps1`, `scripts/status.ps1`, `scripts/doctor.ps1`, `scripts/import.ps1`
-- macOS: `scripts/setup.command`, `scripts/check.command`, `scripts/status.command`, `scripts/doctor.command`, `scripts/import.command`
+- Linux: `scripts/setup.sh`, `scripts/check.sh`, `scripts/status.sh`, `scripts/doctor.sh`, `scripts/import.sh`, `scripts/start_here.sh`
+- PowerShell: `scripts/setup.ps1`, `scripts/check.ps1`, `scripts/status.ps1`, `scripts/doctor.ps1`, `scripts/import.ps1`, `scripts/start_here.ps1`
+- macOS: `scripts/setup.command`, `scripts/check.command`, `scripts/status.command`, `scripts/doctor.command`, `scripts/import.command`, `scripts/start_here.command`
 
 ## Command notes
 
@@ -88,6 +103,12 @@ Current V1 export bundle may include:
 - `document_register.csv`
 - `timeline.csv`
 - `provenance.csv`
+
+## Safety markers
+
+- SAFE: `start_here`, `setup`, `check`, `status`, `doctor`, `import`, `build-register`, `build-timeline`, `export-package`
+- ADVANCED: `import --source /path/to/files`
+- DESTRUCTIVE: none in the current public V1 path
 
 ## Local testing rule
 
