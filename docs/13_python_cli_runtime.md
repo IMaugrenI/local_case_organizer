@@ -6,6 +6,7 @@ This repo now has a Python-first runtime entrypoint.
 
 ```bash
 python run.py setup
+python run.py ui
 python run.py check
 python run.py status
 python run.py doctor
@@ -22,9 +23,9 @@ The runtime truth is `python run.py ...`.
 
 Supported convenience wrappers are limited to these files:
 
-- Linux shell wrappers: `scripts/setup.sh`, `scripts/check.sh`, `scripts/status.sh`, `scripts/doctor.sh`, `scripts/import.sh`
-- Windows PowerShell wrappers: `scripts/setup.ps1`, `scripts/check.ps1`, `scripts/status.ps1`, `scripts/doctor.ps1`, `scripts/import.ps1`
-- macOS command launchers: `scripts/setup.command`, `scripts/check.command`, `scripts/status.command`, `scripts/doctor.command`, `scripts/import.command`
+- Linux shell wrappers: `scripts/setup.sh`, `scripts/check.sh`, `scripts/status.sh`, `scripts/doctor.sh`, `scripts/import.sh`, `scripts/start_here.sh`
+- Windows PowerShell wrappers: `scripts/setup.ps1`, `scripts/check.ps1`, `scripts/status.ps1`, `scripts/doctor.ps1`, `scripts/import.ps1`, `scripts/start_here.ps1`
+- macOS command launchers: `scripts/setup.command`, `scripts/check.command`, `scripts/status.command`, `scripts/doctor.command`, `scripts/import.command`, `scripts/start_here.command`
 
 ## goal
 
@@ -33,6 +34,7 @@ Supported convenience wrappers are limited to these files:
 - shell and platform launchers stay thin
 - local case data remains outside the public repository truth
 - import provenance is written before register and export work
+- a local browser UI gives normal users a simpler front door
 
 ## command summary
 
@@ -42,6 +44,13 @@ Supported convenience wrappers are limited to these files:
 - prepares `data/`, `exports/`, `logs/`, and `workspace/`
 - prepares `data/inbox/` as a simple user drop zone
 - prints the next local testing steps
+
+### ui
+
+- starts the local browser UI
+- opens the browser by default
+- shows large buttons for the main safe actions
+- keeps advanced details in the background
 
 ### check
 
