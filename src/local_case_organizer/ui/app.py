@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import cgi
 import json
 import os
 import platform
+import shutil
 import subprocess
 import sys
 import webbrowser
@@ -43,18 +45,37 @@ HTML = """<!doctype html>
     .log { margin-top: 18px; background: #111827; color: #d1fae5; border-radius: 14px; padding: 16px; min-height: 180px; }
     .section-title { margin-top: 28px; margin-bottom: 10px; }
     .note { font-size: 14px; color: #6b7280; }
+    .upload-box { background: white; border-radius: 14px; padding: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.06); margin-top: 20px; }
+    .upload-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    input[type=file] { max-width: 100%; }
+    .hint { margin-top: 12px; color: #6b7280; font-size: 14px; }
+    .next-step { margin-top: 18px; background: #ecfeff; border: 1px solid #a5f3fc; color: #164e63; border-radius: 14px; padding: 16px; }
+    .file-list { margin-top: 18px; background: white; border-radius: 14px; padding: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.06); }
+    ul { margin: 8px 0 0 18px; padding: 0; }
   </style>
 </head>
 <body>
   <div class=\"wrap\">
     <div class=\"hero\">
       <h1>local_case_organizer</h1>
-      <p class=\"lead\">A simple local front door for building a clean case dossier. Put files into your inbox, import them, build a register, build a timeline, and export a handoff package.</p>
+      <p class=\"lead\">A simple local front door for building a clean case dossier. Add files, import them, build a register, build a timeline, and export a handoff package.</p>
       <p class=\"note\">This UI is local-only. Your private files stay on your machine.</p>
     </div>
 
+    <div class=\"next-step\" id=\"next-step\">Loading next step...</div>
+
     <h2 class=\"section-title\">Current status</h2>
     <div class=\"grid\" id=\"cards\"></div>
+
+    <h2 class=\"section-title\">Add files</h2>
+    <div class=\"upload-box\">
+      <div class=\"upload-row\">
+        <input id=\"fileInput\" type=\"file\" multiple>
+        <button class=\"secondary\" onclick=\"uploadFiles()\">Upload selected files to inbox</button>
+        <button class=\"ghost\" onclick=\"runAction('open-inbox')\">Open inbox folder</button>
+      </div>
+      <div class=\"hint\">You can either upload files here or open the inbox folder and place files there yourself.</div>
+    </div>
 
     <h2 class=\"section-title\">Main actions</h2>
     <div class=\"actions\">
@@ -67,11 +88,13 @@ HTML = """<!doctype html>
 
     <h2 class=\"section-title\">Helpful actions</h2>
     <div class=\"actions\">
-      <button class=\"ghost\" onclick=\"runAction('open-inbox')\">Open inbox folder</button>
       <button class=\"ghost\" onclick=\"runAction('open-exports')\">Open exports folder</button>
       <button class=\"light\" onclick=\"runAction('doctor')\">Run doctor</button>
       <button class=\"light\" onclick=\"refreshStatus()\">Refresh status</button>
     </div>
+
+    <h2 class=\"section-title\">Recent inbox files</h2>
+    <div class=\"file-list\"><div id=\"recent-files\">Loading recent files...</div></div>
 
     <h2 class=\"section-title\">Local paths</h2>
     <div class=\"paths\"><pre id=\"paths\">Loading paths...</pre></div>
@@ -104,10 +127,30 @@ HTML = """<!doctype html>
       }
     }
 
+    function renderRecentFiles(items) {
+      const root = document.getElementById('recent-files');
+      if (!items || items.length === 0) {
+        root.textContent = 'No files are currently waiting in the inbox.';
+        return;
+      }
+      const html = ['<ul>'];
+      for (const item of items) {
+        html.push(`<li>${item}</li>`);
+      }
+      html.push('</ul>');
+      root.innerHTML = html.join('');
+    }
+
+    function renderNextStep(text) {
+      document.getElementById('next-step').textContent = text;
+    }
+
     async function refreshStatus() {
       const response = await fetch('/api/status');
       const data = await response.json();
       renderCards(data.summary);
+      renderRecentFiles(data.recent_inbox_files || []);
+      renderNextStep(data.next_step || 'Use the main action buttons below.');
       document.getElementById('paths').textContent = JSON.stringify(data.paths, null, 2);
       appendLog('Status refreshed.');
     }
@@ -117,6 +160,24 @@ HTML = """<!doctype html>
       const response = await fetch(`/api/${action}`, { method: 'POST' });
       const data = await response.json();
       appendLog(JSON.stringify(data, null, 2));
+      await refreshStatus();
+    }
+
+    async function uploadFiles() {
+      const input = document.getElementById('fileInput');
+      if (!input.files || input.files.length === 0) {
+        appendLog('No files selected for upload.');
+        return;
+      }
+      const form = new FormData();
+      for (const file of input.files) {
+        form.append('files', file, file.name);
+      }
+      appendLog(`Uploading ${input.files.length} file(s) to inbox ...`);
+      const response = await fetch('/api/upload', { method: 'POST', body: form });
+      const data = await response.json();
+      appendLog(JSON.stringify(data, null, 2));
+      input.value = '';
       await refreshStatus();
     }
 
@@ -153,6 +214,43 @@ def _check_writable(path: Path) -> bool:
 
 
 
+def _next_available_path(path: Path) -> Path:
+    if not path.exists():
+        return path
+    counter = 1
+    while True:
+        candidate = path.with_name(f"{path.stem}_{counter}{path.suffix}")
+        if not candidate.exists():
+            return candidate
+        counter += 1
+
+
+
+def _recent_inbox_files(inbox_dir: Path, limit: int = 8) -> list[str]:
+    files = [path for path in inbox_dir.rglob("*") if path.is_file()]
+    files.sort(key=lambda item: item.stat().st_mtime, reverse=True)
+    return [str(path.relative_to(inbox_dir)) for path in files[:limit]]
+
+
+
+def _next_step_message(paths: object) -> str:
+    workspace_paths = get_workspace_paths()
+    inbox_files = _count_files(workspace_paths.inbox_dir)
+    import_batches = _count_directories(workspace_paths.originals_dir)
+    register_files = _count_files(workspace_paths.register_dir)
+    export_packages = _count_directories(workspace_paths.exports_dir)
+    if inbox_files > 0:
+        return "Next step: click 'Import inbox files' to move your waiting files into a tracked import batch."
+    if import_batches == 0:
+        return "Next step: add files through the upload box or open the inbox folder and place files there."
+    if register_files == 0:
+        return "Next step: click 'Build register' to create your document register."
+    if export_packages == 0:
+        return "Next step: build a timeline or create your first export package."
+    return "Your workspace already has imports, register data, and exports. Use the buttons below for the next update cycle."
+
+
+
 def _status_payload() -> dict[str, object]:
     paths = get_workspace_paths()
     return {
@@ -167,6 +265,8 @@ def _status_payload() -> dict[str, object]:
             "export_packages": _count_directories(paths.exports_dir),
         },
         "paths": describe_workspace(paths),
+        "recent_inbox_files": _recent_inbox_files(paths.inbox_dir),
+        "next_step": _next_step_message(paths),
     }
 
 
@@ -208,6 +308,36 @@ def _open_path_in_file_manager(path: Path) -> dict[str, object]:
 
 
 
+def _save_uploaded_files(handler: BaseHTTPRequestHandler) -> dict[str, object]:
+    paths = create_local_workspace()
+    form = cgi.FieldStorage(
+        fp=handler.rfile,
+        headers=handler.headers,
+        environ={
+            "REQUEST_METHOD": "POST",
+            "CONTENT_TYPE": handler.headers.get("Content-Type", ""),
+        },
+    )
+    files_field = form["files"] if "files" in form else []
+    if not isinstance(files_field, list):
+        files_field = [files_field]
+
+    saved: list[str] = []
+    for item in files_field:
+        filename = Path(item.filename or "uploaded_file").name
+        target = _next_available_path(paths.inbox_dir / filename)
+        with target.open("wb") as handle:
+            shutil.copyfileobj(item.file, handle)
+        saved.append(str(target.relative_to(paths.inbox_dir)))
+
+    return {
+        "uploaded_files": saved,
+        "inbox_dir": str(paths.inbox_dir),
+        "message": f"Saved {len(saved)} file(s) to the inbox.",
+    }
+
+
+
 def _json_bytes(payload: dict[str, object]) -> bytes:
     return json.dumps(payload, indent=2).encode("utf-8")
 
@@ -238,6 +368,8 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
             parsed = urlparse(self.path)
             if parsed.path == "/api/setup":
                 payload = {"created": describe_workspace(create_local_workspace())}
+            elif parsed.path == "/api/upload":
+                payload = _save_uploaded_files(self)
             elif parsed.path == "/api/import":
                 payload = import_sources(None)
             elif parsed.path == "/api/build-register":
