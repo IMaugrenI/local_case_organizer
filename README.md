@@ -59,20 +59,30 @@ Real case data, private profiles, real names, account numbers, case numbers, and
 
 ## Current command surface
 
-Primary entrypoint:
+Primary runtime entrypoint:
 
 ```bash
+python run.py setup
 python run.py check
-python run.py init-workspace
+python run.py status
+python run.py doctor
 python run.py build-register
 python run.py build-timeline
 python run.py export-package
 ```
 
+Thin wrapper availability:
+
+- Linux: `scripts/setup.sh`, `scripts/check.sh`, `scripts/status.sh`, `scripts/doctor.sh`
+- PowerShell: `scripts/setup.ps1`, `scripts/check.ps1`, `scripts/status.ps1`, `scripts/doctor.ps1`
+- macOS: `scripts/setup.command`, `scripts/check.command`, `scripts/status.command`, `scripts/doctor.command`
+
 What these currently do:
 
+- `setup` prepares ignored local folders such as `data/`, `exports/`, and `logs/`
 - `check` prints repo and local workspace status
-- `init-workspace` creates ignored local folders such as `data/`, `exports/`, and `logs/`
+- `status` prints a concise summary of local files and export packages
+- `doctor` runs local runtime and writeability checks
 - `build-register` scans `data/originals/` and creates `data/register/document_register.csv`
 - `build-timeline` creates `data/register/timeline.csv`
 - `export-package` creates a timestamped neutral export bundle under `exports/`
@@ -80,7 +90,7 @@ What these currently do:
 ## Local-only testing flow
 
 1. clone the repository locally
-2. run `python run.py init-workspace`
+2. run `python run.py setup`
 3. place private test files in `data/originals/`
 4. run `python run.py build-register`
 5. run `python run.py build-timeline`
@@ -106,6 +116,6 @@ profiles/default/
 
 ## Status
 
-Early V1 scaffold with a working local command path.
+Early V1 scaffold with a working Python-first command path.
 
 The first goal is a clean, truthful repo shape before feature growth.
