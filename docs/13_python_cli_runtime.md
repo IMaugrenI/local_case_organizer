@@ -9,6 +9,8 @@ python run.py setup
 python run.py check
 python run.py status
 python run.py doctor
+python run.py import
+python run.py import --source /path/to/files
 python run.py build-register
 python run.py build-timeline
 python run.py export-package
@@ -20,9 +22,9 @@ The runtime truth is `python run.py ...`.
 
 Supported convenience wrappers are limited to these files:
 
-- Linux shell wrappers: `scripts/setup.sh`, `scripts/check.sh`, `scripts/status.sh`, `scripts/doctor.sh`
-- Windows PowerShell wrappers: `scripts/setup.ps1`, `scripts/check.ps1`, `scripts/status.ps1`, `scripts/doctor.ps1`
-- macOS command launchers: `scripts/setup.command`, `scripts/check.command`, `scripts/status.command`, `scripts/doctor.command`
+- Linux shell wrappers: `scripts/setup.sh`, `scripts/check.sh`, `scripts/status.sh`, `scripts/doctor.sh`, `scripts/import.sh`
+- Windows PowerShell wrappers: `scripts/setup.ps1`, `scripts/check.ps1`, `scripts/status.ps1`, `scripts/doctor.ps1`, `scripts/import.ps1`
+- macOS command launchers: `scripts/setup.command`, `scripts/check.command`, `scripts/status.command`, `scripts/doctor.command`, `scripts/import.command`
 
 ## goal
 
@@ -30,6 +32,7 @@ Supported convenience wrappers are limited to these files:
 - cross-platform command handling in Python
 - shell and platform launchers stay thin
 - local case data remains outside the public repository truth
+- import provenance is written before register and export work
 
 ## command summary
 
@@ -37,6 +40,7 @@ Supported convenience wrappers are limited to these files:
 
 - creates ignored local workspace folders
 - prepares `data/`, `exports/`, `logs/`, and `workspace/`
+- prepares `data/inbox/` as a simple user drop zone
 - prints the next local testing steps
 
 ### check
@@ -46,7 +50,7 @@ Supported convenience wrappers are limited to these files:
 ### status
 
 - prints a concise local workspace summary
-- includes file counts and export-package counts
+- includes inbox file counts, imported file counts, batch counts, and export-package counts
 
 ### doctor
 
@@ -54,9 +58,17 @@ Supported convenience wrappers are limited to these files:
 - checks repo structure presence
 - verifies local writeability for key folders
 
+### import
+
+- imports from `data/inbox/` by default
+- can import directly from a chosen source path with `--source`
+- writes a batch-specific import manifest
+- rebuilds aggregate provenance output
+
 ### build-register
 
 - scans `data/originals/`
+- reads provenance-backed stable file IDs where available
 - writes `data/register/document_register.csv`
 
 ### build-timeline
@@ -67,3 +79,4 @@ Supported convenience wrappers are limited to these files:
 
 - creates a timestamped handoff folder in `exports/`
 - copies current register artifacts into the export bundle
+- includes provenance output when available
