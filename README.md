@@ -57,6 +57,35 @@ This public repository contains only the neutral technical core.
 
 Real case data, private profiles, real names, account numbers, case numbers, and sensitive exports should stay local and must not be committed.
 
+## Current command surface
+
+Primary entrypoint:
+
+```bash
+python run.py check
+python run.py init-workspace
+python run.py build-register
+python run.py build-timeline
+python run.py export-package
+```
+
+What these currently do:
+
+- `check` prints repo and local workspace status
+- `init-workspace` creates ignored local folders such as `data/`, `exports/`, and `logs/`
+- `build-register` scans `data/originals/` and creates `data/register/document_register.csv`
+- `build-timeline` creates `data/register/timeline.csv`
+- `export-package` creates a timestamped neutral export bundle under `exports/`
+
+## Local-only testing flow
+
+1. clone the repository locally
+2. run `python run.py init-workspace`
+3. place private test files in `data/originals/`
+4. run `python run.py build-register`
+5. run `python run.py build-timeline`
+6. run `python run.py export-package`
+
 ## Planned structure
 
 ```text
@@ -77,6 +106,6 @@ profiles/default/
 
 ## Status
 
-Early public scaffold.
+Early V1 scaffold with a working local command path.
 
 The first goal is a clean, truthful repo shape before feature growth.
