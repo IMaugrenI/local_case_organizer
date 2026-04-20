@@ -10,8 +10,11 @@ This repository now keeps a sorted documentation map by purpose.
 - `docs/roadmap/` — forward-looking product and version plans
 - `docs/release/` — maintainer release checks
 
-## Compatibility note
+## Reading order
 
-The older top-level or flat `docs/` files are still kept for compatibility and existing links.
+For most users, the best reading order is:
 
-The sorted folders are the preferred reading order going forward.
+1. `docs/guides/beginner_quickstart.md`
+2. `docs/guides/install_and_first_test.md`
+3. `docs/reference/commands.md`
+4. the matching file under `docs/platform/`
