@@ -4,34 +4,45 @@ Local, cloud-free tool for organizing sensitive case documents into structured d
 
 This repository is a neutral public core for local case organization work. It is designed for people who need to turn chaotic document collections into a cleaner, reviewable dossier without pushing data into a cloud service.
 
-## Use this repo in the simplest way
-
-If you want the shortest safe path, start here:
+## Fastest safe start
 
 ### Linux
 
 ```bash
-bash scripts/start_here.sh
+bash scripts/linux/start_here.sh
 ```
 
 ### Windows PowerShell
 
 ```powershell
-pwsh ./scripts/start_here.ps1
+pwsh ./scripts/windows/start_here.ps1
 ```
 
 ### macOS
 
 ```bash
-./scripts/start_here.command
+./scripts/macos/start_here.command
 ```
 
-That path now runs:
+That path runs:
 
 1. setup
 2. local browser UI
 
-A beginner guide is available in `docs/00_beginner_quickstart.md`.
+## Preferred documentation order
+
+- `docs/guides/beginner_quickstart.md`
+- `docs/guides/install_and_first_test.md`
+- `docs/reference/commands.md`
+- `docs/reference/python_cli_runtime.md`
+- `docs/platform/linux.md`
+- `docs/platform/windows.md`
+- `docs/platform/macos.md`
+- `docs/roadmap/productization_roadmap.md`
+- `docs/roadmap/roadmap_v1.md`
+- `docs/release/release_checklist.md`
+
+A documentation map is available in `docs/README.md`.
 
 ## Positioning
 
@@ -70,24 +81,7 @@ This repository is meant to stay technically honest:
 - advisory and support contexts
 - lawyers as downstream recipients of cleaner dossier exports
 
-## Core ideas for V1
-
-- preserve originals without silent modification
-- create stable file IDs
-- store hashes and import metadata
-- separate inbox, originals, working copies, register data, and exports
-- generate a document register
-- generate a timeline table
-- generate export-ready case packages
-- offer a local browser front door so normal users do not need to live in the terminal
-
-## Public vs. private split
-
-This public repository contains only the neutral technical core.
-
-Real case data, private profiles, real names, account numbers, case numbers, and sensitive exports should stay local and must not be committed.
-
-## Current command surface
+## Runtime truth
 
 Primary runtime entrypoint:
 
@@ -104,13 +98,28 @@ python run.py build-timeline
 python run.py export-package
 ```
 
-Thin wrapper availability:
+## Sorted launcher layout
 
-- Linux: `scripts/setup.sh`, `scripts/check.sh`, `scripts/status.sh`, `scripts/doctor.sh`, `scripts/import.sh`, `scripts/start_here.sh`
-- PowerShell: `scripts/setup.ps1`, `scripts/check.ps1`, `scripts/status.ps1`, `scripts/doctor.ps1`, `scripts/import.ps1`, `scripts/start_here.ps1`
-- macOS: `scripts/setup.command`, `scripts/check.command`, `scripts/status.command`, `scripts/doctor.command`, `scripts/import.command`, `scripts/start_here.command`
+Thin OS launchers now live under:
 
-What these currently do:
+- `scripts/linux/`
+- `scripts/windows/`
+- `scripts/macos/`
+
+Common launchers available across the sorted folders:
+
+- `setup`
+- `ui`
+- `check`
+- `status`
+- `doctor`
+- `import`
+- `build-register`
+- `build-timeline`
+- `export-package`
+- `start_here`
+
+## What the commands do
 
 - `setup` prepares ignored local folders such as `data/`, `exports/`, and `logs/`
 - `ui` starts the local browser interface
@@ -125,7 +134,7 @@ What these currently do:
 ## Local-only testing flow
 
 1. clone the repository locally
-2. run `bash scripts/start_here.sh` or the matching PowerShell/macOS launcher
+2. run the matching `start_here` launcher for your operating system
 3. the browser UI opens locally
 4. drop private files into `data/inbox/` or use the inbox folder button from the UI
 5. use the large UI buttons for import, register, timeline, and export
@@ -152,27 +161,17 @@ A successful first run means:
 - the UI can see your local status cleanly
 - later imports produce stable batch and provenance data
 
-## Planned structure
+## Current repository shape
 
 ```text
+run.py
 src/local_case_organizer/
 docs/
+scripts/
 examples/demo_case/
 profiles/default/
 ```
 
-## Early roadmap
-
-1. repository skeleton and boundary
-2. local import and original preservation
-3. file ID + hash manifest
-4. register and timeline generation
-5. export package builder
-6. local browser front door
-7. optional local-only helper features later
-
 ## Status
 
-Early V1 scaffold with a working Python-first command path, a first provenance-aware import layer, and a local browser UI.
-
-The first goal is a clean, truthful repo shape before feature growth.
+Early V1 scaffold with a working Python-first command path, a local browser UI, sorted documentation folders, and a sorted cross-platform launcher layout.
