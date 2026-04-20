@@ -1,7 +1,5 @@
 # Python CLI runtime
 
-This file is the preferred sorted mirror of `docs/13_python_cli_runtime.md`.
-
 This repo has a Python-first runtime entrypoint.
 
 ## Primary entrypoint
