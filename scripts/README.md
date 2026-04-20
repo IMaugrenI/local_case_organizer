@@ -18,6 +18,21 @@ python run.py ...
 
 The OS-specific script folders only contain thin wrappers.
 
+## Sorted launcher parity
+
+The sorted folders now cover these common launchers:
+
+- `setup`
+- `ui`
+- `check`
+- `status`
+- `doctor`
+- `import`
+- `build-register`
+- `build-timeline`
+- `export-package`
+- `start_here`
+
 ## Compatibility note
 
 The older flat script files are still kept for compatibility and existing docs.
