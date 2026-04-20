@@ -73,6 +73,16 @@ FIXUP_SCRIPT = r"""
     return String(value).toLowerCase().startsWith('de') ? 'de' : 'en';
   }
 
+  function normalizeNextStepValue(value) {
+    if (!value) return NEXT_STEP_TEXT[currentLang()].next_step_use_buttons;
+    const raw = String(value).trim();
+    const key = raw.startsWith('next_step_') ? raw : (NEXT_STEP_TEXT_TO_KEY[raw] || null);
+    if (key && NEXT_STEP_TEXT[currentLang()][key]) {
+      return NEXT_STEP_TEXT[currentLang()][key];
+    }
+    return raw;
+  }
+
   function sectionEditorFor(id) {
     const el = document.getElementById(id);
     return el ? el.closest('.editor') : null;
@@ -83,11 +93,7 @@ FIXUP_SCRIPT = r"""
 
     const nextStep = document.getElementById('next-step');
     if (nextStep) {
-      const raw = nextStep.textContent.trim();
-      const key = raw.startsWith('next_step_') ? raw : (NEXT_STEP_TEXT_TO_KEY[raw] || null);
-      if (key && NEXT_STEP_TEXT[lang][key]) {
-        nextStep.textContent = NEXT_STEP_TEXT[lang][key];
-      }
+      nextStep.textContent = normalizeNextStepValue(nextStep.textContent);
     }
 
     const registerEditor = sectionEditorFor('register-editor');
@@ -113,7 +119,7 @@ FIXUP_SCRIPT = r"""
           ? 'Bekannte Datei-IDs erscheinen hier, sobald das Register geladen wurde.'
           : 'Known file IDs will appear here after the register is loaded.';
       }
-      if (hints[2] && hints[2].textContent.includes('No timeline rows')) {
+      if (hints[2] && !hints[2].querySelector('table')) {
         hints[2].textContent = lang === 'de'
           ? 'Noch keine Zeitlinien-Zeilen vorhanden. Baue zuerst die Zeitlinie.'
           : 'No timeline rows available yet. Build the timeline first.';
@@ -133,7 +139,7 @@ FIXUP_SCRIPT = r"""
           ? 'Bekannte Datei-IDs erscheinen hier, sobald das Register geladen wurde.'
           : 'Known file IDs will appear here after the register is loaded.';
       }
-      if (hints[2] && hints[2].textContent.includes('No entity rows')) {
+      if (hints[2] && !hints[2].querySelector('table')) {
         hints[2].textContent = lang === 'de'
           ? 'Noch keine Einträge vorhanden. Füge deine erste Zeile hinzu.'
           : 'No entity rows available yet. Add your first row.';
@@ -148,7 +154,7 @@ FIXUP_SCRIPT = r"""
           ? 'Hier werden die letzten Exportpakete, passende ZIP-Dateien und Manifest-Dateien angezeigt.'
           : 'Recent export packages, matching ZIP archives, and manifest files are shown here.';
       }
-      if (hints[1] && hints[1].textContent.includes('No export packages')) {
+      if (hints[1] && !hints[1].querySelector('table')) {
         hints[1].textContent = lang === 'de'
           ? 'Noch keine Exportpakete gefunden.'
           : 'No export packages found yet.';
@@ -162,10 +168,10 @@ FIXUP_SCRIPT = r"""
       const label = card.querySelector('div');
       if (!label) return;
       const text = label.textContent.trim();
-      if (text === 'Register-Dateien' || text === 'Register files') {
+      if (text === 'Register-Dateien' || text === 'Register files' || text === 'Files in register folder' || text === 'Dateien im Register-Ordner') {
         label.textContent = lang === 'de' ? 'Dateien im Register-Ordner' : 'Files in register folder';
       }
-      if (text === 'Für Export markiert' || text === 'Selected for export') {
+      if (text === 'Für Export markiert' || text === 'Selected for export' || text === 'Marked for export') {
         label.textContent = lang === 'de' ? 'Für Export markiert' : 'Marked for export';
       }
     });
@@ -173,25 +179,37 @@ FIXUP_SCRIPT = r"""
 
   function ensureLogToggle() {
     const logPanel = document.querySelector('.log');
-    if (!logPanel || logPanel.dataset.lcoToggleReady === '1') return;
-    logPanel.classList.add('lco-collapsed');
-    const toolbar = document.createElement('div');
-    toolbar.className = 'lco-log-toolbar';
-    const button = document.createElement('button');
-    button.className = 'lco-log-toggle';
-    button.type = 'button';
-    const setLabel = () => {
+    if (!logPanel) return;
+
+    let toolbar = document.querySelector('.lco-log-toolbar');
+    let button = toolbar ? toolbar.querySelector('.lco-log-toggle') : null;
+
+    if (!toolbar) {
+      toolbar = document.createElement('div');
+      toolbar.className = 'lco-log-toolbar';
+      button = document.createElement('button');
+      button.className = 'lco-log-toggle';
+      button.type = 'button';
+      button.addEventListener('click', () => {
+        logPanel.classList.toggle('lco-collapsed');
+        updateLogToggleLabel();
+      });
+      toolbar.appendChild(button);
+      logPanel.parentNode.insertBefore(toolbar, logPanel);
+    }
+
+    if (!logPanel.classList.contains('lco-collapsed') && !logPanel.dataset.lcoExpandedOnce) {
+      logPanel.classList.add('lco-collapsed');
+    }
+
+    function updateLogToggleLabel() {
+      if (!button) return;
       button.textContent = logPanel.classList.contains('lco-collapsed')
         ? (currentLang() === 'de' ? 'Log erweitern' : 'Expand log')
         : (currentLang() === 'de' ? 'Log einklappen' : 'Collapse log');
-    };
-    setLabel();
-    button.addEventListener('click', () => {
-      logPanel.classList.toggle('lco-collapsed');
-      setLabel();
-    });
-    toolbar.appendChild(button);
-    logPanel.parentNode.insertBefore(toolbar, logPanel);
+    }
+
+    updateLogToggleLabel();
     logPanel.dataset.lcoToggleReady = '1';
   }
 
@@ -199,6 +217,13 @@ FIXUP_SCRIPT = r"""
     applyTextFixes();
     applyCardFixes();
     ensureLogToggle();
+  }
+
+  const originalRenderNextStep = window.renderNextStep;
+  if (typeof originalRenderNextStep === 'function') {
+    window.renderNextStep = function (value) {
+      return originalRenderNextStep.call(this, normalizeNextStepValue(value));
+    };
   }
 
   const originalRefreshAll = window.refreshAll;
@@ -214,6 +239,25 @@ FIXUP_SCRIPT = r"""
   if (typeof originalRefreshStatus === 'function') {
     window.refreshStatus = async function () {
       const result = await originalRefreshStatus.apply(this, arguments);
+      setTimeout(applyAllFixes, 0);
+      return result;
+    };
+  }
+
+  const originalToggleLanguage = window.toggleLanguage;
+  if (typeof originalToggleLanguage === 'function') {
+    window.toggleLanguage = function () {
+      const result = originalToggleLanguage.apply(this, arguments);
+      setTimeout(applyAllFixes, 0);
+      setTimeout(applyAllFixes, 50);
+      return result;
+    };
+  }
+
+  const originalApplyLanguage = window.applyLanguage;
+  if (typeof originalApplyLanguage === 'function') {
+    window.applyLanguage = function () {
+      const result = originalApplyLanguage.apply(this, arguments);
       setTimeout(applyAllFixes, 0);
       return result;
     };
