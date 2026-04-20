@@ -1,7 +1,5 @@
 # Beginner quickstart
 
-This guide is the preferred sorted mirror of `docs/00_beginner_quickstart.md`.
-
 This guide is for people who want the shortest safe path.
 
 ## What this repo is
