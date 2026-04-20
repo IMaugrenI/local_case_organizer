@@ -1,7 +1,5 @@
 # Install and first test
 
-This file is the preferred sorted mirror of `INSTALL_AND_FIRST_TEST.md`.
-
 This file is the shortest practical path for a fresh local download.
 
 ## 1. Get the repository
