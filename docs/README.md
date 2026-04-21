@@ -2,6 +2,8 @@
 
 This repository now keeps a sorted documentation map by purpose.
 
+> Runtime core lives in `run.py` and `src/`. The documentation, examples, and profiles are support layers and should not be confused with runtime truth.
+
 ## Preferred documentation layout
 
 - `docs/guides/` — shortest practical paths for normal users
