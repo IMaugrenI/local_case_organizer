@@ -1,104 +1,81 @@
-# local_case_organizer
+# tof_container_pulse
 
-> Die englische Hauptfassung liegt in `README.md`.
+Lokaler Docker-Host-Status auf einen Blick
 
-Lokales Tool zur Organisation sensibler Fallakten in saubere Dossiers.
+Erzeugt eine einfache statische Statusseite aus Docker-CLI-Daten — read-only, lokal, keine Datenbank, keine Cloud.
 
-Ein lokales, cloudfreies System, um chaotische Dokumentensammlungen in strukturierte Register, Zeitlinien und Exportpakete zu überführen.
+> Die englische Hauptfassung liegt in README.md.
 
-Dieses Repository ist ein neutraler öffentlicher Kern für lokale Fallorganisationsarbeit. Es ist für Menschen gedacht, die aus ungeordneten Dokumentenbeständen ein prüfbares Dossier erstellen wollen, ohne Daten in eine Cloud zu geben.
+---
 
-## Schnellstart (sicherster Einstieg)
+Ein Host. Eine Seite. Ein Blick.
 
-### Linux
+tof_container_pulse ist ein kleines lokales Dashboard für Docker-Hosts.  
+Es erzeugt eine statische pulse.html, damit du eine Frage sofort beantworten kannst:
 
-```bash
-bash scripts/linux/start_here.sh
-```
+> Läuft gerade alles sauber?
 
-### Windows PowerShell
+---
 
-```powershell
-pwsh ./scripts/windows/start_here.ps1
-```
+## Rolle in der öffentlichen Produktlinie
 
-### macOS
+Beobachten (Systemzustand sichtbar machen)
 
-```bash
-./scripts/macos/start_here.command
-```
+### Funktioniert allein
+Ja.
 
-Dieser Pfad führt aus:
+### Integration
+Keine (bewusst nur Beobachtung)
 
-1. setup
-2. lokale Browser-Oberfläche
+### Nicht gedacht für
+- andere Tools zu steuern  
+- automatisierte Prozesse auszulösen  
+- Teil einer Verarbeitungskette zu werden  
 
-## Einordnung
+---
 
-`local_case_organizer` ist kein Kanzleisystem, kein Gerichtstool und keine Rechtsberatungsmaschine.
+## Funktionen
 
-Es ist eine lokale Dossier- und Organisationsschicht.
+- Linux, macOS, Windows  
+- read-only Zugriff über Docker CLI  
+- kein Docker SDK notwendig  
+- konfigurierbare Warnschwellen  
+- optionaler Watch-Modus  
+- optionaler Multi-Host-Modus (Docker Contexts)  
+- statische HTML-Ausgabe  
+- keine Datenbank  
+- keine Cloud  
 
-Ziel ist:
+---
 
-1. Originale schützen
-2. stabile Dokument-IDs vergeben
-3. ein prüfbares Register aufbauen
-4. Timeline-Arbeit ermöglichen
-5. saubere Exportpakete für Dritte (z. B. Anwälte) vorbereiten
+## Voraussetzungen
 
-## Zielgruppe
+- Python 3.9+  
+- Docker CLI im PATH  
+- laufender Docker-Daemon oder Docker Desktop  
 
-- Privatpersonen mit chaotischen Fallakten
-- Beratungs- und Unterstützungsumfelder
-- Anwälte als Empfänger strukturierter Dossiers
+---
 
-## Runtime-Wahrheit
+## Schnellstart
 
-Primärer Einstieg:
+bash python3 run.py --once 
 
-```bash
-python run.py setup
-python run.py ui
-python run.py check
-```
+Erzeugt die HTML-Datei und öffnet sie automatisch im Browser.
 
-Weitere Befehle:
+---
 
-```bash
-python run.py status
-python run.py doctor
-python run.py import
-python run.py build-register
-python run.py build-timeline
-python run.py export-package
-```
+## Kernprinzipien
 
-## Plattform-Starter
+- read-only  
+- kein Eingriff in Container  
+- keine Historie  
+- keine versteckte Logik  
 
-Die unterstützte Runtime bleibt `python run.py ...`.
+---
 
-Komfortstarter existieren für:
+## Statusmodell
 
-- Linux
-- Windows
-- macOS
-
-## Grenzen
-
-Dieses Repository behauptet nicht:
-
-- garantierte rechtliche Korrektheit
-- automatische Rechtsbewertung
-- Cloud-Verarbeitung als Standard
-
-Es bleibt technisch ehrlich:
-
-- local-first
-- cloudfrei
-- datenschutzfreundlich
-- evidenz- und herkunftsbewusst
-
-## Status
-
-Früher V1-Stand mit funktionierendem Python-CLI, lokaler UI und sauberer Plattformstruktur.
+- ok = läuft und innerhalb der Grenzwerte  
+- warn = läuft, aber über Grenzwerten  
+- critical = nicht gesund  
+- unknown = Zustand nicht sauber bestimmbar
