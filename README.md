@@ -1,6 +1,8 @@
 # local_case_organizer
 
-Local, cloud-free tool for organizing sensitive case documents into structured dossiers, timelines, and export packages.
+**Organize sensitive case files locally into clean dossiers**
+
+A local, cloud-free tool for turning chaotic document collections into structured registers, timelines, and export packages.
 
 This repository is a neutral public core for local case organization work. It is designed for people who need to turn chaotic document collections into a cleaner, reviewable dossier without pushing data into a cloud service.
 
@@ -29,6 +31,26 @@ That path runs:
 1. setup
 2. local browser UI
 
+## Positioning
+
+`local_case_organizer` is not a law firm system, not a court tool, and not a legal advice engine.
+
+It is a local dossier-building and organization layer.
+
+The goal is simple:
+
+1. keep originals protected
+2. assign stable document IDs
+3. build a reviewable register
+4. support timeline work
+5. prepare clean export packages for third parties such as lawyers or advisory services
+
+## Intended users
+
+- private individuals with chaotic case files
+- advisory and support contexts
+- lawyers as downstream recipients of cleaner dossier exports
+
 ## Preferred documentation order
 
 - `docs/guides/beginner_quickstart.md`
@@ -43,20 +65,6 @@ That path runs:
 - `docs/release/release_checklist.md`
 
 A documentation map is available in `docs/README.md`.
-
-## Positioning
-
-`local_case_organizer` is not a law firm system, not a court tool, and not a legal advice engine.
-
-It is a local dossier-building and organization layer.
-
-The goal is simple:
-
-1. keep originals protected
-2. assign stable document IDs
-3. build a reviewable register
-4. support timeline work
-5. prepare clean export packages for third parties such as lawyers or advisory services
 
 ## Boundary
 
@@ -74,12 +82,6 @@ This repository is meant to stay technically honest:
 - privacy-friendly by design
 - evidence and provenance aware
 - neutral enough for different case types
-
-## Intended users
-
-- private individuals with chaotic case files
-- advisory and support contexts
-- lawyers as downstream recipients of cleaner dossier exports
 
 ## Runtime truth
 
