@@ -6,6 +6,21 @@ A local, cloud-free tool for turning chaotic document collections into structure
 
 This repository is a neutral public core for local case organization work. It is designed for people who need to turn chaotic document collections into a cleaner, reviewable dossier without pushing data into a cloud service.
 
+## Role in the public product line
+
+Structure (organization and export)
+
+### Works standalone
+Yes.
+
+### Can be combined with
+- `tof_local_builder` for structuring generated outputs
+- `tof_local_knowledge` for organizing extracted evidence
+
+### Not intended for
+- triggering generation processes
+- acting as a knowledge retrieval system
+
 ## Fastest safe start
 
 ### Linux
