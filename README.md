@@ -1,5 +1,9 @@
 # local_case_organizer
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/IMaugrenI/IMaugrenI/main/assets/banner/local_case_organizer_banner_v3_spaced.png" alt="local_case_organizer banner" width="100%" />
+</p>
+
 **Organize sensitive case files locally into clean dossiers**
 
 A local, cloud-free tool for turning chaotic document collections into structured registers, timelines, and export packages.
