@@ -8,6 +8,8 @@
 
 A local, cloud-free tool for turning chaotic document collections into structured registers, timelines, and export packages.
 
+Local dossier-building and organization layer for sensitive case files.
+
 This repository is a neutral public core for local case organization work. It is designed for people who need to turn chaotic document collections into a cleaner, reviewable dossier without pushing data into a cloud service.
 
 ## What this repo is
@@ -27,6 +29,10 @@ This repo is not a law-firm system, not a court tool, not a legal advice engine,
 - `tof-showcase` — public architecture and product-line overview
 - `tof_local_knowledge` — search and extract grounded evidence before organizing it
 - `tof_local_builder` — generate reviewed material before structuring it
+
+## Why this repo exists
+
+This repo exists to keep originals protected, assign stable document IDs, build a reviewable structure, support timeline work, and prepare clean export packages without pushing sensitive material into a cloud workflow.
 
 ## Role in the public product line
 
@@ -67,20 +73,6 @@ That path runs:
 
 1. setup
 2. local browser UI
-
-## Positioning
-
-`local_case_organizer` is not a law firm system, not a court tool, and not a legal advice engine.
-
-It is a local dossier-building and organization layer.
-
-The goal is simple:
-
-1. keep originals protected
-2. assign stable document IDs
-3. build a reviewable register
-4. support timeline work
-5. prepare clean export packages for third parties such as lawyers or advisory services
 
 ## Intended users
 
