@@ -6,6 +6,24 @@ A local, cloud-free tool for turning chaotic document collections into structure
 
 This repository is a neutral public core for local case organization work. It is designed for people who need to turn chaotic document collections into a cleaner, reviewable dossier without pushing data into a cloud service.
 
+## What this repo is
+
+This repository is the public Structure repo in the product line.
+
+## Who it is for
+
+This repo is for people who need to sort sensitive local documents into a cleaner, reviewable dossier without using a cloud-first workflow.
+
+## What it is not
+
+This repo is not a law-firm system, not a court tool, not a legal advice engine, and not a hidden cloud service.
+
+## Where to go next
+
+- `tof-showcase` — public architecture and product-line overview
+- `tof_local_knowledge` — search and extract grounded evidence before organizing it
+- `tof_local_builder` — generate reviewed material before structuring it
+
 ## Role in the public product line
 
 Structure (organization and export)
