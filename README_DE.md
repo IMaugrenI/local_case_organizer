@@ -1,10 +1,16 @@
 # local_case_organizer
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/IMaugrenI/IMaugrenI/main/assets/banner/local_case_organizer_banner_v3_spaced.png" alt="local_case_organizer banner" width="100%" />
+</p>
+
+> Die englische Hauptfassung liegt in `README.md`.
+
 **Sensible Fallakten lokal in saubere Dossiers strukturieren**
 
 Ein lokales, cloud-freies Werkzeug, um unübersichtliche Dokumentensammlungen in strukturierte Register, Zeitleisten und Exportpakete zu überführen.
 
-> Die englische Hauptfassung liegt in `README.md`.
+Lokale Dossier- und Organisationsschicht für sensible Fallakten.
 
 Diese Ablage ist der neutrale öffentliche Kern für lokale Fallorganisation. Sie ist für Menschen gedacht, die sensible Unterlagen ohne Cloud-Workflow in eine sauberere, prüfbare Dossier-Struktur bringen wollen.
 
