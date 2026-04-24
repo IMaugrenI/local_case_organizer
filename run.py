@@ -13,7 +13,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 OVERRIDE_MODULE_NAME = "local_case_organizer.ui.app"
-OVERRIDE_PATH = REPO_ROOT / "local_case_organizer_ui_override.py"
+OVERRIDE_PATH = SRC_DIR / "local_case_organizer" / "ui" / "local_case_organizer_ui_override.py"
 if OVERRIDE_PATH.exists():
     spec = importlib.util.spec_from_file_location(OVERRIDE_MODULE_NAME, OVERRIDE_PATH)
     if spec is not None and spec.loader is not None:
