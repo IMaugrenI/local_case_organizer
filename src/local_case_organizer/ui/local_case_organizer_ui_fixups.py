@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-FIXUP_CSS = """
+FIXUP_CSS = '''
 <style>
   .hero { padding: 20px 22px !important; }
   .hero .lead { max-width: 980px; }
@@ -25,9 +25,9 @@ FIXUP_CSS = """
     overflow: auto;
   }
 </style>
-"""
+'''
 
-FIXUP_SCRIPT = r"""
+FIXUP_SCRIPT = r'''
 <script>
 (function () {
   const NEXT_STEP_TEXT = {
@@ -270,4 +270,4 @@ FIXUP_SCRIPT = r"""
   });
 })();
 </script>
-"""
+'''

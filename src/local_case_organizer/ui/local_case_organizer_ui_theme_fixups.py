@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-THEME_FIXUP_CSS = """
+THEME_FIXUP_CSS = '''
 <style>
   .lco-top-toggles { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
   .lco-theme-toggle {
@@ -145,9 +145,9 @@ THEME_FIXUP_CSS = """
     row-gap: 10px;
   }
 </style>
-"""
+'''
 
-THEME_FIXUP_SCRIPT = r"""
+THEME_FIXUP_SCRIPT = r'''
 <script>
 (function () {
   const LABELS = {
@@ -242,4 +242,4 @@ THEME_FIXUP_SCRIPT = r"""
   });
 })();
 </script>
-"""
+'''
