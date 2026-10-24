@@ -4,39 +4,15 @@
   <img src="https://raw.githubusercontent.com/IMaugrenI/IMaugrenI/main/assets/banner/local_case_organizer_banner_v3_spaced.png" alt="local_case_organizer banner" width="100%" />
 </p>
 
-> Die englische Hauptfassung liegt in `README.md`.
+**Unübersichtliche lokale Dokumente in eine geordnete, prüfbare Fallakte überführen.**
 
-**Sensible Fallakten lokal in saubere Dossiers strukturieren**
+Local Case Organizer unterstützt beim Import von Dateien, bei stabilen Dokumentreferenzen, beim Aufbau eines Registers und einer Zeitachse sowie bei der Vorbereitung von Exportpaketen. Die Verarbeitung bleibt standardmäßig lokal und ist für Menschen mit **unstrukturierten oder sensiblen Dokumentensammlungen** gedacht.
 
-Ein lokales, cloud-freies Werkzeug, um unübersichtliche Dokumentensammlungen in strukturierte Register, Zeitleisten und Exportpakete zu überführen.
+**Einstieg:** [Schnellstart](START_HERE_DE.md) · [English README](README.md) · [ToF Systems Übersicht](https://github.com/IMaugrenI/tof-showcase)
 
-Lokale Dossier- und Organisationsschicht für sensible Fallakten.
+**Ablauf:** **Import → Register → Timeline → Export**. Jeder Schritt macht das Dossier leichter nachvollziehbar, besprechbar und übergebbar. Das Repository ist das eigenständige **Structure**-Werkzeug; Wissenssuche oder KI-Generierung führt es nicht selbst aus.
 
-> **Neu hier?** Starte mit [START_HERE_DE.md](START_HERE_DE.md). Dort wird der erste lokale Lauf, die Browser-UI, der Ablauf Import → Register → Timeline → Export und die Datenschutzgrenze erklärt.
-
-Diese Ablage ist der neutrale öffentliche Kern für lokale Fallorganisation. Sie ist für Menschen gedacht, die sensible Unterlagen ohne Cloud-Workflow in eine sauberere, prüfbare Dossier-Struktur bringen wollen.
-
-## Was dieses Repo ist
-
-Dieses Repository ist das öffentliche **Structure**-Repo in der Produktlinie.
-
-## Für wen es gedacht ist
-
-Dieses Repo ist für Menschen, die sensible lokale Dokumente ohne cloud-first Workflow in ein saubereres, prüfbares Dossier überführen wollen.
-
-## Was es nicht ist
-
-Dieses Repo ist keine Kanzleisoftware, kein Gerichtstool, keine Rechtsberatungs-Engine und kein versteckter Cloud-Dienst.
-
-## Wohin du als Nächstes gehen kannst
-
-- `tof-showcase` — öffentlicher Architektur- und Produktlinien-Einstieg
-- `tof_local_knowledge` — Evidenz suchen und extrahieren, bevor du strukturierst
-- `tof_local_builder` — geprüfte Ausgaben erzeugen, bevor du sie ordnest
-
-## Warum dieses Repo existiert
-
-Dieses Repo existiert, um Originale geschützt zu halten, stabile Dokument-IDs zu vergeben, eine prüfbare Struktur aufzubauen, Timeline-Arbeit zu unterstützen und saubere Exportpakete vorzubereiten, ohne sensibles Material in einen Cloud-Workflow zu schieben.
+**Grenze:** Dieses Organisationswerkzeug ist weder Rechtsberatung noch Gerichtssystem noch Garantie rechtlicher oder regulatorischer Konformität. Sensible Inhalte müssen vor der Weitergabe eines Exportpakets geprüft werden.
 
 ## Rolle in der öffentlichen Produktlinie
 
