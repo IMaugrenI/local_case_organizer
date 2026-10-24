@@ -1,27 +1,27 @@
 # Hier starten
 
-Das ist der kürzeste Einstieg für neue Nutzer.
+Das ist der kürzeste Weg vom frischen Klon bis zu einem geordneten lokalen Fall und einem sauberen Übergabepaket.
 
 > English version: [START_HERE.md](START_HERE.md)
 
-## Was dieses Tool macht
+## Wofür dieses Produkt gedacht ist
 
-`local_case_organizer` hilft dir, sensible lokale Dateien zu strukturieren in:
+Bringe eine chaotische Sammlung lokaler Dokumente in einen verständlichen Fall:
 
-1. importierte Originale mit Provenienz
-2. ein Dokumentregister
-3. eine bearbeitbare Timeline
-4. ein neutrales Exportpaket
+1. Dokumente hinzufügen
+2. Unterlagen in den Fall übernehmen
+3. Dokumente prüfen und ordnen
+4. eine Zeitlinie aufbauen
+5. Personen und Organisationen verbinden
+6. ein Übergabepaket erstellen
 
-Das Tool arbeitet local-first und benötigt keinen Cloud-Dienst.
+Alles ist für lokale Nutzung gedacht. Das Tool ordnet Material; es entscheidet **nicht**, was rechtlich richtig, wichtig oder verwertbar ist.
 
-Es ist **keine** Rechtsberatung und entscheidet nicht, ob ein Dokument rechtlich korrekt oder wichtig ist.
+## Was du brauchst
 
-## Voraussetzungen
-
-- Python 3.11+ (unter Windows über `py` oder `python` erreichbar)
-- ein lokaler Browser für die UI
-- genügend lokaler Speicherplatz für kopierte Originale und Exporte
+- Python 3.11+ (unter Windows über `py` oder `python`)
+- einen lokalen Browser
+- genügend Speicherplatz für kopierte Originale und Übergabepakete
 
 ## Erster Start
 
@@ -49,73 +49,61 @@ cd local_case_organizer
 ./scripts/macos/start_here.command
 ```
 
-Der Launcher bereitet den lokalen Workspace vor und startet die Browser-UI.
+Die lokale Browserseite öffnet sich und zeigt dir den nächsten sinnvollen Schritt.
 
-Die UI läuft lokal. Das Terminal bzw. der Prozess muss während der Nutzung laufen; beendet wird mit `Ctrl+C`.
+## Dein erstes sinnvolles Ergebnis
 
-## Normaler Ablauf
+Für einen sicheren Test nutze synthetische Demo-Unterlagen statt echter sensibler Daten.
 
-### 1. Dateien ablegen
+Ein normaler erster Ablauf:
 
-Lege Dateien hier ab:
+1. **Dokumente hinzufügen**
+2. **Wartende Dateien übernehmen**
+3. **Dokumentenübersicht erstellen**
+4. Unterlagen prüfen und die gewünschten Dateien für die Übergabe markieren
+5. **Zeitlinie erstellen** und bei Bedarf mindestens ein Ereignis ergänzen
+6. bei Bedarf Personen oder Organisationen ergänzen
+7. **Übergabepaket erstellen**
 
-```text
-data/inbox/
-```
+**Erfolgreiches Ergebnis:** Du hast ein lokales Paket mit den ausgewählten Unterlagen, während die Arbeitsstruktur und Nachvollziehbarkeit im Organizer erhalten bleiben.
 
-oder wähle eine Quelle über den unterstützten Importweg.
+## Wenn etwas nicht funktioniert
 
-### 2. Importieren
+Die Browserseite zeigt eine verständliche Meldung. Technische Details bleiben unter **Weitere Optionen & technische Details**.
 
-```bash
-python run.py import
-```
+Wähle dort **Probleme prüfen**.
 
-Der Import erzeugt einen eindeutigen Batch, kopiert Originale nach `data/originals/`, berechnet SHA-256 und schreibt Provenienz.
-
-### 3. Register bauen
-
-```bash
-python run.py build-register
-```
-
-### 4. Timeline bauen
+Im Terminal:
 
 ```bash
-python run.py build-timeline
-```
-
-### 5. Exportieren
-
-```bash
-python run.py export-package
-```
-
-Exporte landen unter `exports/`.
-
-Die weitergebbare Export-Provenienz enthält bewusst keine absoluten lokalen Quellpfade. Ausgewählte Originale werden vor dem Export gegen ihren gespeicherten SHA-256 geprüft.
-
-## Nützliche Prüfungen
-
-```bash
-python run.py status
-python run.py check
 python run.py doctor
 ```
 
-## Grenze für private Daten
+Wenn eine Datei nach dem Import verändert wurde, kann der Export stoppen, statt still eine veränderte Datei weiterzugeben. Das ist ein Integritätsschutz.
 
-Diese lokalen Laufzeitordner werden von Git ignoriert:
+## Datenschutz und Vertrauen
 
-- `data/`
-- `exports/`
-- `logs/`
-- `workspace/`
-- private Profile und Archive
+Echte Fallunterlagen können sensibel sein.
 
-Keine echten Fallakten, Exporte, Screenshots mit privaten Daten oder absoluten privaten Pfade in öffentliche GitHub-Issues stellen.
+Veröffentliche keine echten Fallakten, Übergabepakete, Screenshots mit persönlichen Informationen oder privaten lokalen Pfade in öffentlichen GitHub-Issues.
 
-Vor echten sensiblen Daten: [SECURITY.md](SECURITY.md).
+Lies vor echten sensiblen Daten [SECURITY.md](SECURITY.md).
+
+## Stoppen und später weitermachen
+
+Die Browseroberfläche läuft im Terminalprozess. Beenden mit `Ctrl+C`.
+
+Später denselben `start_here`-Starter erneut nutzen oder:
+
+```bash
+python run.py ui
+```
+
+Deine lokalen Falldateien bleiben im ignorierten lokalen Arbeitsbereich erhalten.
+
+## Beispiel aus echter Nutzung
+
+[docs/guides/USER_JOURNEY_DE.md](docs/guides/USER_JOURNEY_DE.md) zeigt einen kompletten Fall-bis-Übergabe-Ablauf und einen typischen Integritätsfehler.
 
 ## Mehr Details
 

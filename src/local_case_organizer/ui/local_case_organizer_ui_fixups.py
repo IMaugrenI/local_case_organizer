@@ -2,6 +2,28 @@ from __future__ import annotations
 
 FIXUP_CSS = r'''
 <style>
+  .lco-skip-link {
+    position:absolute;
+    left:16px;
+    top:-64px;
+    z-index:30;
+    padding:10px 14px;
+    border-radius:10px;
+    background:var(--lco-gold,#c69a52);
+    color:#17120d;
+    font-weight:750;
+  }
+  .lco-skip-link:focus { top:16px; }
+
+  button:focus-visible,
+  summary:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline:2px solid var(--lco-gold-bright,#e1b969);
+    outline-offset:3px;
+  }
+
   .lco-brandbar {
     display:flex;
     align-items:center;
@@ -49,7 +71,7 @@ FIXUP_CSS = r'''
     line-height:1.65;
   }
   .next-step::before {
-    content:"NÄCHSTER SCHRITT";
+    content:attr(data-label);
     display:block;
     margin-bottom:7px;
     color:var(--lco-gold,#c69a52);
@@ -142,6 +164,27 @@ FIXUP_CSS = r'''
     font-size:.82rem;
   }
 
+  .lco-feedback {
+    display:none;
+    margin:14px 0 0;
+    padding:12px 14px;
+    border-radius:12px;
+    border:1px solid var(--lco-border,rgba(244,240,232,.10));
+    color:var(--lco-muted,#aaa49a);
+    background:rgba(255,255,255,.015);
+  }
+  .lco-feedback.show { display:block; }
+  .lco-feedback.ok {
+    color:#71c39b;
+    border-color:rgba(113,195,155,.28);
+    background:rgba(113,195,155,.045);
+  }
+  .lco-feedback.attention {
+    color:#e5bf82;
+    border-color:rgba(216,168,95,.30);
+    background:rgba(216,168,95,.05);
+  }
+
   .lco-hidden-heading { display:none !important; }
 
   table th { font-size:.78rem; line-height:1.3; }
@@ -152,6 +195,15 @@ FIXUP_CSS = r'''
     .lco-process-step:nth-child(3) { border-right:0; }
     .lco-process-step:nth-child(-n+3) { border-bottom:1px solid var(--lco-border,rgba(244,240,232,.10)); }
   }
+  @media (prefers-reduced-motion: reduce) {
+    *,*::before,*::after {
+      transition-duration:.001ms !important;
+      animation-duration:.001ms !important;
+      animation-iteration-count:1 !important;
+      scroll-behavior:auto !important;
+    }
+  }
+
   @media (max-width:620px) {
     .lco-process { grid-template-columns:1fr; }
     .lco-process-step { border-right:0; border-bottom:1px solid var(--lco-border,rgba(244,240,232,.10)); }
@@ -219,6 +271,16 @@ FIXUP_SCRIPT = r'''
       exportHint: 'Hier siehst du bereits erstellte Übergabepakete und wie viele Originaldokumente sie enthalten.',
       exportEmpty: 'Noch kein Übergabepaket erstellt.',
       waitingNone: 'Aktuell warten keine neuen Dateien auf die Übernahme.',
+      nextLabel: 'NÄCHSTER SCHRITT',
+      skipLink: 'Zum Inhalt springen',
+      uploadNone: 'Wähle zuerst mindestens eine Datei aus.',
+      uploadDone: 'Die ausgewählten Dateien wurden hinzugefügt.',
+      actionDone: 'Erledigt. Die Ansicht wurde aktualisiert.',
+      saveDone: 'Deine Änderungen wurden gespeichert.',
+      actionFailed: 'Das hat nicht funktioniert. Öffne „Weitere Optionen & technische Details“ und wähle „Probleme prüfen“.',
+      registerEmpty: 'Noch keine Dokumentenübersicht vorhanden. Erstelle sie zuerst.',
+      timelineEmptyState: 'Noch keine Zeitlinie vorhanden. Erstelle sie zuerst oder füge ein Ereignis hinzu.',
+      entitiesEmptyState: 'Noch keine Personen oder Organisationen vorhanden. Füge den ersten Eintrag hinzu.',
       table: {
         file_id:'Datei-ID', original_name:'Dateiname', relative_path:'Datei',
         review_status:'Prüfung', document_group:'Gruppe', selected_for_export:'Für Übergabe',
@@ -284,6 +346,16 @@ FIXUP_SCRIPT = r'''
       exportHint: 'See previously created handoff packages and how many original documents they contain.',
       exportEmpty: 'No handoff package created yet.',
       waitingNone: 'No new files are waiting to be added.',
+      nextLabel: 'NEXT STEP',
+      skipLink: 'Skip to content',
+      uploadNone: 'Choose at least one file first.',
+      uploadDone: 'The selected files were added.',
+      actionDone: 'Done. The view has been updated.',
+      saveDone: 'Your changes were saved.',
+      actionFailed: 'That did not work. Open “More options & technical details” and choose “Check for problems”.',
+      registerEmpty: 'There is no document overview yet. Create it first.',
+      timelineEmptyState: 'There is no timeline yet. Create it first or add an event.',
+      entitiesEmptyState: 'There are no people or organizations yet. Add the first entry.',
       table: {
         file_id:'File ID', original_name:'Filename', relative_path:'File',
         review_status:'Review', document_group:'Group', selected_for_export:'Include in handoff',
@@ -313,6 +385,51 @@ FIXUP_SCRIPT = r'''
   }
 
   function copy() { return COPY[currentLang()]; }
+
+  function ensureAccessibility() {
+    const wrap = document.querySelector('.wrap');
+    if (wrap) {
+      wrap.id = 'main-content';
+      wrap.setAttribute('role', 'main');
+    }
+    if (!document.getElementById('lco-skip-link')) {
+      const link = document.createElement('a');
+      link.id = 'lco-skip-link';
+      link.className = 'lco-skip-link';
+      link.href = '#main-content';
+      link.textContent = copy().skipLink;
+      document.body.insertBefore(link, document.body.firstChild);
+    }
+    const next = document.getElementById('next-step');
+    if (next) {
+      next.setAttribute('role','status');
+      next.setAttribute('aria-live','polite');
+    }
+    const input = document.getElementById('fileInput');
+    if (input) input.setAttribute('aria-label', currentLang() === 'de' ? 'Dokumente auswählen' : 'Choose documents');
+  }
+
+  function ensureFeedback() {
+    const next = document.getElementById('next-step');
+    if (!next) return null;
+    let box = document.getElementById('lco-feedback');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'lco-feedback';
+      box.className = 'lco-feedback';
+      box.setAttribute('role','status');
+      box.setAttribute('aria-live','polite');
+      next.insertAdjacentElement('afterend', box);
+    }
+    return box;
+  }
+
+  function showFeedback(message, kind='ok') {
+    const box = ensureFeedback();
+    if (!box) return;
+    box.className = `lco-feedback show ${kind}`;
+    box.textContent = message;
+  }
 
   function textButton(selector, value) {
     const el = document.querySelector(selector);
@@ -455,7 +572,9 @@ FIXUP_SCRIPT = r'''
   }
 
   function applyHumanCopy() {
+    ensureAccessibility();
     ensureBrand();
+    ensureFeedback();
     ensureProcess();
     moveTechnicalSections();
 
@@ -551,7 +670,20 @@ FIXUP_SCRIPT = r'''
     }
 
     const next = document.getElementById('next-step');
-    if (next) next.textContent = humanizeNextStep(next.textContent);
+    if (next) {
+      next.dataset.label = t.nextLabel;
+      next.textContent = humanizeNextStep(next.textContent);
+    }
+
+    const skip = document.getElementById('lco-skip-link');
+    if (skip) skip.textContent = t.skipLink;
+
+    const registerRoot = document.getElementById('register-editor');
+    if (registerRoot && /No register rows available yet/i.test(registerRoot.textContent)) registerRoot.textContent = t.registerEmpty;
+    const timelineRoot = document.getElementById('timeline-editor');
+    if (timelineRoot && /No timeline rows available yet/i.test(timelineRoot.textContent)) timelineRoot.textContent = t.timelineEmptyState;
+    const entityRoot = document.getElementById('entity-editor');
+    if (entityRoot && /No entity rows available yet/i.test(entityRoot.textContent)) entityRoot.textContent = t.entitiesEmptyState;
 
     const tech = document.getElementById('lco-tech-details');
     if (tech) {
@@ -602,6 +734,62 @@ FIXUP_SCRIPT = r'''
       return result;
     };
   }
+
+  const originalRunAction = window.runAction;
+  if (typeof originalRunAction === 'function') {
+    window.runAction = async function() {
+      try {
+        const result = await originalRunAction.apply(this, arguments);
+        showFeedback(copy().actionDone, 'ok');
+        return result;
+      } catch (error) {
+        showFeedback(copy().actionFailed, 'attention');
+        const log = document.getElementById('log');
+        if (log) log.textContent = `Action failed: ${error}\n\n` + log.textContent;
+      }
+    };
+  }
+
+  const originalUploadFiles = window.uploadFiles;
+  if (typeof originalUploadFiles === 'function') {
+    window.uploadFiles = async function() {
+      const input = document.getElementById('fileInput');
+      if (!input || !input.files || input.files.length === 0) {
+        showFeedback(copy().uploadNone, 'attention');
+        return;
+      }
+      try {
+        const result = await originalUploadFiles.apply(this, arguments);
+        showFeedback(copy().uploadDone, 'ok');
+        return result;
+      } catch (error) {
+        showFeedback(copy().actionFailed, 'attention');
+        const log = document.getElementById('log');
+        if (log) log.textContent = `Upload failed: ${error}\n\n` + log.textContent;
+      }
+    };
+  }
+
+  ['saveRegister','saveTimeline','saveEntities'].forEach(name => {
+    const original = window[name];
+    if (typeof original === 'function') {
+      window[name] = async function() {
+        try {
+          const result = await original.apply(this, arguments);
+          showFeedback(copy().saveDone, 'ok');
+          return result;
+        } catch (error) {
+          showFeedback(copy().actionFailed, 'attention');
+          const log = document.getElementById('log');
+          if (log) log.textContent = `${name} failed: ${error}\n\n` + log.textContent;
+        }
+      };
+    }
+  });
+
+  window.addEventListener('unhandledrejection', event => {
+    showFeedback(copy().actionFailed, 'attention');
+  });
 
   const originalToggleLanguage = window.toggleLanguage;
   if (typeof originalToggleLanguage === 'function') {
