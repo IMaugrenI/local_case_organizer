@@ -6,6 +6,7 @@ import shutil
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from uuid import uuid4
 
 from local_case_organizer.paths import WorkspacePaths, create_local_workspace, get_workspace_paths
 
@@ -45,12 +46,38 @@ def _sha256_for_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _within(base: Path, candidate: Path) -> bool:
+    try:
+        candidate.relative_to(base)
+        return True
+    except ValueError:
+        return False
+
 
 def _iter_source_files(source_path: Path) -> list[Path]:
-    if source_path.is_file():
-        return [source_path]
-    return sorted([path for path in source_path.rglob("*") if path.is_file()])
+    root = source_path.resolve()
 
+    if root.is_file():
+        return [root]
+
+    files: list[Path] = []
+    for path in root.rglob("*"):
+        try:
+            resolved = path.resolve(strict=True)
+        except (OSError, RuntimeError):
+            continue
+
+        if not resolved.is_file():
+            continue
+
+        # A symlink may be present inside the selected tree, but its target
+        # must never escape the explicitly selected source root.
+        if not _within(root, resolved):
+            continue
+
+        files.append(path)
+
+    return sorted(files)
 
 
 def _next_available_path(path: Path) -> Path:
@@ -64,13 +91,11 @@ def _next_available_path(path: Path) -> Path:
         counter += 1
 
 
-
 def _write_csv(path: Path, fieldnames: list[str], rows: list[dict[str, str | int]]) -> None:
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
-
 
 
 def rebuild_provenance_table(paths: WorkspacePaths | None = None) -> Path:
@@ -88,7 +113,6 @@ def rebuild_provenance_table(paths: WorkspacePaths | None = None) -> Path:
     return output_path
 
 
-
 def import_sources(source: str | None = None) -> dict[str, object]:
     paths = create_local_workspace()
     source_path = Path(source).expanduser().resolve() if source else paths.inbox_dir.resolve()
@@ -102,10 +126,11 @@ def import_sources(source: str | None = None) -> dict[str, object]:
         raise ValueError(f"No files found to import: {source_path}")
 
     imported_at = datetime.now(UTC)
-    batch_timestamp = imported_at.strftime("%Y%m%dT%H%M%SZ")
-    batch_id = f"IMP-{batch_timestamp}"
+    batch_timestamp = imported_at.strftime("%Y%m%dT%H%M%S%fZ")
+    batch_nonce = uuid4().hex[:8]
+    batch_id = f"IMP-{batch_timestamp}-{batch_nonce}"
     batch_root = paths.originals_dir / batch_id
-    batch_root.mkdir(parents=True, exist_ok=True)
+    batch_root.mkdir(parents=True, exist_ok=False)
 
     rows: list[ImportRow] = []
     for index, file_path in enumerate(files, start=1):
@@ -114,7 +139,7 @@ def import_sources(source: str | None = None) -> dict[str, object]:
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(file_path, destination)
 
-        file_id = f"DOC-{batch_timestamp}-{index:04d}"
+        file_id = f"DOC-{batch_timestamp}-{batch_nonce}-{index:04d}"
         rows.append(
             ImportRow(
                 batch_id=batch_id,
@@ -130,6 +155,8 @@ def import_sources(source: str | None = None) -> dict[str, object]:
         )
 
     manifest_path = paths.register_dir / f"{MANIFEST_PREFIX}{batch_id}.csv"
+    if manifest_path.exists():
+        raise FileExistsError(f"Import manifest already exists: {manifest_path}")
     _write_csv(manifest_path, MANIFEST_FIELDS, [asdict(row) for row in rows])
     provenance_path = rebuild_provenance_table(paths)
 

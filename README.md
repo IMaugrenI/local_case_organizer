@@ -10,6 +10,8 @@ A local, cloud-free tool for turning chaotic document collections into structure
 
 Local dossier-building and organization layer for sensitive case files.
 
+> **New here?** Start with [START_HERE.md](START_HERE.md). It walks through the first local run, the browser UI, the import → register → timeline → export flow, and the privacy boundary.
+
 This repository is a neutral public core for local case organization work. It is designed for people who need to turn chaotic document collections into a cleaner, reviewable dossier without pushing data into a cloud service.
 
 ## What this repo is

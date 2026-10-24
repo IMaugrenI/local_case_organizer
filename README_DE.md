@@ -12,6 +12,8 @@ Ein lokales, cloud-freies Werkzeug, um unübersichtliche Dokumentensammlungen in
 
 Lokale Dossier- und Organisationsschicht für sensible Fallakten.
 
+> **Neu hier?** Starte mit [START_HERE_DE.md](START_HERE_DE.md). Dort wird der erste lokale Lauf, die Browser-UI, der Ablauf Import → Register → Timeline → Export und die Datenschutzgrenze erklärt.
+
 Diese Ablage ist der neutrale öffentliche Kern für lokale Fallorganisation. Sie ist für Menschen gedacht, die sensible Unterlagen ohne Cloud-Workflow in eine sauberere, prüfbare Dossier-Struktur bringen wollen.
 
 ## Was dieses Repo ist
