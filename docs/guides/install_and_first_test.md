@@ -1,6 +1,6 @@
 # Install and first test
 
-This file is the shortest practical path for a fresh local download.
+This file is the shortest practical path for a fresh local download. No package installation is required for the normal `run.py` path; the repository adds its local `src/` directory itself.
 
 ## 1. Get the repository
 

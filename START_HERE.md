@@ -19,7 +19,7 @@ It is **not** a legal advice system and does not decide whether a document is le
 
 ## Requirements
 
-- Python 3.11+
+- Python 3.11+ (`py` or `python` on Windows)
 - a local browser for the UI
 - enough local disk space for your copied originals and exports
 

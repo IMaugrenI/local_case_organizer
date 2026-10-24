@@ -19,7 +19,7 @@ Es ist **keine** Rechtsberatung und entscheidet nicht, ob ein Dokument rechtlich
 
 ## Voraussetzungen
 
-- Python 3.11+
+- Python 3.11+ (unter Windows über `py` oder `python` erreichbar)
 - ein lokaler Browser für die UI
 - genügend lokaler Speicherplatz für kopierte Originale und Exporte
 

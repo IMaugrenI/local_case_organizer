@@ -31,5 +31,13 @@ jobs:
       - name: Compile all Python sources
         run: python -m compileall -q .
 
+      - name: Fresh-clone CLI smoke
+        run: |
+          python run.py setup
+          python run.py check
+          python run.py status
+          python run.py doctor
+          python run.py ui --help
+
       - name: Run tests
         run: pytest -q
