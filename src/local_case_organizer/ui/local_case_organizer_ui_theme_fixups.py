@@ -1,149 +1,154 @@
 from __future__ import annotations
 
-THEME_FIXUP_CSS = '''
+THEME_FIXUP_CSS = r'''
 <style>
-  .lco-top-toggles { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
-  .lco-theme-toggle {
-    border: 0;
-    border-radius: 12px;
-    padding: 12px 16px;
-    font-size: 15px;
-    cursor: pointer;
-    background: #0f766e;
-    color: white;
+  :root {
+    --lco-bg:#0d0d0c;
+    --lco-surface:#181612;
+    --lco-surface-2:#211e18;
+    --lco-text:#f4f0e8;
+    --lco-muted:#aaa49a;
+    --lco-gold:#c69a52;
+    --lco-gold-bright:#e1b969;
+    --lco-border:rgba(244,240,232,.10);
+    --lco-border-strong:rgba(198,154,82,.34);
   }
 
-  body.lco-dark {
-    background: #0b1220 !important;
-    color: #e5e7eb !important;
+  body {
+    background:
+      radial-gradient(circle at 82% 7%, rgba(198,154,82,.08), transparent 28rem),
+      radial-gradient(circle at 7% 46%, rgba(198,154,82,.03), transparent 34rem),
+      linear-gradient(180deg, #0d0d0c 0%, #100f0d 55%, #0d0d0c 100%) !important;
+    color:var(--lco-text) !important;
+    font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif !important;
+    -webkit-font-smoothing:antialiased;
   }
 
-  body.lco-dark .hero,
-  body.lco-dark .editor,
-  body.lco-dark .upload-box,
-  body.lco-dark .file-list,
-  body.lco-dark .paths,
-  body.lco-dark .log,
-  body.lco-dark .card {
-    background: #111827 !important;
-    color: #e5e7eb !important;
-    box-shadow: 0 10px 28px rgba(0,0,0,0.28) !important;
-    border: 1px solid #1f2937 !important;
+  body::before {
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    opacity:.13;
+    background-image:
+      linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.014) 1px, transparent 1px);
+    background-size:72px 72px;
+    mask-image:linear-gradient(180deg,#000 0,transparent 80%);
+    z-index:-1;
   }
 
-  body.lco-dark .hero {
-    background: linear-gradient(180deg, #111827 0%, #0f172a 100%) !important;
+  .wrap { max-width:1240px !important; padding:26px 24px 56px !important; }
+
+  body .hero,
+  body .editor,
+  body .upload-box,
+  body .file-list,
+  body .paths,
+  body .log,
+  body .card {
+    background:rgba(255,255,255,.014) !important;
+    color:var(--lco-text) !important;
+    box-shadow:none !important;
   }
 
-  body.lco-dark .section-title,
-  body.lco-dark h1,
-  body.lco-dark h2,
-  body.lco-dark h3 {
-    color: #f8fafc !important;
+  body h1, body h2, body h3, body .section-title { color:var(--lco-text) !important; }
+  body .lead, body .note, body .hint, body .lang-status { color:var(--lco-muted) !important; }
+  body .value { color:var(--lco-text) !important; }
+
+  body input[type=text],
+  body input[type=file],
+  body textarea,
+  body select {
+    background:rgba(255,255,255,.018) !important;
+    color:var(--lco-text) !important;
+    border-color:var(--lco-border) !important;
+  }
+  body input::placeholder, body textarea::placeholder { color:#777169 !important; }
+
+  body th {
+    background:#15130f !important;
+    color:#cfc7bb !important;
+    border-bottom-color:var(--lco-border) !important;
+  }
+  body td { border-bottom-color:var(--lco-border) !important; }
+  body td.readonly { color:#8e887f !important; }
+
+  body button {
+    min-height:44px;
+    border-radius:11px !important;
+    box-shadow:none !important;
+    font-weight:700;
+  }
+  body button:not(.ghost):not(.light):not(.secondary):not(.lco-theme-toggle) {
+    background:var(--lco-gold) !important;
+    color:#17120d !important;
+  }
+  body button.secondary {
+    background:rgba(198,154,82,.07) !important;
+    color:var(--lco-text) !important;
+    border:1px solid var(--lco-border-strong) !important;
+  }
+  body button.ghost, body button.light {
+    background:rgba(255,255,255,.018) !important;
+    color:var(--lco-muted) !important;
+    border:1px solid var(--lco-border) !important;
   }
 
-  body.lco-dark .lead,
-  body.lco-dark .note,
-  body.lco-dark .hint,
-  body.lco-dark #cards .card > div:first-child,
-  body.lco-dark .lang-status {
-    color: #cbd5e1 !important;
+  .lco-top-toggles { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:14px; }
+  .lco-theme-toggle, #lang-toggle {
+    min-height:38px !important;
+    padding:0 12px !important;
+    background:rgba(255,255,255,.018) !important;
+    color:var(--lco-muted) !important;
+    border:1px solid var(--lco-border) !important;
+    font-size:.82rem !important;
   }
 
-  body.lco-dark .value {
-    color: #f8fafc !important;
+  body .next-step {
+    background:
+      radial-gradient(circle at 88% 18%, rgba(198,154,82,.10), transparent 20rem),
+      rgba(255,255,255,.014) !important;
+    color:#c8c0b5 !important;
   }
 
-  body.lco-dark input[type=text],
-  body.lco-dark input[type=file],
-  body.lco-dark textarea,
-  body.lco-dark select {
-    background: #0f172a !important;
-    color: #e5e7eb !important;
-    border-color: #334155 !important;
+  body .chip {
+    background:rgba(198,154,82,.08) !important;
+    color:var(--lco-gold-bright) !important;
+    border-color:rgba(198,154,82,.25) !important;
   }
 
-  body.lco-dark input::placeholder,
-  body.lco-dark textarea::placeholder {
-    color: #94a3b8 !important;
+  body .paths, body .log {
+    background:#090a09 !important;
+    color:#c6d7c8 !important;
+    border:1px solid rgba(255,255,255,.06) !important;
   }
 
-  body.lco-dark td.readonly,
-  body.lco-dark th {
-    color: #cbd5e1 !important;
+  body.lco-light {
+    --lco-bg:#efe9df;
+    --lco-surface:#fbf8f2;
+    --lco-surface-2:#f1eadf;
+    --lco-text:#211d18;
+    --lco-muted:#6f675e;
+    --lco-gold:#9b7135;
+    --lco-gold-bright:#7f591f;
+    --lco-border:rgba(50,40,28,.12);
+    --lco-border-strong:rgba(155,113,53,.36);
+    background:
+      radial-gradient(circle at 82% 7%, rgba(155,113,53,.08), transparent 28rem),
+      linear-gradient(180deg,#efe9df 0%,#f6f1e8 55%,#efe9df 100%) !important;
+    color:var(--lco-text) !important;
   }
-
-  body.lco-dark th {
-    background: #172033 !important;
-    border-bottom-color: #334155 !important;
-  }
-
-  body.lco-dark td {
-    border-bottom-color: #334155 !important;
-  }
-
-  body.lco-dark table {
-    background: transparent !important;
-  }
-
-  body.lco-dark button {
-    box-shadow: none !important;
-  }
-
-  body.lco-dark button:not(.ghost):not(.light):not(.secondary):not(.lco-theme-toggle):not(.lco-log-toggle) {
-    background: #2563eb !important;
-    color: #eff6ff !important;
-  }
-
-  body.lco-dark button.secondary {
-    background: #0f766e !important;
-    color: #ecfeff !important;
-  }
-
-  body.lco-dark button.ghost {
-    background: #1f2937 !important;
-    color: #f8fafc !important;
-    border: 1px solid #334155 !important;
-  }
-
-  body.lco-dark button.light,
-  body.lco-dark .lco-log-toggle {
-    background: #334155 !important;
-    color: #f8fafc !important;
-  }
-
-  body.lco-dark .lco-theme-toggle {
-    background: #7c3aed !important;
-    color: #faf5ff !important;
-  }
-
-  body.lco-dark .next-step {
-    background: linear-gradient(180deg, #0f2433 0%, #102737 100%) !important;
-    border-color: #155e75 !important;
-    color: #dbeafe !important;
-  }
-
-  body.lco-dark .chip {
-    background: #1e293b !important;
-    color: #c7d2fe !important;
-    border-color: #4338ca !important;
-  }
-
-  body.lco-dark .paths {
-    background: #091226 !important;
-    color: #dbeafe !important;
-  }
-
-  body.lco-dark .log {
-    background: #081120 !important;
-    color: #d1fae5 !important;
-  }
-
-  body.lco-dark .editor-actions,
-  body.lco-dark .upload-row,
-  body.lco-dark .actions {
-    row-gap: 10px;
-  }
+  body.lco-light .hero,
+  body.lco-light .editor,
+  body.lco-light .upload-box,
+  body.lco-light .file-list,
+  body.lco-light .card { background:rgba(255,255,255,.48) !important; }
+  body.lco-light th { background:#eee5d8 !important; color:#574c3f !important; }
+  body.lco-light input[type=text],
+  body.lco-light input[type=file],
+  body.lco-light textarea,
+  body.lco-light select { background:#fbf8f2 !important; color:#211d18 !important; }
 </style>
 '''
 
@@ -151,8 +156,8 @@ THEME_FIXUP_SCRIPT = r'''
 <script>
 (function () {
   const LABELS = {
-    en: { to_dark: 'Dark mode', to_light: 'Light mode', dark: 'Theme: dark', light: 'Theme: light' },
-    de: { to_dark: 'Dunkelmodus', to_light: 'Hellmodus', dark: 'Farbschema: dunkel', light: 'Farbschema: hell' }
+    en: { to_dark:'Dark', to_light:'Light', dark:'Dark view', light:'Light view' },
+    de: { to_dark:'Dunkel', to_light:'Hell', dark:'Dunkle Ansicht', light:'Helle Ansicht' }
   };
 
   function lang() {
@@ -161,11 +166,11 @@ THEME_FIXUP_SCRIPT = r'''
   }
 
   function theme() {
-    return localStorage.getItem('local_case_organizer_ui_theme') === 'dark' ? 'dark' : 'light';
+    return localStorage.getItem('local_case_organizer_ui_theme') === 'light' ? 'light' : 'dark';
   }
 
   function applyTheme() {
-    document.body.classList.toggle('lco-dark', theme() === 'dark');
+    document.body.classList.toggle('lco-light', theme() === 'light');
     updateThemeButton();
   }
 
@@ -198,23 +203,13 @@ THEME_FIXUP_SCRIPT = r'''
       row.appendChild(button);
     }
 
-    let status = document.getElementById('theme-status');
-    if (!status) {
-      status = document.createElement('div');
-      status.id = 'theme-status';
-      status.className = 'lang-status';
-      container.appendChild(status);
-    }
-
     updateThemeButton();
   }
 
   function updateThemeButton() {
     const button = document.getElementById('theme-toggle');
-    const status = document.getElementById('theme-status');
     const labels = LABELS[lang()];
     if (button) button.textContent = theme() === 'dark' ? labels.to_light : labels.to_dark;
-    if (status) status.textContent = theme() === 'dark' ? labels.dark : labels.light;
   }
 
   const originalToggleLanguage = window.toggleLanguage;
@@ -238,7 +233,7 @@ THEME_FIXUP_SCRIPT = r'''
   document.addEventListener('DOMContentLoaded', () => {
     ensureThemeButton();
     applyTheme();
-    setTimeout(() => { ensureThemeButton(); applyTheme(); }, 300);
+    setTimeout(() => { ensureThemeButton(); applyTheme(); }, 250);
   });
 })();
 </script>
