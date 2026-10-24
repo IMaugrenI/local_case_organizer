@@ -4,37 +4,15 @@
   <img src="https://raw.githubusercontent.com/IMaugrenI/IMaugrenI/main/assets/banner/local_case_organizer_banner_v3_spaced.png" alt="local_case_organizer banner" width="100%" />
 </p>
 
-**Organize sensitive case files locally into clean dossiers**
+**Turn scattered local documents into an organized, reviewable case file.**
 
-A local, cloud-free tool for turning chaotic document collections into structured registers, timelines, and export packages.
+Local Case Organizer helps you import files, assign stable document references, build a register and timeline, and prepare export packages. The workflow stays local by default and is intended for people dealing with **unstructured or sensitive document collections**.
 
-Local dossier-building and organization layer for sensitive case files.
+**Get started:** [First run](START_HERE.md) · [German README](README_DE.md) · [ToF Systems overview](https://github.com/IMaugrenI/tof-showcase)
 
-> **New here?** Start with [START_HERE.md](START_HERE.md). It walks through the first local run, the browser UI, the import → register → timeline → export flow, and the privacy boundary.
+**Workflow:** **Import → Register → Timeline → Export**. Each stage helps make the resulting dossier easier to inspect, discuss, and hand over. The repository is the independent **Structure** tool; it does not perform knowledge retrieval or AI generation by itself.
 
-This repository is a neutral public core for local case organization work. It is designed for people who need to turn chaotic document collections into a cleaner, reviewable dossier without pushing data into a cloud service.
-
-## What this repo is
-
-This repository is the public Structure repo in the product line.
-
-## Who it is for
-
-This repo is for people who need to sort sensitive local documents into a cleaner, reviewable dossier without using a cloud-first workflow.
-
-## What it is not
-
-This repo is not a law-firm system, not a court tool, not a legal advice engine, and not a hidden cloud service.
-
-## Where to go next
-
-- `tof-showcase` — public architecture and product-line overview
-- `tof_local_knowledge` — search and extract grounded evidence before organizing it
-- `tof_local_builder` — generate reviewed material before structuring it
-
-## Why this repo exists
-
-This repo exists to keep originals protected, assign stable document IDs, build a reviewable structure, support timeline work, and prepare clean export packages without pushing sensitive material into a cloud workflow.
+**Boundary:** this is an organization tool, not a legal-advice engine, court system, or guarantee of legal or regulatory compliance. Review sensitive material before sharing an exported package.
 
 ## Role in the public product line
 
