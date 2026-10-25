@@ -106,3 +106,12 @@ def test_corrupted_index_is_rejected(tmp_path, monkeypatch):
     target.write_text('{"version":1,"file_id":"DOC-1","pages":["corrupted"]}', encoding="utf-8")
     with pytest.raises(ValueError, match="invalid page structure"):
         get_indexed("DOC-1")
+
+
+def test_browser_js_string_newlines_survive_python_html_literal():
+    # Python evaluates backslash escapes in the existing triple-quoted UI HTML.
+    # JavaScript single-quoted strings must receive the escaped, not raw, newline.
+    from local_case_organizer.ui.app import HTML
+    assert r"'\nQuote: '" in HTML
+    assert r".join('\n')" in HTML
+    assert "'\nQuote: '" not in HTML

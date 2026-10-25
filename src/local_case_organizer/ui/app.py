@@ -668,7 +668,7 @@ HTML = """<!doctype html>
           const description = document.createElement('p');
           description.textContent = claim.claim_id + ' · ' + claim.file_id +
             ' page ' + claim.source_page + ' · ' + claim.review_status +
-            '\nQuote: ' + claim.source_quote + '\nStatement: ' + claim.statement;
+            '\\nQuote: ' + claim.source_quote + '\\nStatement: ' + claim.statement;
           description.style.whiteSpace = 'pre-wrap';
           item.appendChild(description);
           const status = document.createElement('select');
@@ -754,7 +754,7 @@ HTML = """<!doctype html>
       const data = await response.json();
       const root = document.getElementById('integrity-history');
       root.textContent = (data.runs || []).length
-        ? (data.runs || []).map(row => row.at + ' · ' + row.checked + ' checked · ' + JSON.stringify(row.counts)).join('\n')
+        ? (data.runs || []).map(row => row.at + ' · ' + row.checked + ' checked · ' + JSON.stringify(row.counts)).join('\\n')
         : 'No verification runs recorded yet.';
       root.style.whiteSpace = 'pre-wrap';
     }
