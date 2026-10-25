@@ -21,6 +21,8 @@ from local_case_organizer.claims import add_claim, read_claims, set_review_statu
 from local_case_organizer.comparison import add_comparison, comparison_report
 from local_case_organizer.audit import recent_changes
 from local_case_organizer.tasks import add_task, update_task, task_board
+from local_case_organizer.ai_exchange import (prepare_ai_packet, import_ai_suggestions,
+                                               read_ai_suggestions, review_ai_suggestion)
 from local_case_organizer.graph import evidence_graph
 from local_case_organizer.integrity import recent_integrity_runs, verify_integrity
 from local_case_organizer.entities.store import ENTITY_FIELDS, read_entity_rows, write_entity_rows
@@ -274,6 +276,23 @@ HTML = """<!doctype html>
         <button type=\"button\" class=\"secondary\" onclick=\"loadCaseTasks()\">Refresh task list</button>
       </div>
       <div id=\"task-board\" aria-live=\"polite\"></div>
+    </div>
+
+    <h2 class=\"section-title\">Optional offline AI review exchange</h2>
+    <div class=\"editor\">
+      <p class=\"hint\">This app does not run or contact an LLM. An explicit packet may contain
+      private excerpts. Hand it to a trusted local assistant yourself. Returned suggestions
+      are untrusted; only an individual manual action can create a draft claim.</p>
+      <div class=\"editor-actions\">
+        <label>Indexed document IDs <input id=\"ai-source-ids\" type=\"text\" placeholder=\"DOC-1,DOC-2\"></label>
+        <button type=\"button\" onclick=\"prepareAiHandoff()\">Prepare private handoff</button>
+        <button type=\"button\" class=\"secondary\" onclick=\"loadAiSuggestions()\">Review suggestions</button>
+      </div>
+      <label>Paste JSON suggestions from your trusted local assistant (no automatic transmission)
+        <textarea id=\"ai-response-json\" maxlength=\"110000\" placeholder='{"suggestions":[{"file_id":"DOC-1","page":1,"source_quote":"Exact quote","statement":"Draft statement"}]}'></textarea>
+      </label>
+      <button type=\"button\" onclick=\"importAiResponse()\">Import as untrusted suggestions</button>
+      <div id=\"ai-review-result\" aria-live=\"polite\"></div>
     </div>
 
     <h2 class=\"section-title\">Export history</h2>
@@ -888,6 +907,66 @@ HTML = """<!doctype html>
       } catch(error) { area.textContent = String(error); }
     }
 
+    async function prepareAiHandoff() {
+      const area = document.getElementById('ai-review-result');
+      const raw = document.getElementById('ai-source-ids').value.trim();
+      const files = raw.split(',').map(x => x.trim()).filter(Boolean);
+      if (!window.confirm('Private text excerpts will be written to the selected case working folder. Continue?')) return;
+      try {
+        const output = await casePost('/api/prepare-ai-review', {file_ids:files});
+        area.textContent = 'Saved local packet: ' + output.path +
+          '. Nothing transmitted. Handle private source excerpts carefully.';
+      } catch(error) { area.textContent = String(error); }
+    }
+
+    async function importAiResponse() {
+      const area = document.getElementById('ai-review-result');
+      try {
+        const parsed = JSON.parse(document.getElementById('ai-response-json').value);
+        const outcome = await casePost('/api/import-ai-review', parsed);
+        area.textContent = outcome.accepted_as_pending + ' proposals awaiting manual review.';
+        await loadAiSuggestions();
+      } catch(error) { area.textContent = String(error); }
+    }
+
+    async function loadAiSuggestions() {
+      const area = document.getElementById('ai-review-result');
+      try {
+        const response = await fetch('/api/ai-suggestions');
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Suggestions unavailable');
+        area.replaceChildren();
+        for (const entry of data.suggestions || []) {
+          const card = document.createElement('div');
+          card.style.cssText = 'border-bottom:1px solid #7774;padding:12px';
+          const line = document.createElement('p');
+          line.textContent = entry.file_id + ' · page ' + entry.page + ' · ' + entry.status +
+            ' · exact quote: ' + entry.source_quote + ' · draft: ' + entry.statement;
+          card.appendChild(line);
+          if (entry.status === 'pending_review') {
+            for (const choice of [
+              {decision:'reject',label:'Reject'},
+              {decision:'create_draft_claim',label:'Create draft claim'}
+            ]) {
+              const button = document.createElement('button');
+              button.type='button'; button.className='secondary';button.textContent=choice.label;
+              button.addEventListener('click', async () => {
+                try {
+                  await casePost('/api/review-ai-suggestion', {
+                    suggestion_id:entry.suggestion_id, decision:choice.decision
+                  });
+                  await loadAiSuggestions(); await loadSourcedClaims();
+                } catch(error) { area.textContent = String(error); }
+              });
+              card.appendChild(button);
+            }
+          }
+          area.appendChild(card);
+        }
+        if (!(data.suggestions || []).length) area.textContent = 'No AI suggestions imported.';
+      } catch(error) { area.textContent = String(error); }
+    }
+
     async function loadCaseAudit() {
       const root = document.getElementById('case-audit');
       try {
@@ -1373,6 +1452,10 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
             if parsed.path == "/api/integrity-history":
                 self._send(200, "application/json; charset=utf-8", _json_bytes({"runs": recent_integrity_runs()}))
                 return
+            if parsed.path == "/api/ai-suggestions":
+                self._send(200, "application/json; charset=utf-8",
+                           _json_bytes({"suggestions": read_ai_suggestions()}))
+                return
             if parsed.path == "/api/tasks":
                 self._send(200, "application/json; charset=utf-8", _json_bytes(task_board()))
                 return
@@ -1439,10 +1522,17 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
                 except ValueError as exc:
                     self._send(400, "application/json; charset=utf-8", _json_bytes({"error": str(exc)}))
                     return
-            elif parsed.path in {"/api/index-document", "/api/search-text", "/api/add-claim", "/api/review-claim", "/api/add-comparison", "/api/add-task", "/api/update-task"}:
+            elif parsed.path in {"/api/index-document", "/api/search-text", "/api/add-claim", "/api/review-claim", "/api/add-comparison", "/api/add-task", "/api/update-task", "/api/prepare-ai-review", "/api/import-ai-review", "/api/review-ai-suggestion"}:
                 try:
                     body = _read_json_body(self)
-                    if parsed.path == "/api/add-task":
+                    if parsed.path == "/api/prepare-ai-review":
+                        payload = prepare_ai_packet(body.get("file_ids", []))
+                    elif parsed.path == "/api/import-ai-review":
+                        payload = import_ai_suggestions(body)
+                    elif parsed.path == "/api/review-ai-suggestion":
+                        payload = review_ai_suggestion(str(body.get("suggestion_id", "")),
+                                                       str(body.get("decision", "")))
+                    elif parsed.path == "/api/add-task":
                         payload = add_task(str(body.get("title", "")), str(body.get("due_date", "")),
                                            str(body.get("priority", "normal")),
                                            str(body.get("linked_file_ids", "")),

@@ -193,3 +193,26 @@ Target:
 - Fallgebundene Aufgaben unter `data/register/tasks.csv` mit dem bestehenden
   metadatenbasierten Audit-Journal.
 - Keine Hintergrunddienste, Timer, E-Mail, externe Kalender oder Cloud.
+
+
+## CASE-A10 – optionale lokale KI-Review-Schnittstelle (Entwicklung)
+
+- \`prepare-ai-review\` legt auf ausdrücklichen Wunsch ein begrenztes Paket
+  aus **zuvor indizierten und noch hash-geprüften** Originalen lokal unter
+  \`data/working/ai_exchange/outbox/\` ab. Es kann private Textauszüge
+  enthalten. Es erfolgt **keine** automatische Übertragung oder LLM-Abfrage.
+- Ein vertrauenswürdiges, vom Betreiber separat kontrolliertes lokales LLM
+  kann eine JSON-Liste mit Dokument-ID, Seite, exakt belegtem Zitat und
+  vorgeschlagener Interpretation erzeugen.
+- \`import-ai-review\` (lokales Inbox-JSON) bzw. der Browser-Import (eingefügtes
+  JSON) validieren jede Quellenstelle erneut. Ergebnisse bleiben zunächst
+  untrusted \`pending_review\` im fallgebundenen Register.
+- Nur ein ausdrücklicher Einzelentscheid \`review-ai-suggestion\` kann einen
+  Vorschlag verwerfen oder als normalen \`draft\`-Claim erzeugen. Eine
+  Quelle beweist nicht die Interpretation, ein AI-Draft ist **niemals**
+  automatisch Review- oder Wissensstand.
+- Vorhandenes Claim-/Audit-System wird wiederverwendet; keine neue Datenbank,
+  kein zweiter Browser, keine API-Schlüssel oder automatische OS-/Netz-Aktionen.
+- Dieses Paket ist eine **Integrationsnaht**, kein eingebautes generatives
+  Modell und keine installierte Drittanbieter-KI. Die vollständige KI-Integration
+  bleibt bei Bedarf eine gesonderte Entscheidung im bestehenden ToF-Ökosystem.

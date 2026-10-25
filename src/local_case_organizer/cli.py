@@ -12,6 +12,8 @@ from local_case_organizer.cases import create_case, get_active_case, list_cases,
 from local_case_organizer.comparison import comparison_report
 from local_case_organizer.audit import recent_changes
 from local_case_organizer.tasks import add_task, update_task, task_board
+from local_case_organizer.ai_exchange import (prepare_ai_packet, import_ai_file,
+                                               read_ai_suggestions, review_ai_suggestion)
 from local_case_organizer.document_text import index_document, search_text
 from local_case_organizer.claims import add_claim, read_claims, set_review_status
 from local_case_organizer.integrity import verify_integrity
@@ -55,6 +57,14 @@ def build_parser() -> argparse.ArgumentParser:
     index_parser.add_argument("--ocr", action="store_true", help="Explicitly enable optional offline OCR")
     search_parser = subparsers.add_parser("search-text", help="Search local verified derivative text")
     search_parser.add_argument("query")
+    packet_parser = subparsers.add_parser("prepare-ai-review", help="Manually prepare a private offline text packet for another local assistant")
+    packet_parser.add_argument("file_ids", nargs="+")
+    ai_import = subparsers.add_parser("import-ai-review", help="Read an untrusted AI JSON response from the private local inbox")
+    ai_import.add_argument("filename")
+    subparsers.add_parser("ai-suggestions", help="Read pending and reviewed AI suggestions")
+    ai_review = subparsers.add_parser("review-ai-suggestion", help="Reject or convert one AI proposal into an unreviewed draft claim")
+    ai_review.add_argument("suggestion_id")
+    ai_review.add_argument("--decision", choices=["reject", "create_draft_claim"], required=True)
     subparsers.add_parser("list-claims", help="List sourced claims for selected case")
     claim_parser = subparsers.add_parser("add-claim", help="Record a draft claim bound to a source passage")
     claim_parser.add_argument("file_id")
@@ -275,6 +285,19 @@ def _dispatch(args: argparse.Namespace) -> int:
         return 0
     if args.command == "search-text":
         print(json.dumps(search_text(args.query), indent=2, ensure_ascii=False))
+        return 0
+    if args.command == "prepare-ai-review":
+        print(json.dumps(prepare_ai_packet(args.file_ids), indent=2, ensure_ascii=False))
+        return 0
+    if args.command == "import-ai-review":
+        print(json.dumps(import_ai_file(args.filename), indent=2, ensure_ascii=False))
+        return 0
+    if args.command == "ai-suggestions":
+        print(json.dumps({"suggestions": read_ai_suggestions()}, indent=2, ensure_ascii=False))
+        return 0
+    if args.command == "review-ai-suggestion":
+        print(json.dumps(review_ai_suggestion(args.suggestion_id, args.decision),
+                         indent=2, ensure_ascii=False))
         return 0
     if args.command == "list-claims":
         print(json.dumps({"claims": read_claims()}, indent=2, ensure_ascii=False))
