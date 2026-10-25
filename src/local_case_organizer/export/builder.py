@@ -11,6 +11,7 @@ from local_case_organizer.export.helpers import (
     write_sanitized_provenance,
     write_zip_checksum,
 )
+from local_case_organizer.export.dossier import write_dossier
 from local_case_organizer.paths import create_local_workspace, get_workspace_paths
 
 
@@ -40,6 +41,7 @@ def build_export_package() -> Path:
         included_files.append(sanitized_provenance.name)
 
     copied_selected = copy_selected_files(export_dir)
+    included_files.extend(write_dossier(export_dir, copied_selected))
 
     readme = export_dir / "README.txt"
     readme.write_text(
