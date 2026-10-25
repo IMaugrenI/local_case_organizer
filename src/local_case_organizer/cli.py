@@ -10,6 +10,7 @@ from pathlib import Path
 
 from local_case_organizer.cases import create_case, get_active_case, list_cases, using_case
 from local_case_organizer.comparison import comparison_report
+from local_case_organizer.audit import recent_changes
 from local_case_organizer.document_text import index_document, search_text
 from local_case_organizer.claims import add_claim, read_claims, set_review_status
 from local_case_organizer.integrity import verify_integrity
@@ -37,6 +38,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("verify-integrity", help="Explicitly verify original document hashes")
     subparsers.add_parser("propose-events", help="Suggest unverified dates from registered plaintext sources")
     subparsers.add_parser("compare-claims", help="Report manually grouped possible claim discrepancies")
+    subparsers.add_parser("audit-history", help="List committed local CSV metadata changes")
     index_parser = subparsers.add_parser("index-document", help="Manually index a verified imported document for offline text search")
     index_parser.add_argument("file_id")
     index_parser.add_argument("--ocr", action="store_true", help="Explicitly enable optional offline OCR")
@@ -243,6 +245,9 @@ def _dispatch(args: argparse.Namespace) -> int:
         return 0
     if args.command == "compare-claims":
         print(json.dumps(comparison_report(), indent=2, ensure_ascii=False))
+        return 0
+    if args.command == "audit-history":
+        print(json.dumps({"changes": recent_changes()}, indent=2, ensure_ascii=False))
         return 0
     if args.command == "index-document":
         print(json.dumps(index_document(args.file_id, use_ocr=args.ocr), indent=2))

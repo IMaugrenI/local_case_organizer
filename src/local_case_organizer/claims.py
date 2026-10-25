@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 from local_case_organizer.document_text import get_indexed
+from local_case_organizer.audit import write_audited_csv
 from local_case_organizer.paths import create_local_workspace, get_workspace_paths
 
 CLAIM_FIELDS = ["claim_id", "file_id", "source_page", "source_quote",
@@ -37,27 +38,7 @@ def read_claims() -> list[dict[str, str]]:
 
 def _write_claims(rows: list[dict[str, str]]) -> None:
     create_local_workspace()
-    path = _path()
-    # Only controlled CSV fields can be persisted; originals are never modified.
-    temp = None
-    try:
-        with tempfile.NamedTemporaryFile("w", encoding="utf-8", newline="",
-                                         dir=path.parent, prefix=".claims-",
-                                         delete=False) as fd:
-            temp = fd.name
-            os.chmod(temp, 0o600)
-            writer = csv.DictWriter(fd, fieldnames=CLAIM_FIELDS, extrasaction="ignore")
-            writer.writeheader()
-            for row in rows:
-                writer.writerow({field: str(row.get(field, "")) for field in CLAIM_FIELDS})
-            fd.flush()
-            os.fsync(fd.fileno())
-        if path.is_symlink():
-            raise ValueError("Claims table must not be a symlink")
-        os.replace(temp, path)
-    finally:
-        if temp and os.path.exists(temp):
-            os.unlink(temp)
+    write_audited_csv(_path(), CLAIM_FIELDS, rows, "claims")
 
 
 def add_claim(file_id: str, source_page: int, source_quote: str,

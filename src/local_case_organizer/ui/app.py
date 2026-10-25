@@ -18,6 +18,7 @@ from local_case_organizer.cases import get_active_case, using_case
 from local_case_organizer.document_text import index_document, search_text
 from local_case_organizer.claims import add_claim, read_claims, set_review_status
 from local_case_organizer.comparison import add_comparison, comparison_report
+from local_case_organizer.audit import recent_changes
 from local_case_organizer.graph import evidence_graph
 from local_case_organizer.integrity import recent_integrity_runs, verify_integrity
 from local_case_organizer.entities.store import ENTITY_FIELDS, read_entity_rows, write_entity_rows
@@ -228,6 +229,14 @@ HTML = """<!doctype html>
         <button type=\"button\" class=\"secondary\" onclick=\"loadClaimComparisons()\">Find differences</button>
       </div>
       <div id=\"claim-comparisons\" aria-live=\"polite\"></div>
+    </div>
+
+    <h2 class=\"section-title\">Metadata change history</h2>
+    <div class=\"editor\">
+      <div class=\"editor-actions\"><button onclick=\"loadCaseAudit()\">Refresh change history</button></div>
+      <p class=\"hint\">Local, metadata-only record of saved edits. No document contents or verified
+      operator identity; incomplete transactions are not presented as committed.</p>
+      <div id=\"case-audit\" aria-live=\"polite\"></div>
     </div>
 
     <h2 class=\"section-title\">Export history</h2>
@@ -718,7 +727,24 @@ HTML = """<!doctype html>
           value: document.getElementById('compare-value').value.trim()
         });
         await loadClaimComparisons();
+      await loadCaseAudit();
       } catch (error) { area.textContent = String(error); }
+    }
+
+    async function loadCaseAudit() {
+      const root = document.getElementById('case-audit');
+      try {
+        const response = await fetch('/api/audit-history');
+        const data = await response.json();
+        root.replaceChildren();
+        for (const item of data.changes || []) {
+          const line = document.createElement('p');
+          line.textContent = item.at + ' · ' + item.area + ' · ' +
+            item.row_count + ' rows · ' + item.change_id;
+          root.appendChild(line);
+        }
+        if (!(data.changes || []).length) root.textContent = 'No saved edits recorded yet.';
+      } catch(error) { root.textContent = String(error); }
     }
 
     async function loadClaimComparisons() {
@@ -1174,6 +1200,9 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
                 return
             if parsed.path == "/api/integrity-history":
                 self._send(200, "application/json; charset=utf-8", _json_bytes({"runs": recent_integrity_runs()}))
+                return
+            if parsed.path == "/api/audit-history":
+                self._send(200, "application/json; charset=utf-8", _json_bytes({"changes": recent_changes()}))
                 return
             if parsed.path == "/api/claim-comparisons":
                 self._send(200, "application/json; charset=utf-8", _json_bytes(comparison_report()))

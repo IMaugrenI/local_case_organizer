@@ -142,3 +142,20 @@ Target:
 - Comparison data are kept in the selected local case register directory,
   never in GitHub. \`python run.py [--case ID] compare-claims\` is read-only.
 - Existing case, source register, claim and export data remain undisturbed.
+
+
+## CASE-A6 (development) – metadata-only local edit journal
+
+- Atomic CSV replacements with two-phase \`prepared\` / \`committed\` journal
+  entries for the existing register, timeline, entities, claims and comparison
+  work areas. Routine generation of the register/timeline uses the same writer.
+- Only timestamps, table area, affected row count and SHA-256 digests are
+  stored; personal text, source originals and credentials are not copied.
+- \`python run.py [--case ID] audit-history\` and a read-only UI panel show
+  completed changes. No local username is asserted (there is no login system).
+- A prepared-only record may remain after a power failure; it is **not** reported
+  as committed.
+- The journal has a size limit and never deletes entries automatically.
+- This is *not* a signed or tamper-proof compliance trail and does not store
+  earlier full document versions. Multi-process serialization is not guaranteed.
+  Final acceptance remains separate at the end of expansion.

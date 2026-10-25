@@ -12,6 +12,7 @@ from uuid import uuid4
 
 from local_case_organizer.claims import read_claims
 from local_case_organizer.document_text import get_indexed
+from local_case_organizer.audit import write_audited_csv
 from local_case_organizer.paths import create_local_workspace, get_workspace_paths
 
 FIELDS = ["comparison_id", "claim_id", "topic", "kind", "value", "normalized",
@@ -60,24 +61,7 @@ def read_comparisons():
 
 def _save(rows):
     create_local_workspace()
-    path = _path()
-    temp = None
-    try:
-        with tempfile.NamedTemporaryFile("w", encoding="utf-8", newline="",
-                                         dir=path.parent, prefix=".comp-", delete=False) as handle:
-            temp = handle.name
-            os.chmod(temp, 0o600)
-            writer = csv.DictWriter(handle, fieldnames=FIELDS)
-            writer.writeheader()
-            writer.writerows({key: str(row.get(key, "")) for key in FIELDS} for row in rows)
-            handle.flush()
-            os.fsync(handle.fileno())
-        if path.is_symlink():
-            raise ValueError("Comparison table is a symlink")
-        os.replace(temp, path)
-    finally:
-        if temp and os.path.exists(temp):
-            os.unlink(temp)
+    write_audited_csv(_path(), FIELDS, rows, "comparisons")
 
 
 def add_comparison(claim_id: str, topic: str, kind: str, value: str):

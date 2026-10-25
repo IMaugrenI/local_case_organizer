@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import csv
+
+from local_case_organizer.audit import write_audited_csv
 from pathlib import Path
 
 from local_case_organizer.paths import create_local_workspace, get_workspace_paths
@@ -44,10 +46,4 @@ def read_register_rows() -> list[dict[str, str]]:
 
 def write_register_rows(rows: list[dict[str, str]]) -> Path:
     path = register_path()
-    with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=REGISTER_FIELDS)
-        writer.writeheader()
-        for row in rows:
-            normalized = {field: str(row.get(field, "")) for field in REGISTER_FIELDS}
-            writer.writerow(normalized)
-    return path
+    return write_audited_csv(path, REGISTER_FIELDS, rows, "register")
