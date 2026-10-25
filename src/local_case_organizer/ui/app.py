@@ -17,6 +17,7 @@ from urllib.parse import urlparse
 from local_case_organizer.cases import get_active_case, using_case
 from local_case_organizer.document_text import index_document, search_text
 from local_case_organizer.claims import add_claim, read_claims, set_review_status
+from local_case_organizer.comparison import add_comparison, comparison_report
 from local_case_organizer.graph import evidence_graph
 from local_case_organizer.integrity import recent_integrity_runs, verify_integrity
 from local_case_organizer.entities.store import ENTITY_FIELDS, read_entity_rows, write_entity_rows
@@ -212,6 +213,21 @@ HTML = """<!doctype html>
         <button type=\"button\" class=\"secondary\" onclick=\"loadSourcedClaims()\">Refresh claims</button>
       </div>
       <div id=\"claim-results\" aria-live=\"polite\"></div>
+    </div>
+
+    <h2 class=\"section-title\">Claim comparisons – possible discrepancies</h2>
+    <div class=\"editor\">
+      <p class=\"hint\">Manually assign a shared topic and an exact value to distinct source-linked claims.
+      Different values flag a review candidate, not a proven contradiction.</p>
+      <div class=\"editor-actions\">
+        <label>Claim ID <input id=\"compare-claim-id\" type=\"text\" placeholder=\"CLM-...\"></label>
+        <label>Topic <input id=\"compare-topic\" type=\"text\" placeholder=\"invoice-amount\"></label>
+        <label>Kind <select id=\"compare-kind\"><option value=\"date\">Date</option><option value=\"amount\">Amount</option><option value=\"text\">Text</option></select></label>
+        <label>Value <input id=\"compare-value\" type=\"text\" placeholder=\"1250,00\"></label>
+        <button type=\"button\" onclick=\"addClaimComparison()\">Link claim value</button>
+        <button type=\"button\" class=\"secondary\" onclick=\"loadClaimComparisons()\">Find differences</button>
+      </div>
+      <div id=\"claim-comparisons\" aria-live=\"polite\"></div>
     </div>
 
     <h2 class=\"section-title\">Export history</h2>
@@ -692,6 +708,46 @@ HTML = """<!doctype html>
       } catch (error) { area.textContent = String(error); }
     }
 
+    async function addClaimComparison() {
+      const area = document.getElementById('claim-comparisons');
+      try {
+        await casePost('/api/add-comparison', {
+          claim_id: document.getElementById('compare-claim-id').value.trim(),
+          topic: document.getElementById('compare-topic').value.trim(),
+          kind: document.getElementById('compare-kind').value,
+          value: document.getElementById('compare-value').value.trim()
+        });
+        await loadClaimComparisons();
+      } catch (error) { area.textContent = String(error); }
+    }
+
+    async function loadClaimComparisons() {
+      const area = document.getElementById('claim-comparisons');
+      try {
+        const response = await fetch('/api/claim-comparisons');
+        const data = await response.json();
+        area.replaceChildren();
+        const intro = document.createElement('p');
+        intro.textContent = (data.records || []).length + ' registered comparisons · ' +
+          (data.review_candidates || []).length + ' possible discrepancies.';
+        area.appendChild(intro);
+        for (const group of data.review_candidates || []) {
+          const div = document.createElement('div');
+          div.style.cssText = 'padding:12px;border-bottom:1px solid #7774';
+          const title = document.createElement('strong');
+          title.textContent = group.topic + ' (' + group.kind + '): review suggested';
+          div.appendChild(title);
+          for (const source of group.sources || []) {
+            const line = document.createElement('p');
+            line.textContent = source.claim_id + ' / ' + source.file_id +
+              ': ' + source.value + ' [' + source.claim_review_status + ']';
+            div.appendChild(line);
+          }
+          area.appendChild(div);
+        }
+      } catch (error) { area.textContent = String(error); }
+    }
+
     async function loadEvidenceGraph() {
       const response = await fetch('/api/evidence-graph');
       const data = await response.json();
@@ -810,6 +866,7 @@ HTML = """<!doctype html>
       await loadExportHistory();
       await loadEvidenceGraph();
       await loadIntegrityHistory();
+      await loadClaimComparisons();
       await loadSourcedClaims();
     }
 
@@ -1118,6 +1175,9 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
             if parsed.path == "/api/integrity-history":
                 self._send(200, "application/json; charset=utf-8", _json_bytes({"runs": recent_integrity_runs()}))
                 return
+            if parsed.path == "/api/claim-comparisons":
+                self._send(200, "application/json; charset=utf-8", _json_bytes(comparison_report()))
+                return
             if parsed.path == "/api/claims":
                 self._send(200, "application/json; charset=utf-8", _json_bytes({"claims": read_claims()}))
                 return
@@ -1155,10 +1215,15 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
                 except ValueError as exc:
                     self._send(400, "application/json; charset=utf-8", _json_bytes({"error": str(exc)}))
                     return
-            elif parsed.path in {"/api/index-document", "/api/search-text", "/api/add-claim", "/api/review-claim"}:
+            elif parsed.path in {"/api/index-document", "/api/search-text", "/api/add-claim", "/api/review-claim", "/api/add-comparison"}:
                 try:
                     body = _read_json_body(self)
-                    if parsed.path == "/api/index-document":
+                    if parsed.path == "/api/add-comparison":
+                        payload = add_comparison(str(body.get("claim_id", "")),
+                                                 str(body.get("topic", "")),
+                                                 str(body.get("kind", "")),
+                                                 str(body.get("value", "")))
+                    elif parsed.path == "/api/index-document":
                         payload = index_document(str(body.get("file_id", "")),
                                                  use_ocr=body.get("use_ocr") is True)
                     elif parsed.path == "/api/search-text":

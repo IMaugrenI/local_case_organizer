@@ -128,3 +128,17 @@ Target:
   never included in exports by default.
 - No server beyond the existing local browser UI, no forced dependencies,
   no cloud LLM, no automatic legal evaluation, no production installation.
+
+
+## CASE-A5 (development) – manually grouped claim comparison
+
+- Each comparison links an existing claim ID, operator-supplied topic key,
+  explicitly selected date / decimal amount / plain text kind and value.
+- Cross-document differences are flagged only for **two or more different
+  source documents** and distinct normalized values under the same topic.
+- No claims are automatically edited or pronounced false.
+- Adding a link checks that the claim's original hash and exact quote still
+  match the existing indexed source. No OCR/LLM or external services are called.
+- Comparison data are kept in the selected local case register directory,
+  never in GitHub. \`python run.py [--case ID] compare-claims\` is read-only.
+- Existing case, source register, claim and export data remain undisturbed.
