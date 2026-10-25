@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import csv
+
+from local_case_organizer.audit import write_audited_csv
 from pathlib import Path
 
 from local_case_organizer.paths import create_local_workspace, get_workspace_paths
@@ -30,10 +32,4 @@ def read_entity_rows() -> list[dict[str, str]]:
 
 def write_entity_rows(rows: list[dict[str, str]]) -> Path:
     path = entities_path()
-    with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=ENTITY_FIELDS)
-        writer.writeheader()
-        for row in rows:
-            normalized = {field: str(row.get(field, "")) for field in ENTITY_FIELDS}
-            writer.writerow(normalized)
-    return path
+    return write_audited_csv(path, ENTITY_FIELDS, rows, "entities")

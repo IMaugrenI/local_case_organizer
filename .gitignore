@@ -183,3 +183,6 @@ examples/private_case/
 *.tar
 *.gz
 *.7z
+
+# CASE-A1: isolated private case workspaces (never commit real case data)
+cases/

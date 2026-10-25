@@ -186,3 +186,26 @@ profiles/default/
 ## Status
 
 Frühes V1-Scaffold mit funktionierendem Python-first Befehlsweg, lokaler Browser-UI, sortierten Doku-Ordnern und sortierter Cross-Platform-Launcher-Struktur.
+
+
+## Ausbaustand A1–A10 auf dem Entwicklungsbranch
+
+Der Entwurfs-PR #3 ergänzt die Fallakten um isolierte Arbeitsbereiche,
+Hash-Integrität, Belegverknüpfungen, optionale PDF-/OCR-Indizierung,
+lokale Suche, quellengebundene Aussagen, Vergleichshinweise, Audit-Journal,
+Fallauswahl im Browser, Dossier-Export und manuelle Wiedervorlagen.
+
+**Optionale KI-Integration:** Eine lokale Übergabeschnittstelle erstellt
+auf Wunsch begrenzte Kontextpakete aus indizierten, noch überprüften
+Quellen. Externe lokale KI-Vorschläge müssen bewusst importiert und
+einzeln als Entwurf bestätigt werden. **Kein eingebauter Modellaufruf**
+und keine automatisch akzeptierten Erkenntnisse.
+
+Die vorhandenen Python- und Betriebssystem-Starter bleiben verbindlich.
+Originaldokumente bleiben unverändert; private Arbeitsdateien werden
+nicht auf GitHub hochgeladen. OCR setzt vorhandene optionale lokale
+Werkzeuge voraus und wird nicht automatisch installiert.
+
+Siehe [Ausbau-Übergabe](docs/roadmap/expansion_handoff.md).
+
+**Entwicklungsvorschau, nicht in main und keine Gesamtfreigabe.**

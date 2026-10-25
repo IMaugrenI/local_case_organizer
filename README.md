@@ -186,3 +186,33 @@ profiles/default/
 ## Status
 
 Early V1 scaffold with a working Python-first command path, a local browser UI, sorted documentation folders, and a sorted cross-platform launcher layout.
+
+
+## Expansion branch A1–A10 (development preview)
+
+Draft PR #3 contains opt-in isolated cases, source-hash verification,
+evidence links, operator-reviewed timeline candidates, optional local PDF/OCR
+indexing, source-bound claims, manual mismatch comparisons, metadata-only
+edit journaling, browser case selection, neutral dossiers, manual reminders
+and an offline AI handoff interface.
+
+The independent **Structure** product still makes **no model calls**:
+AI packets can be prepared by explicit user action, but suggestions from
+an external local model must be manually imported and individually reviewed.
+
+Example (private case selection, no alternate launcher):
+
+\`\`\`bash
+python run.py create-case demo --title "Demo"
+python run.py --case demo ui
+python run.py --case demo tasks
+python run.py --case demo prepare-ai-review DOC-1
+\`\`\`
+
+PDF/OCR requires optional local extraction tools; they are not installed
+by this repository. All private case data remain in ignored workspaces.
+
+[Development handoff and limitations](docs/roadmap/expansion_handoff.md).
+
+These changes are on a **development branch**, not on main. CI is not
+device, operator or release acceptance.

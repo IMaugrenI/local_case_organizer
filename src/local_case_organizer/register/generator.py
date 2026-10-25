@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from local_case_organizer.paths import create_local_workspace, get_workspace_paths
+from local_case_organizer.audit import write_audited_csv
 from local_case_organizer.register.store import EDITABLE_REGISTER_FIELDS, REGISTER_FIELDS, read_register_rows
 
 
@@ -120,10 +121,4 @@ def build_document_register() -> Path:
             )
         )
 
-    with output_path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=REGISTER_FIELDS)
-        writer.writeheader()
-        for row in rows:
-            writer.writerow(row.__dict__)
-
-    return output_path
+    return write_audited_csv(output_path, REGISTER_FIELDS, [row.__dict__ for row in rows], "register")

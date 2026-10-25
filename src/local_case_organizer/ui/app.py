@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import cgi
+import html
 import json
 import os
 import platform
@@ -13,13 +14,27 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
+from local_case_organizer.cases import create_case, get_active_case, list_cases, using_case
+from local_case_organizer.ui.case_selection import requested_case
+from local_case_organizer.ui.ui_security import allow_local_post, allowed_ui_host
+from local_case_organizer.document_text import index_document, search_text
+from local_case_organizer.claims import add_claim, read_claims, set_review_status
+from local_case_organizer.comparison import add_comparison, comparison_report
+from local_case_organizer.audit import recent_changes
+from local_case_organizer.tasks import add_task, update_task, task_board
+from local_case_organizer.ai_exchange import (prepare_ai_packet, import_ai_suggestions,
+                                               read_ai_suggestions, review_ai_suggestion)
+from local_case_organizer.graph import evidence_graph
+from local_case_organizer.integrity import recent_integrity_runs, verify_integrity
 from local_case_organizer.entities.store import ENTITY_FIELDS, read_entity_rows, write_entity_rows
 from local_case_organizer.export.builder import build_export_package
+from local_case_organizer.export.dossier import dossier_preview
 from local_case_organizer.export.history import read_export_history
 from local_case_organizer.imports.ingest import import_sources
-from local_case_organizer.paths import create_local_workspace, describe_workspace, get_workspace_paths
+from local_case_organizer.paths import create_local_workspace, describe_workspace, get_repo_root, get_workspace_paths
 from local_case_organizer.register.generator import build_document_register
 from local_case_organizer.register.store import REGISTER_FIELDS, read_register_rows, write_register_rows
+from local_case_organizer.timeline.suggestions import accept_candidate, propose_events
 from local_case_organizer.timeline.generator import build_timeline_template
 from local_case_organizer.timeline.store import TIMELINE_FIELDS, read_timeline_rows, write_timeline_rows
 
@@ -79,6 +94,22 @@ HTML = """<!doctype html>
 
     <div class=\"next-step\" id=\"next-step\">Loading next step...</div>
 
+    <h2 class=\"section-title\">Choose your case</h2>
+    <div class=\"editor\">
+      <p class=\"hint\">Each case has its own private local workspace. Switching cases reloads the browser; save any unsaved changes first.</p>
+      <div class=\"editor-actions\">
+        <label>Case <select id=\"case-selector\"></select></label>
+        <button type=\"button\" class=\"secondary\" onclick=\"openSelectedCase()\">Open selected case</button>
+        <button type=\"button\" class=\"ghost\" onclick=\"loadCaseHub()\">Refresh case list</button>
+      </div>
+      <div class=\"editor-actions\">
+        <label>New case ID <input id=\"new-case-id\" type=\"text\" placeholder=\"my-case\" maxlength=\"48\"></label>
+        <label>Display title <input id=\"new-case-title\" type=\"text\" placeholder=\"Optional private title\" maxlength=\"120\"></label>
+        <button type=\"button\" onclick=\"createCaseFromUI()\">Create a separate case</button>
+      </div>
+      <div id=\"case-hub-result\" class=\"hint\" aria-live=\"polite\"></div>
+    </div>
+
     <h2 class=\"section-title\">Current status</h2>
     <div class=\"grid\" id=\"cards\"></div>
 
@@ -99,7 +130,10 @@ HTML = """<!doctype html>
       <button onclick=\"runAction('build-register')\">3. Build register</button>
       <button onclick=\"runAction('build-timeline')\">4. Build timeline</button>
       <button class=\"secondary\" onclick=\"runAction('export-package')\">5. Build export package</button>
+      <button class=\"ghost\" onclick=\"showDossierPreview()\">Preview dossier contents</button>
     </div>
+
+    <div id=\"dossier-preview\" class=\"hint\" aria-live=\"polite\"></div>
 
     <h2 class=\"section-title\">Helpful actions</h2>
     <div class=\"actions\">
@@ -136,6 +170,16 @@ HTML = """<!doctype html>
       </div>
     </div>
 
+    <h2 class=\"section-title\">Suggested timeline dates (manual review)</h2>
+    <div class=\"editor\">
+      <div class=\"editor-actions\">
+        <button type=\"button\" onclick=\"loadTimelineCandidates()\">Find date mentions in imported text</button>
+      </div>
+      <p class=\"hint\">Only verified UTF-8 TXT, MD, CSV and EML originals; no OCR or cloud.
+      Suggestions are NOT verified events. Click Add draft for each item you choose.</p>
+      <div id=\"timeline-candidates\" aria-live=\"polite\">No suggestions requested.</div>
+    </div>
+
     <h2 class=\"section-title\">Entities / people / institutions</h2>
     <div class=\"editor\">
       <div class=\"editor-actions\">
@@ -146,6 +190,110 @@ HTML = """<!doctype html>
       <div class=\"hint\">Use <code>linked_file_ids</code> to connect people, institutions, or companies to file IDs from the register.</div>
       <div id=\"entity-file-hints\" class=\"hint\">Known file IDs will appear here after the register is loaded.</div>
       <div id=\"entity-editor\" class=\"hint\">Entities will appear here.</div>
+    </div>
+
+    <h2 class=\"section-title\">Verified links / Evidence map</h2>
+    <div class=\"editor\">
+      <div class=\"editor-actions\"><button onclick=\"loadEvidenceGraph()\">Refresh evidence map</button></div>
+      <p class=\"hint\">Only explicitly entered relationships are shown. Links are not judgments of factual or legal truth.</p>
+      <div id=\"evidence-graph\" aria-live=\"polite\"></div>
+    </div>
+
+    <h2 class=\"section-title\">Integrity checks</h2>
+    <div class=\"editor\">
+      <div class=\"editor-actions\">
+        <button onclick=\"runAction(\'verify-integrity\')\">Verify original files now</button>
+        <button class=\"secondary\" onclick=\"loadIntegrityHistory()\">Show verification history</button>
+      </div>
+      <p class=\"hint\">Manual, read-only hash verification. Results are recorded in a local append-only journal.</p>
+      <div id=\"integrity-history\" class=\"hint\"></div>
+    </div>
+
+    <h2 class=\"section-title\">Private PDF / OCR text index</h2>
+    <div class=\"editor\">
+      <p class=\"hint\">Manual offline extraction from an imported, hash-verified document. OCR runs only when explicitly selected and the optional local tools are installed. Indexed text stays in the private working folder, never inside original evidence files.</p>
+      <div class=\"editor-actions\">
+        <label>Document ID <input id=\"text-file-id\" type=\"text\" placeholder=\"DOC-...\"></label>
+        <label><input id=\"text-use-ocr\" type=\"checkbox\"> Enable offline OCR</label>
+        <button type=\"button\" onclick=\"indexSelectedDocument()\">Index selected document</button>
+      </div>
+      <div class=\"editor-actions\" style=\"margin-top:16px\">
+        <label>Search indexed documents <input id=\"text-query\" type=\"text\" placeholder=\"Search term\"></label>
+        <button type=\"button\" class=\"secondary\" onclick=\"searchIndexedDocuments()\">Search local text</button>
+      </div>
+      <div id=\"text-index-status\" class=\"hint\" aria-live=\"polite\"></div>
+      <div id=\"text-search-results\" class=\"hint\"></div>
+    </div>
+
+    <h2 class=\"section-title\">Source-linked claims</h2>
+    <div class=\"editor\">
+      <p class=\"hint\">Claims remain user assertions, even after review. Paste an exact quote from an indexed page. Every new claim starts as a draft; review is a separate manual step.</p>
+      <div class=\"editor-actions\">
+        <label>Document ID <input type=\"text\" id=\"claim-file-id\" placeholder=\"DOC-...\"></label>
+        <label>Page <input type=\"number\" id=\"claim-page\" min=\"1\" max=\"100\" value=\"1\" style=\"width:100px\"></label>
+      </div>
+      <label>Verbatim source passage<textarea id=\"claim-quote\" maxlength=\"500\"></textarea></label>
+      <label>Claim / interpretation (not a verified fact)<textarea id=\"claim-statement\" maxlength=\"800\"></textarea></label>
+      <div class=\"editor-actions\">
+        <button type=\"button\" onclick=\"saveSourcedClaim()\">Add draft claim</button>
+        <button type=\"button\" class=\"secondary\" onclick=\"loadSourcedClaims()\">Refresh claims</button>
+      </div>
+      <div id=\"claim-results\" aria-live=\"polite\"></div>
+    </div>
+
+    <h2 class=\"section-title\">Claim comparisons – possible discrepancies</h2>
+    <div class=\"editor\">
+      <p class=\"hint\">Manually assign a shared topic and an exact value to distinct source-linked claims.
+      Different values flag a review candidate, not a proven contradiction.</p>
+      <div class=\"editor-actions\">
+        <label>Claim ID <input id=\"compare-claim-id\" type=\"text\" placeholder=\"CLM-...\"></label>
+        <label>Topic <input id=\"compare-topic\" type=\"text\" placeholder=\"invoice-amount\"></label>
+        <label>Kind <select id=\"compare-kind\"><option value=\"date\">Date</option><option value=\"amount\">Amount</option><option value=\"text\">Text</option></select></label>
+        <label>Value <input id=\"compare-value\" type=\"text\" placeholder=\"1250,00\"></label>
+        <button type=\"button\" onclick=\"addClaimComparison()\">Link claim value</button>
+        <button type=\"button\" class=\"secondary\" onclick=\"loadClaimComparisons()\">Find differences</button>
+      </div>
+      <div id=\"claim-comparisons\" aria-live=\"polite\"></div>
+    </div>
+
+    <h2 class=\"section-title\">Metadata change history</h2>
+    <div class=\"editor\">
+      <div class=\"editor-actions\"><button onclick=\"loadCaseAudit()\">Refresh change history</button></div>
+      <p class=\"hint\">Local, metadata-only record of saved edits. No document contents or verified
+      operator identity; incomplete transactions are not presented as committed.</p>
+      <div id=\"case-audit\" aria-live=\"polite\"></div>
+    </div>
+
+    <h2 class=\"section-title\">Tasks and operator-entered reminders</h2>
+    <div class=\"editor\">
+      <p class=\"hint\">Manual organizational dates only. Not calculated legal deadlines.
+      No background notifications or automatic actions.</p>
+      <div class=\"editor-actions\">
+        <label>Task <input id=\"task-title\" type=\"text\" maxlength=\"180\" placeholder=\"Review document\"></label>
+        <label>Due date <input id=\"task-date\" type=\"date\"></label>
+        <label>Priority <select id=\"task-priority\"><option value=\"normal\">Normal</option><option value=\"high\">High</option><option value=\"low\">Low</option></select></label>
+        <label>Linked documents <input id=\"task-files\" type=\"text\" placeholder=\"DOC-1,DOC-2\"></label>
+        <button type=\"button\" onclick=\"createCaseTask()\">Add reminder</button>
+        <button type=\"button\" class=\"secondary\" onclick=\"loadCaseTasks()\">Refresh task list</button>
+      </div>
+      <div id=\"task-board\" aria-live=\"polite\"></div>
+    </div>
+
+    <h2 class=\"section-title\">Optional offline AI review exchange</h2>
+    <div class=\"editor\">
+      <p class=\"hint\">This app does not run or contact an LLM. An explicit packet may contain
+      private excerpts. Hand it to a trusted local assistant yourself. Returned suggestions
+      are untrusted; only an individual manual action can create a draft claim.</p>
+      <div class=\"editor-actions\">
+        <label>Indexed document IDs <input id=\"ai-source-ids\" type=\"text\" placeholder=\"DOC-1,DOC-2\"></label>
+        <button type=\"button\" onclick=\"prepareAiHandoff()\">Prepare private handoff</button>
+        <button type=\"button\" class=\"secondary\" onclick=\"loadAiSuggestions()\">Review suggestions</button>
+      </div>
+      <label>Paste JSON suggestions from your trusted local assistant (no automatic transmission)
+        <textarea id=\"ai-response-json\" maxlength=\"110000\" placeholder='{"suggestions":[{"file_id":"DOC-1","page":1,"source_quote":"Exact quote","statement":"Draft statement"}]}'></textarea>
+      </label>
+      <button type=\"button\" onclick=\"importAiResponse()\">Import as untrusted suggestions</button>
+      <div id=\"ai-review-result\" aria-live=\"polite\"></div>
     </div>
 
     <h2 class=\"section-title\">Export history</h2>
@@ -168,6 +316,59 @@ HTML = """<!doctype html>
   </div>
 
   <script>
+    const originalCaseFetch = window.fetch.bind(window);
+    const CASE_CHOICE_KEY = 'lco_active_case_tab';
+    window.fetch = (url, opts = {}) => {
+      if (typeof url !== 'string' || !url.startsWith('/api/')) {
+        return originalCaseFetch(url, opts);
+      }
+      const headers = new Headers(opts.headers || {});
+      const selected = sessionStorage.getItem(CASE_CHOICE_KEY);
+      if (selected) headers.set('X-LCO-Case', selected);
+      if ((opts.method || 'GET').toUpperCase() === 'POST') headers.set('X-LCO-UI', 'same-origin-ui');
+      return originalCaseFetch(url, {...opts, headers});
+    };
+
+    async function loadCaseHub() {
+      const response = await fetch('/api/cases');
+      const data = await response.json();
+      const select = document.getElementById('case-selector');
+      const previous = sessionStorage.getItem(CASE_CHOICE_KEY) || data.selected_case;
+      select.replaceChildren();
+      for (const item of [{case_id:'legacy-default',title:'Legacy default workspace'}, ...(data.cases || [])]) {
+        const option = document.createElement('option');
+        option.value = item.case_id;
+        option.textContent = item.title + ' (' + item.case_id + ')';
+        option.selected = item.case_id === previous;
+        select.appendChild(option);
+      }
+      document.getElementById('case-hub-result').textContent = 'Current case: ' + previous;
+    }
+
+    function openSelectedCase() {
+      const selected = document.getElementById('case-selector').value;
+      if (!selected) return;
+      if (!window.confirm('Save any unsaved work before switching to ' + selected + '. Continue?')) return;
+      sessionStorage.setItem(CASE_CHOICE_KEY, selected);
+      window.location.reload();
+    }
+
+    async function createCaseFromUI() {
+      const box = document.getElementById('case-hub-result');
+      try {
+        const case_id = document.getElementById('new-case-id').value.trim();
+        const title = document.getElementById('new-case-title').value.trim();
+        const response = await fetch('/api/create-case', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({case_id, title}),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Case could not be created');
+        await loadCaseHub();
+        box.textContent = 'Created case ' + result.case_id + '. Select it above to open.';
+      } catch(error) { box.textContent = String(error); }
+    }
+
     let registerRows = [];
     let registerFields = [];
     let timelineRows = [];
@@ -362,6 +563,17 @@ HTML = """<!doctype html>
       });
     }
 
+    async function showDossierPreview() {
+      const target = document.getElementById('dossier-preview');
+      try {
+        const response = await fetch('/api/dossier-preview');
+        const data = await response.json();
+        target.textContent = 'Dossier preview: ' + data.selected_documents +
+          ' selected documents, ' + data.entered_timeline_rows +
+          ' timeline entries, ' + data.claims_in_selection + ' linked claims. ' + data.note;
+      } catch (error) { target.textContent = String(error); }
+    }
+
     async function loadRegister() {
       const response = await fetch('/api/register-data');
       const data = await response.json();
@@ -463,6 +675,410 @@ HTML = """<!doctype html>
       await refreshStatus();
     }
 
+    async function loadTimelineCandidates() {
+      const area = document.getElementById('timeline-candidates');
+      area.textContent = 'Scanning verified local text originals ...';
+      try {
+        const response = await fetch('/api/propose-events', {method:'POST'});
+        const report = await response.json();
+        if (!response.ok) throw new Error(report.error || 'Could not build suggestions');
+        area.replaceChildren();
+        const note = document.createElement('p');
+        note.textContent = (report.candidates || []).length + ' date mentions found; ' +
+          (report.warnings || []).length + ' source warnings; ' +
+          (report.duplicate_content || []).length + ' duplicate-content groups.';
+        area.appendChild(note);
+        if ((report.warnings || []).length) {
+          const w = document.createElement('p');
+          w.textContent = 'Skipped sources: ' + (report.warnings || []).map(x => x.file_id + ' (' + x.reason + ')').join(', ');
+          area.appendChild(w);
+        }
+        for (const item of report.candidates || []) {
+          const row = document.createElement('div');
+          row.style.cssText = 'padding:12px;border-bottom:1px solid #7774;display:flex;gap:12px;align-items:center;flex-wrap:wrap';
+          const description = document.createElement('span');
+          description.textContent = item.date + ' · ' + item.original_name + ' · line ' + item.line +
+            ' · ' + item.excerpt;
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'secondary';
+          button.textContent = 'Add draft';
+          button.addEventListener('click', async () => {
+            button.disabled = true;
+            try {
+              const response = await fetch('/api/accept-candidate', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({candidate_id:item.candidate_id}),
+              });
+              const data = await response.json();
+              if (!response.ok) throw new Error(data.error || 'Could not add draft');
+              button.textContent = data.status === 'already_recorded' ? 'Already added' : 'Draft added';
+              await loadTimeline();
+              await loadEvidenceGraph();
+            } catch (error) {
+              button.disabled = false;
+              appendLog(String(error));
+            }
+          });
+          row.appendChild(description);row.appendChild(button);area.appendChild(row);
+        }
+      } catch (error) {
+        area.textContent = String(error);
+      }
+    }
+
+    async function casePost(url, payload) {
+      const response = await fetch(url, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload || {}),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Local action failed');
+      return data;
+    }
+
+    async function indexSelectedDocument() {
+      const area = document.getElementById('text-index-status');
+      area.textContent = 'Indexing the selected verified original locally ...';
+      try {
+        const result = await casePost('/api/index-document', {
+          file_id: document.getElementById('text-file-id').value.trim(),
+          use_ocr: document.getElementById('text-use-ocr').checked
+        });
+        area.textContent = result.file_id + ': ' + result.method + ', ' +
+          result.pages + ' pages, ' + result.characters + ' characters indexed privately.';
+      } catch (error) { area.textContent = String(error); }
+    }
+
+    async function searchIndexedDocuments() {
+      const area = document.getElementById('text-search-results');
+      area.textContent = 'Searching ...';
+      try {
+        const data = await casePost('/api/search-text', {
+          query: document.getElementById('text-query').value.trim(),
+        });
+        area.replaceChildren();
+        const info = document.createElement('p');
+        info.textContent = (data.matches || []).length + ' matching pages from ' +
+          data.indexed_files + ' verified indexed documents.';
+        area.appendChild(info);
+        for (const hit of data.matches || []) {
+          const row = document.createElement('div');
+          row.style.cssText = 'padding:10px;border-bottom:1px solid #7774';
+          const description = document.createElement('p');
+          description.textContent = hit.file_id + ' · ' + hit.original_name +
+            ' · page ' + hit.page + ': ' + hit.excerpt;
+          const selected = document.createElement('button');
+          selected.type = 'button';
+          selected.className = 'ghost';
+          selected.textContent = 'Use source for claim';
+          selected.addEventListener('click', () => {
+            document.getElementById('claim-file-id').value = hit.file_id;
+            document.getElementById('claim-page').value = hit.page;
+            document.getElementById('claim-quote').value = hit.excerpt.trim().slice(0,500);
+            document.getElementById('claim-statement').focus();
+          });
+          row.appendChild(description); row.appendChild(selected); area.appendChild(row);
+        }
+      } catch (error) { area.textContent = String(error); }
+    }
+
+    async function saveSourcedClaim() {
+      const area = document.getElementById('claim-results');
+      try {
+        const row = await casePost('/api/add-claim', {
+          file_id: document.getElementById('claim-file-id').value.trim(),
+          page: Number(document.getElementById('claim-page').value),
+          quote: document.getElementById('claim-quote').value,
+          statement: document.getElementById('claim-statement').value,
+        });
+        appendLog('Created draft claim ' + row.claim_id);
+        await loadSourcedClaims();
+        await loadEvidenceGraph();
+      } catch (error) { area.textContent = String(error); }
+    }
+
+    async function loadSourcedClaims() {
+      const area = document.getElementById('claim-results');
+      try {
+        const response = await fetch('/api/claims');
+        const data = await response.json();
+        area.replaceChildren();
+        if (!(data.claims || []).length) {
+          area.textContent = 'No source-linked claims yet.';
+          return;
+        }
+        for (const claim of data.claims || []) {
+          const item = document.createElement('div');
+          item.style.cssText = 'padding:12px;border-bottom:1px solid #7774';
+          const description = document.createElement('p');
+          description.textContent = claim.claim_id + ' · ' + claim.file_id +
+            ' page ' + claim.source_page + ' · ' + claim.review_status +
+            '\\nQuote: ' + claim.source_quote + '\\nStatement: ' + claim.statement;
+          description.style.whiteSpace = 'pre-wrap';
+          item.appendChild(description);
+          const status = document.createElement('select');
+          for (const s of ['draft','needs_review','reviewed']) {
+            const option = document.createElement('option');
+            option.value = s; option.textContent = s;
+            option.selected = s === claim.review_status;
+            status.appendChild(option);
+          }
+          const save = document.createElement('button');
+          save.type = 'button'; save.className = 'secondary';
+          save.textContent = 'Update review status';
+          save.addEventListener('click', async () => {
+            try {
+              await casePost('/api/review-claim', {claim_id:claim.claim_id, status:status.value});
+              await loadSourcedClaims();
+            } catch (error) { appendLog(String(error)); }
+          });
+          item.appendChild(status);item.appendChild(save);area.appendChild(item);
+        }
+      } catch (error) { area.textContent = String(error); }
+    }
+
+    async function addClaimComparison() {
+      const area = document.getElementById('claim-comparisons');
+      try {
+        await casePost('/api/add-comparison', {
+          claim_id: document.getElementById('compare-claim-id').value.trim(),
+          topic: document.getElementById('compare-topic').value.trim(),
+          kind: document.getElementById('compare-kind').value,
+          value: document.getElementById('compare-value').value.trim()
+        });
+        await loadClaimComparisons();
+      await loadCaseAudit();
+      await loadCaseTasks();
+      } catch (error) { area.textContent = String(error); }
+    }
+
+    async function createCaseTask() {
+      const area = document.getElementById('task-board');
+      try {
+        await casePost('/api/add-task', {
+          title: document.getElementById('task-title').value.trim(),
+          due_date: document.getElementById('task-date').value,
+          priority: document.getElementById('task-priority').value,
+          linked_file_ids: document.getElementById('task-files').value.trim()
+        });
+        document.getElementById('task-title').value = '';
+        await loadCaseTasks();
+      } catch(error) { area.textContent = String(error); }
+    }
+
+    async function loadCaseTasks() {
+      const area = document.getElementById('task-board');
+      try {
+        const response = await fetch('/api/tasks');
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Tasks unavailable');
+        area.replaceChildren();
+        const note = document.createElement('p');
+        note.textContent = data.as_of + ' · ' + data.note;
+        area.appendChild(note);
+        for (const task of data.tasks || []) {
+          const row = document.createElement('div');
+          row.style.cssText = 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px;border-bottom:1px solid #7774';
+          const label = document.createElement('span');
+          label.textContent = task.title + ' · ' + (task.due_date || 'No date') +
+            ' · ' + task.date_indicator + ' · ' + task.priority +
+            (task.linked_file_ids ? ' · ' + task.linked_file_ids : '');
+          const select = document.createElement('select');
+          select.style.maxWidth = '155px';
+          for (const status of ['open','in_progress','done','cancelled']) {
+            const choice = document.createElement('option');
+            choice.value = status; choice.textContent = status;
+            choice.selected = task.status === status; select.appendChild(choice);
+          }
+          const save = document.createElement('button');
+          save.type = 'button'; save.className = 'secondary'; save.textContent = 'Update';
+          save.addEventListener('click', async () => {
+            try {
+              await casePost('/api/update-task', {task_id: task.task_id, status:select.value});
+              await loadCaseTasks();
+            } catch(error) { area.textContent = String(error); }
+          });
+          row.appendChild(label);row.appendChild(select);row.appendChild(save);area.appendChild(row);
+        }
+        if (!(data.tasks || []).length) {
+          const empty = document.createElement('p');
+          empty.textContent = 'No reminders in this case.';
+          area.appendChild(empty);
+        }
+      } catch(error) { area.textContent = String(error); }
+    }
+
+    async function prepareAiHandoff() {
+      const area = document.getElementById('ai-review-result');
+      const raw = document.getElementById('ai-source-ids').value.trim();
+      const files = raw.split(',').map(x => x.trim()).filter(Boolean);
+      if (!window.confirm('Private text excerpts will be written to the selected case working folder. Continue?')) return;
+      try {
+        const output = await casePost('/api/prepare-ai-review', {file_ids:files});
+        area.textContent = 'Saved local packet: ' + output.path +
+          '. Nothing transmitted. Handle private source excerpts carefully.';
+      } catch(error) { area.textContent = String(error); }
+    }
+
+    async function importAiResponse() {
+      const area = document.getElementById('ai-review-result');
+      try {
+        const parsed = JSON.parse(document.getElementById('ai-response-json').value);
+        const outcome = await casePost('/api/import-ai-review', parsed);
+        area.textContent = outcome.accepted_as_pending + ' proposals awaiting manual review.';
+        await loadAiSuggestions();
+      } catch(error) { area.textContent = String(error); }
+    }
+
+    async function loadAiSuggestions() {
+      const area = document.getElementById('ai-review-result');
+      try {
+        const response = await fetch('/api/ai-suggestions');
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Suggestions unavailable');
+        area.replaceChildren();
+        for (const entry of data.suggestions || []) {
+          const card = document.createElement('div');
+          card.style.cssText = 'border-bottom:1px solid #7774;padding:12px';
+          const line = document.createElement('p');
+          line.textContent = entry.file_id + ' · page ' + entry.page + ' · ' + entry.status +
+            ' · exact quote: ' + entry.source_quote + ' · draft: ' + entry.statement;
+          card.appendChild(line);
+          if (entry.status === 'pending_review') {
+            for (const choice of [
+              {decision:'reject',label:'Reject'},
+              {decision:'create_draft_claim',label:'Create draft claim'}
+            ]) {
+              const button = document.createElement('button');
+              button.type='button'; button.className='secondary';button.textContent=choice.label;
+              button.addEventListener('click', async () => {
+                try {
+                  await casePost('/api/review-ai-suggestion', {
+                    suggestion_id:entry.suggestion_id, decision:choice.decision
+                  });
+                  await loadAiSuggestions(); await loadSourcedClaims();
+                } catch(error) { area.textContent = String(error); }
+              });
+              card.appendChild(button);
+            }
+          }
+          area.appendChild(card);
+        }
+        if (!(data.suggestions || []).length) area.textContent = 'No AI suggestions imported.';
+      } catch(error) { area.textContent = String(error); }
+    }
+
+    async function loadCaseAudit() {
+      const root = document.getElementById('case-audit');
+      try {
+        const response = await fetch('/api/audit-history');
+        const data = await response.json();
+        root.replaceChildren();
+        for (const item of data.changes || []) {
+          const line = document.createElement('p');
+          line.textContent = item.at + ' · ' + item.area + ' · ' +
+            item.row_count + ' rows · ' + item.change_id;
+          root.appendChild(line);
+        }
+        if (!(data.changes || []).length) root.textContent = 'No saved edits recorded yet.';
+      } catch(error) { root.textContent = String(error); }
+    }
+
+    async function loadClaimComparisons() {
+      const area = document.getElementById('claim-comparisons');
+      try {
+        const response = await fetch('/api/claim-comparisons');
+        const data = await response.json();
+        area.replaceChildren();
+        const intro = document.createElement('p');
+        intro.textContent = (data.records || []).length + ' registered comparisons · ' +
+          (data.review_candidates || []).length + ' possible discrepancies.';
+        area.appendChild(intro);
+        for (const group of data.review_candidates || []) {
+          const div = document.createElement('div');
+          div.style.cssText = 'padding:12px;border-bottom:1px solid #7774';
+          const title = document.createElement('strong');
+          title.textContent = group.topic + ' (' + group.kind + '): review suggested';
+          div.appendChild(title);
+          for (const source of group.sources || []) {
+            const line = document.createElement('p');
+            line.textContent = source.claim_id + ' / ' + source.file_id +
+              ': ' + source.value + ' [' + source.claim_review_status + ']';
+            div.appendChild(line);
+          }
+          area.appendChild(div);
+        }
+      } catch (error) { area.textContent = String(error); }
+    }
+
+    async function loadEvidenceGraph() {
+      const response = await fetch('/api/evidence-graph');
+      const data = await response.json();
+      const root = document.getElementById('evidence-graph');
+      root.replaceChildren();
+      const nodes = (data.nodes || []).slice(0, 60);
+      const edges = data.edges || [];
+      if (!nodes.length) {
+        root.textContent = 'No linked evidence registered yet.';
+        return;
+      }
+      const ns = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(ns, 'svg');
+      svg.setAttribute('viewBox', '0 0 760 420');
+      svg.setAttribute('role', 'img');
+      svg.setAttribute('aria-label', 'Document, event and entity relationship map');
+      svg.style.cssText = 'width:100%;min-width:540px;height:auto;max-height:560px';
+      const columns = {document: 105, event: 380, entity: 655};
+      const counts = {document:0, event:0, entity:0};
+      const points = {};
+      for (const node of nodes) {
+        const n = counts[node.kind]++;
+        const x = columns[node.kind] || 380;
+        const y = 28 + (n % 10) * 38;
+        points[node.id] = [x, y];
+      }
+      for (const edge of edges) {
+        const a = points[edge.source], b = points[edge.target];
+        if (!a || !b) continue;
+        const line = document.createElementNS(ns, 'line');
+        for (const [key, value] of Object.entries({x1:a[0],y1:a[1],x2:b[0],y2:b[1]})) line.setAttribute(key, value);
+        line.setAttribute('stroke', '#b89a65');
+        line.setAttribute('stroke-opacity', '0.5');
+        line.setAttribute('stroke-width', '1.5');
+        svg.appendChild(line);
+      }
+      for (const node of nodes) {
+        const [x,y] = points[node.id];
+        const circle = document.createElementNS(ns, 'circle');
+        circle.setAttribute('cx',x);circle.setAttribute('cy',y);circle.setAttribute('r','7');
+        circle.setAttribute('fill', node.kind === 'document' ? '#93c5fd' : node.kind === 'event' ? '#fbbf24' : '#86efac');
+        const title = document.createElementNS(ns, 'title');
+        title.textContent = node.kind + ': ' + node.label;
+        circle.appendChild(title);svg.appendChild(circle);
+        const label = document.createElementNS(ns, 'text');
+        label.setAttribute('x', x + 11); label.setAttribute('y', y + 4);
+        label.setAttribute('fill', 'currentColor'); label.setAttribute('font-size', '11');
+        label.textContent = String(node.label || node.id).slice(0,22);
+        svg.appendChild(label);
+      }
+      root.appendChild(svg);
+      const note = document.createElement('p');
+      note.textContent = 'Links: ' + edges.length + ' · unresolved: ' + (data.unresolved || []).length +
+        ((data.truncated || data.total_nodes > nodes.length) ? ' · showing a limited view' : '');
+      root.appendChild(note);
+    }
+
+    async function loadIntegrityHistory() {
+      const response = await fetch('/api/integrity-history');
+      const data = await response.json();
+      const root = document.getElementById('integrity-history');
+      root.textContent = (data.runs || []).length
+        ? (data.runs || []).map(row => row.at + ' · ' + row.checked + ' checked · ' + JSON.stringify(row.counts)).join('\\n')
+        : 'No verification runs recorded yet.';
+      root.style.whiteSpace = 'pre-wrap';
+    }
+
     async function loadExportHistory() {
       const response = await fetch('/api/export-history');
       const data = await response.json();
@@ -512,8 +1128,13 @@ HTML = """<!doctype html>
       await loadTimeline();
       await loadEntities();
       await loadExportHistory();
+      await loadEvidenceGraph();
+      await loadIntegrityHistory();
+      await loadClaimComparisons();
+      await loadSourcedClaims();
     }
 
+    loadCaseHub();
     refreshAll();
   </script>
 </body>
@@ -777,9 +1398,18 @@ def _json_bytes(payload: dict[str, object]) -> bytes:
 
 
 def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True) -> int:
+    if not allowed_ui_host(host):
+        raise ValueError("The private case UI may only bind to localhost; no authentication is implemented")
     create_local_workspace()
 
+    active_case = get_active_case()
+
     class Handler(BaseHTTPRequestHandler):
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            # ThreadingHTTPServer creates new threads; explicitly rebind selected case.
+            with using_case(active_case):
+                super().__init__(*args, **kwargs)
+
         def _send(self, code: int, content_type: str, body: bytes) -> None:
             self.send_response(code)
             self.send_header("Content-Type", content_type)
@@ -788,9 +1418,25 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
             self.wfile.write(body)
 
         def do_GET(self) -> None:
+            try:
+                chosen = requested_case(self.headers.get("X-LCO-Case"), active_case, get_repo_root())
+            except (ValueError, OSError) as exc:
+                self._send(400, "application/json; charset=utf-8", _json_bytes({"error": str(exc)}))
+                return
+            with using_case(chosen):
+                self._handle_get()
+
+        def _handle_get(self) -> None:
             parsed = urlparse(self.path)
             if parsed.path == "/":
-                self._send(200, "text/html; charset=utf-8", HTML.encode("utf-8"))
+                label = html.escape(get_active_case() or "legacy-default", quote=True)
+                page = HTML.replace("</h1>", "</h1><p class='note'>Active case: " + label + "</p>", 1)
+                self._send(200, "text/html; charset=utf-8", page.encode("utf-8"))
+                return
+            if parsed.path == "/api/cases":
+                self._send(200, "application/json; charset=utf-8",
+                           _json_bytes({"selected_case": get_active_case() or "legacy-default",
+                                        "cases": list_cases(get_repo_root())}))
                 return
             if parsed.path == "/api/status":
                 self._send(200, "application/json; charset=utf-8", _json_bytes(_status_payload()))
@@ -804,14 +1450,68 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
             if parsed.path == "/api/entity-data":
                 self._send(200, "application/json; charset=utf-8", _json_bytes(_entity_data_payload()))
                 return
+            if parsed.path == "/api/evidence-graph":
+                self._send(200, "application/json; charset=utf-8", _json_bytes(evidence_graph()))
+                return
+            if parsed.path == "/api/integrity-history":
+                self._send(200, "application/json; charset=utf-8", _json_bytes({"runs": recent_integrity_runs()}))
+                return
+            if parsed.path == "/api/ai-suggestions":
+                self._send(200, "application/json; charset=utf-8",
+                           _json_bytes({"suggestions": read_ai_suggestions()}))
+                return
+            if parsed.path == "/api/tasks":
+                self._send(200, "application/json; charset=utf-8", _json_bytes(task_board()))
+                return
+            if parsed.path == "/api/audit-history":
+                self._send(200, "application/json; charset=utf-8", _json_bytes({"changes": recent_changes()}))
+                return
+            if parsed.path == "/api/claim-comparisons":
+                self._send(200, "application/json; charset=utf-8", _json_bytes(comparison_report()))
+                return
+            if parsed.path == "/api/claims":
+                self._send(200, "application/json; charset=utf-8", _json_bytes({"claims": read_claims()}))
+                return
+            if parsed.path == "/api/dossier-preview":
+                self._send(200, "application/json; charset=utf-8", _json_bytes(dossier_preview()))
+                return
             if parsed.path == "/api/export-history":
                 self._send(200, "application/json; charset=utf-8", _json_bytes(_export_history_payload()))
                 return
             self._send(404, "application/json; charset=utf-8", _json_bytes({"error": "not found"}))
 
         def do_POST(self) -> None:
+            if not allow_local_post(self.headers):
+                self._send(403, "application/json; charset=utf-8",
+                           _json_bytes({"error": "Same-origin local UI request required"}))
+                return
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+            except ValueError:
+                length = -1
+            if length < 0 or length > 32 * 1024 * 1024:
+                self._send(413, "application/json; charset=utf-8",
+                           _json_bytes({"error": "Request exceeds local size limit"}))
+                return
+            try:
+                chosen = requested_case(self.headers.get("X-LCO-Case"), active_case, get_repo_root())
+            except (ValueError, OSError) as exc:
+                self._send(400, "application/json; charset=utf-8", _json_bytes({"error": str(exc)}))
+                return
+            with using_case(chosen):
+                self._handle_post()
+
+        def _handle_post(self) -> None:
             parsed = urlparse(self.path)
-            if parsed.path == "/api/setup":
+            if parsed.path == "/api/create-case":
+                try:
+                    body = _read_json_body(self)
+                    payload = create_case(get_repo_root(), str(body.get("case_id", "")),
+                                          str(body.get("title", "")))
+                except (ValueError, OSError, FileExistsError, TypeError) as exc:
+                    self._send(400, "application/json; charset=utf-8", _json_bytes({"error": str(exc)}))
+                    return
+            elif parsed.path == "/api/setup":
                 payload = {"created": describe_workspace(create_local_workspace())}
             elif parsed.path == "/api/upload":
                 payload = _save_uploaded_files(self)
@@ -827,6 +1527,57 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
                 payload = _save_timeline_payload(self)
             elif parsed.path == "/api/save-entities":
                 payload = _save_entities_payload(self)
+            elif parsed.path == "/api/verify-integrity":
+                payload = verify_integrity()
+            elif parsed.path == "/api/propose-events":
+                payload = propose_events()
+            elif parsed.path == "/api/accept-candidate":
+                body = _read_json_body(self)
+                try:
+                    payload = accept_candidate(str(body.get("candidate_id", "")))
+                except ValueError as exc:
+                    self._send(400, "application/json; charset=utf-8", _json_bytes({"error": str(exc)}))
+                    return
+            elif parsed.path in {"/api/index-document", "/api/search-text", "/api/add-claim", "/api/review-claim", "/api/add-comparison", "/api/add-task", "/api/update-task", "/api/prepare-ai-review", "/api/import-ai-review", "/api/review-ai-suggestion"}:
+                try:
+                    body = _read_json_body(self)
+                    if parsed.path == "/api/prepare-ai-review":
+                        payload = prepare_ai_packet(body.get("file_ids", []))
+                    elif parsed.path == "/api/import-ai-review":
+                        payload = import_ai_suggestions(body)
+                    elif parsed.path == "/api/review-ai-suggestion":
+                        payload = review_ai_suggestion(str(body.get("suggestion_id", "")),
+                                                       str(body.get("decision", "")))
+                    elif parsed.path == "/api/add-task":
+                        payload = add_task(str(body.get("title", "")), str(body.get("due_date", "")),
+                                           str(body.get("priority", "normal")),
+                                           str(body.get("linked_file_ids", "")),
+                                           str(body.get("note", "")))
+                    elif parsed.path == "/api/update-task":
+                        payload = update_task(str(body.get("task_id", "")),
+                                              str(body.get("status", "")))
+                    elif parsed.path == "/api/add-comparison":
+                        payload = add_comparison(str(body.get("claim_id", "")),
+                                                 str(body.get("topic", "")),
+                                                 str(body.get("kind", "")),
+                                                 str(body.get("value", "")))
+                    elif parsed.path == "/api/index-document":
+                        payload = index_document(str(body.get("file_id", "")),
+                                                 use_ocr=body.get("use_ocr") is True)
+                    elif parsed.path == "/api/search-text":
+                        payload = search_text(str(body.get("query", "")))
+                    elif parsed.path == "/api/add-claim":
+                        payload = add_claim(
+                            str(body.get("file_id", "")), body.get("page"),
+                            body.get("quote", ""), body.get("statement", "")
+                        )
+                    else:
+                        payload = set_review_status(str(body.get("claim_id", "")),
+                                                    str(body.get("status", "")))
+                except (ValueError, TypeError, OSError) as exc:
+                    self._send(400, "application/json; charset=utf-8",
+                               _json_bytes({"error": str(exc)}))
+                    return
             elif parsed.path == "/api/export-package":
                 export_dir = build_export_package()
                 payload = {
