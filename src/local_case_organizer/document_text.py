@@ -210,8 +210,16 @@ def get_indexed(file_id: str, *, verify_original: bool = False) -> dict:
     if not target.is_file() or target.is_symlink() or target.stat().st_size > 800_000:
         raise ValueError("Document has no valid local text index")
     data = json.loads(target.read_text(encoding="utf-8"))
-    if data.get("version") != 1 or data.get("file_id") != file_id or not isinstance(data.get("pages"), list):
+    if not isinstance(data, dict) or data.get("version") != 1 or data.get("file_id") != file_id or not isinstance(data.get("pages"), list):
         raise ValueError("Local text index is invalid")
+    if len(data["pages"]) > MAX_PAGES or any(
+        not isinstance(page, dict)
+        or not isinstance(page.get("page"), int)
+        or not isinstance(page.get("text"), str)
+        or len(page["text"]) > MAX_PAGE_CHARS
+        for page in data["pages"]
+    ):
+        raise ValueError("Local text index has invalid page structure")
     if verify_original:
         _, provenance = _source_for(file_id)
         if str(provenance["sha256"]).lower() != data.get("source_sha256"):

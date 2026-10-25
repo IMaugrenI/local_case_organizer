@@ -94,3 +94,15 @@ def test_rejects_forged_id_or_page(tmp_path, monkeypatch):
         add_claim("DOC-1", 3, "Evidence quote", "An interpretation")
     with pytest.raises(ValueError):
         index_document("../escape")
+
+
+def test_corrupted_index_is_rejected(tmp_path, monkeypatch):
+    root = tmp_path / "repo"
+    monkeypatch.setattr(paths, "get_repo_root", lambda: root)
+    _imported(root, "DOC-1", "note.txt", b"Quote of evidence.")
+    index_document("DOC-1")
+    from local_case_organizer.document_text import _index_path
+    target = _index_path("DOC-1")
+    target.write_text('{"version":1,"file_id":"DOC-1","pages":["corrupted"]}', encoding="utf-8")
+    with pytest.raises(ValueError, match="invalid page structure"):
+        get_indexed("DOC-1")

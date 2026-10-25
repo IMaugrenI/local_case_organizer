@@ -53,7 +53,8 @@ def selected_data_root(root: Path) -> Path:
         return root
     base = _case_base(root, active)
     protected = ("data", "data/inbox", "data/originals", "data/register",
-                 "data/working", "exports", "logs", "workspace", "case.json")
+                 "data/working", "data/working/text_index",
+                 "exports", "logs", "workspace", "case.json")
     if any((base / name).is_symlink() for name in protected):
         raise ValueError("Case workspace paths cannot be symlinks")
     if not (base / "case.json").is_file():

@@ -88,3 +88,19 @@ def test_case_symlink_alias_is_blocked(tmp_path, monkeypatch):
     with using_case("alpha"):
         with pytest.raises(ValueError, match="symlinks"):
             paths.get_workspace_paths()
+
+
+def test_case_text_index_symlink_is_blocked(tmp_path, monkeypatch):
+    root = tmp_path / "repo"
+    monkeypatch.setattr(paths, "get_repo_root", lambda: root)
+    create_case(root, "alpha")
+    create_case(root, "beta")
+    a = root / "cases" / "alpha" / "data" / "working" / "text_index"
+    destination = root / "cases" / "beta" / "data" / "working"
+    try:
+        a.symlink_to(destination, target_is_directory=True)
+    except OSError:
+        pytest.skip("Symlinks unavailable")
+    with using_case("alpha"):
+        with pytest.raises(ValueError, match="symlinks"):
+            paths.get_workspace_paths()
