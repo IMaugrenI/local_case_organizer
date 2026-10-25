@@ -8,6 +8,8 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+from local_case_organizer.cases import create_case, get_active_case, list_cases, using_case
+from local_case_organizer.integrity import verify_integrity
 from local_case_organizer.export.builder import build_export_package
 from local_case_organizer.imports.ingest import import_sources
 from local_case_organizer.paths import create_local_workspace, describe_workspace, get_workspace_paths
@@ -21,7 +23,14 @@ def build_parser() -> argparse.ArgumentParser:
         prog="local_case_organizer",
         description="Local, cloud-free dossier organizer for structured case work.",
     )
+    parser.add_argument("--case", default=None, help="Explicitly select an isolated case ID; default keeps legacy workspace")
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    new_case = subparsers.add_parser("create-case", help="Create a new isolated local case")
+    new_case.add_argument("case_id", help="Lowercase identifier for this case")
+    new_case.add_argument("--title", default="", help="Optional local display title")
+    subparsers.add_parser("list-cases", help="List locally registered case IDs")
+    subparsers.add_parser("verify-integrity", help="Explicitly verify original document hashes")
 
     subparsers.add_parser("setup", aliases=["init-workspace"], help="Prepare ignored local workspace folders")
     subparsers.add_parser("check", help="Show repository and local workspace status")
@@ -122,6 +131,7 @@ def cmd_status() -> int:
         "timestamp_utc": payload["timestamp_utc"],
         "python": sys.version.split()[0],
         "platform": platform.platform(),
+        "active_case": get_active_case() or "legacy-default",
         "inbox_file_count": _count_files(paths.inbox_dir),
         "original_file_count": _count_files(paths.originals_dir),
         "import_batches": _count_directories(paths.originals_dir),
@@ -194,7 +204,20 @@ def cmd_export_package() -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    with using_case(args.case):
+        return _dispatch(args)
 
+
+def _dispatch(args: argparse.Namespace) -> int:
+    if args.command == "create-case":
+        print(json.dumps(create_case(get_workspace_paths().repo_root, args.case_id, args.title), indent=2))
+        return 0
+    if args.command == "list-cases":
+        print(json.dumps({"cases": list_cases(get_workspace_paths().repo_root)}, indent=2))
+        return 0
+    if args.command == "verify-integrity":
+        print(json.dumps(verify_integrity(), indent=2))
+        return 0
     if args.command in {"setup", "init-workspace"}:
         return cmd_setup()
     if args.command == "check":

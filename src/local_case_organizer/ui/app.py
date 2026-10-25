@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import cgi
+import html
 import json
 import os
 import platform
@@ -13,6 +14,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
+from local_case_organizer.cases import get_active_case, using_case
+from local_case_organizer.graph import evidence_graph
+from local_case_organizer.integrity import recent_integrity_runs, verify_integrity
 from local_case_organizer.entities.store import ENTITY_FIELDS, read_entity_rows, write_entity_rows
 from local_case_organizer.export.builder import build_export_package
 from local_case_organizer.export.history import read_export_history
@@ -146,6 +150,23 @@ HTML = """<!doctype html>
       <div class=\"hint\">Use <code>linked_file_ids</code> to connect people, institutions, or companies to file IDs from the register.</div>
       <div id=\"entity-file-hints\" class=\"hint\">Known file IDs will appear here after the register is loaded.</div>
       <div id=\"entity-editor\" class=\"hint\">Entities will appear here.</div>
+    </div>
+
+    <h2 class=\"section-title\">Verified links / Evidence map</h2>
+    <div class=\"editor\">
+      <div class=\"editor-actions\"><button onclick=\"loadEvidenceGraph()\">Refresh evidence map</button></div>
+      <p class=\"hint\">Only explicitly entered relationships are shown. Links are not judgments of factual or legal truth.</p>
+      <div id=\"evidence-graph\" aria-live=\"polite\"></div>
+    </div>
+
+    <h2 class=\"section-title\">Integrity checks</h2>
+    <div class=\"editor\">
+      <div class=\"editor-actions\">
+        <button onclick=\"runAction(\'verify-integrity\')\">Verify original files now</button>
+        <button class=\"secondary\" onclick=\"loadIntegrityHistory()\">Show verification history</button>
+      </div>
+      <p class=\"hint\">Manual, read-only hash verification. Results are recorded in a local append-only journal.</p>
+      <div id=\"integrity-history\" class=\"hint\"></div>
     </div>
 
     <h2 class=\"section-title\">Export history</h2>
@@ -463,6 +484,73 @@ HTML = """<!doctype html>
       await refreshStatus();
     }
 
+    async function loadEvidenceGraph() {
+      const response = await fetch('/api/evidence-graph');
+      const data = await response.json();
+      const root = document.getElementById('evidence-graph');
+      root.replaceChildren();
+      const nodes = (data.nodes || []).slice(0, 60);
+      const edges = data.edges || [];
+      if (!nodes.length) {
+        root.textContent = 'No linked evidence registered yet.';
+        return;
+      }
+      const ns = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(ns, 'svg');
+      svg.setAttribute('viewBox', '0 0 760 420');
+      svg.setAttribute('role', 'img');
+      svg.setAttribute('aria-label', 'Document, event and entity relationship map');
+      svg.style.cssText = 'width:100%;min-width:540px;height:auto;max-height:560px';
+      const columns = {document: 105, event: 380, entity: 655};
+      const counts = {document:0, event:0, entity:0};
+      const points = {};
+      for (const node of nodes) {
+        const n = counts[node.kind]++;
+        const x = columns[node.kind] || 380;
+        const y = 28 + (n % 10) * 38;
+        points[node.id] = [x, y];
+      }
+      for (const edge of edges) {
+        const a = points[edge.source], b = points[edge.target];
+        if (!a || !b) continue;
+        const line = document.createElementNS(ns, 'line');
+        for (const [key, value] of Object.entries({x1:a[0],y1:a[1],x2:b[0],y2:b[1]})) line.setAttribute(key, value);
+        line.setAttribute('stroke', '#b89a65');
+        line.setAttribute('stroke-opacity', '0.5');
+        line.setAttribute('stroke-width', '1.5');
+        svg.appendChild(line);
+      }
+      for (const node of nodes) {
+        const [x,y] = points[node.id];
+        const circle = document.createElementNS(ns, 'circle');
+        circle.setAttribute('cx',x);circle.setAttribute('cy',y);circle.setAttribute('r','7');
+        circle.setAttribute('fill', node.kind === 'document' ? '#93c5fd' : node.kind === 'event' ? '#fbbf24' : '#86efac');
+        const title = document.createElementNS(ns, 'title');
+        title.textContent = node.kind + ': ' + node.label;
+        circle.appendChild(title);svg.appendChild(circle);
+        const label = document.createElementNS(ns, 'text');
+        label.setAttribute('x', x + 11); label.setAttribute('y', y + 4);
+        label.setAttribute('fill', 'currentColor'); label.setAttribute('font-size', '11');
+        label.textContent = String(node.label || node.id).slice(0,22);
+        svg.appendChild(label);
+      }
+      root.appendChild(svg);
+      const note = document.createElement('p');
+      note.textContent = 'Links: ' + edges.length + ' · unresolved: ' + (data.unresolved || []).length +
+        ((data.truncated || data.total_nodes > nodes.length) ? ' · showing a limited view' : '');
+      root.appendChild(note);
+    }
+
+    async function loadIntegrityHistory() {
+      const response = await fetch('/api/integrity-history');
+      const data = await response.json();
+      const root = document.getElementById('integrity-history');
+      root.textContent = (data.runs || []).length
+        ? (data.runs || []).map(row => row.at + ' · ' + row.checked + ' checked · ' + JSON.stringify(row.counts)).join('\n')
+        : 'No verification runs recorded yet.';
+      root.style.whiteSpace = 'pre-wrap';
+    }
+
     async function loadExportHistory() {
       const response = await fetch('/api/export-history');
       const data = await response.json();
@@ -512,6 +600,8 @@ HTML = """<!doctype html>
       await loadTimeline();
       await loadEntities();
       await loadExportHistory();
+      await loadEvidenceGraph();
+      await loadIntegrityHistory();
     }
 
     refreshAll();
@@ -779,7 +869,14 @@ def _json_bytes(payload: dict[str, object]) -> bytes:
 def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True) -> int:
     create_local_workspace()
 
+    active_case = get_active_case()
+
     class Handler(BaseHTTPRequestHandler):
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            # ThreadingHTTPServer creates new threads; explicitly rebind selected case.
+            with using_case(active_case):
+                super().__init__(*args, **kwargs)
+
         def _send(self, code: int, content_type: str, body: bytes) -> None:
             self.send_response(code)
             self.send_header("Content-Type", content_type)
@@ -790,7 +887,9 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
         def do_GET(self) -> None:
             parsed = urlparse(self.path)
             if parsed.path == "/":
-                self._send(200, "text/html; charset=utf-8", HTML.encode("utf-8"))
+                label = html.escape(active_case or "legacy-default", quote=True)
+                page = HTML.replace("</h1>", "</h1><p class='note'>Active case: " + label + "</p>", 1)
+                self._send(200, "text/html; charset=utf-8", page.encode("utf-8"))
                 return
             if parsed.path == "/api/status":
                 self._send(200, "application/json; charset=utf-8", _json_bytes(_status_payload()))
@@ -803,6 +902,12 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
                 return
             if parsed.path == "/api/entity-data":
                 self._send(200, "application/json; charset=utf-8", _json_bytes(_entity_data_payload()))
+                return
+            if parsed.path == "/api/evidence-graph":
+                self._send(200, "application/json; charset=utf-8", _json_bytes(evidence_graph()))
+                return
+            if parsed.path == "/api/integrity-history":
+                self._send(200, "application/json; charset=utf-8", _json_bytes({"runs": recent_integrity_runs()}))
                 return
             if parsed.path == "/api/export-history":
                 self._send(200, "application/json; charset=utf-8", _json_bytes(_export_history_payload()))
@@ -827,6 +932,8 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
                 payload = _save_timeline_payload(self)
             elif parsed.path == "/api/save-entities":
                 payload = _save_entities_payload(self)
+            elif parsed.path == "/api/verify-integrity":
+                payload = verify_integrity()
             elif parsed.path == "/api/export-package":
                 export_dir = build_export_package()
                 payload = {

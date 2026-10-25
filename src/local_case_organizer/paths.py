@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from local_case_organizer.cases import selected_data_root
+
 
 @dataclass(frozen=True)
 class WorkspacePaths:
@@ -24,7 +26,8 @@ def get_repo_root() -> Path:
 
 def get_workspace_paths(repo_root: Path | None = None) -> WorkspacePaths:
     root = repo_root or get_repo_root()
-    data_dir = root / "data"
+    private_root = selected_data_root(root)
+    data_dir = private_root / "data"
     return WorkspacePaths(
         repo_root=root,
         data_dir=data_dir,
@@ -32,9 +35,9 @@ def get_workspace_paths(repo_root: Path | None = None) -> WorkspacePaths:
         originals_dir=data_dir / "originals",
         working_dir=data_dir / "working",
         register_dir=data_dir / "register",
-        exports_dir=root / "exports",
-        logs_dir=root / "logs",
-        workspace_dir=root / "workspace",
+        exports_dir=private_root / "exports",
+        logs_dir=private_root / "logs",
+        workspace_dir=private_root / "workspace",
         profiles_dir=root / "profiles",
     )
 

@@ -74,3 +74,14 @@ Target:
 - simple download package
 - starter files per operating system
 - short offline user guide inside the release package
+
+
+## CASE-A1 (development branch) – case workspaces, provenance and links
+
+- Legacy single-case workspace remains the default without migration.
+- Explicit create-case/list-cases and --case select private, isolated workspaces.
+- UI runs for one selected case per process; it does not silently switch scopes.
+- Verify-integrity is manual only; source originals are never modified.
+- A local append-only journal records verification results by file ID (no file contents).
+- Evidence map displays only manually entered document-event-entity links.
+- These are development features, not an operator acceptance or legal assessment.
