@@ -34,12 +34,15 @@ def _date_iso(raw: str) -> str | None:
     return when.date().isoformat()
 
 
-def _file_lines(path: Path) -> list[str]:
-    if path.stat().st_size > MAX_READ_BYTES:
-        raise ValueError("too_large")
+def _verified_lines(path: Path, expected_sha256: str) -> list[str]:
+    # Single bounded read: the bytes parsed are exactly the bytes hash-verified.
     with path.open("rb") as stream:
         raw = stream.read(MAX_READ_BYTES + 1)
-    if len(raw) > MAX_READ_BYTES or b"\x00" in raw:
+    if len(raw) > MAX_READ_BYTES:
+        raise ValueError("too_large")
+    if hashlib.sha256(raw).hexdigest() != expected_sha256:
+        raise ValueError("integrity_mismatch")
+    if b"\x00" in raw:
         raise ValueError("unsupported_content")
     try:
         text = raw.decode("utf-8-sig")
@@ -77,12 +80,7 @@ def propose_events() -> dict[str, object]:
             continue
         try:
             source = _resolve_original_path(paths.originals_dir, relative_path)
-            if source.stat().st_size > MAX_READ_BYTES:
-                raise ValueError("too_large")
-            raw = source.read_bytes()
-            if hashlib.sha256(raw).hexdigest() != expected:
-                raise ValueError("integrity_mismatch")
-            lines = _file_lines(source)
+            lines = _verified_lines(source, expected)
         except (OSError, ValueError, RuntimeError) as exc:
             reason = str(exc)
             if not reason.startswith(("too_large", "integrity_mismatch", "non_utf8", "unsupported_content")):
