@@ -23,6 +23,7 @@ from local_case_organizer.graph import evidence_graph
 from local_case_organizer.integrity import recent_integrity_runs, verify_integrity
 from local_case_organizer.entities.store import ENTITY_FIELDS, read_entity_rows, write_entity_rows
 from local_case_organizer.export.builder import build_export_package
+from local_case_organizer.export.dossier import dossier_preview
 from local_case_organizer.export.history import read_export_history
 from local_case_organizer.imports.ingest import import_sources
 from local_case_organizer.paths import create_local_workspace, describe_workspace, get_workspace_paths
@@ -108,7 +109,10 @@ HTML = """<!doctype html>
       <button onclick=\"runAction('build-register')\">3. Build register</button>
       <button onclick=\"runAction('build-timeline')\">4. Build timeline</button>
       <button class=\"secondary\" onclick=\"runAction('export-package')\">5. Build export package</button>
+      <button class=\"ghost\" onclick=\"showDossierPreview()\">Preview dossier contents</button>
     </div>
+
+    <div id=\"dossier-preview\" class=\"hint\" aria-live=\"polite\"></div>
 
     <h2 class=\"section-title\">Helpful actions</h2>
     <div class=\"actions\">
@@ -451,6 +455,17 @@ HTML = """<!doctype html>
         const field = el.getAttribute('data-field');
         entityRows[rowIndex][field] = el.value;
       });
+    }
+
+    async function showDossierPreview() {
+      const target = document.getElementById('dossier-preview');
+      try {
+        const response = await fetch('/api/dossier-preview');
+        const data = await response.json();
+        target.textContent = 'Dossier preview: ' + data.selected_documents +
+          ' selected documents, ' + data.entered_timeline_rows +
+          ' timeline entries, ' + data.claims_in_selection + ' linked claims. ' + data.note;
+      } catch (error) { target.textContent = String(error); }
     }
 
     async function loadRegister() {
@@ -1209,6 +1224,9 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
                 return
             if parsed.path == "/api/claims":
                 self._send(200, "application/json; charset=utf-8", _json_bytes({"claims": read_claims()}))
+                return
+            if parsed.path == "/api/dossier-preview":
+                self._send(200, "application/json; charset=utf-8", _json_bytes(dossier_preview()))
                 return
             if parsed.path == "/api/export-history":
                 self._send(200, "application/json; charset=utf-8", _json_bytes(_export_history_payload()))
