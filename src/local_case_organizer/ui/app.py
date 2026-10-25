@@ -14,7 +14,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
-from local_case_organizer.cases import get_active_case, using_case
+from local_case_organizer.cases import create_case, get_active_case, list_cases, using_case
+from local_case_organizer.ui.case_selection import requested_case
 from local_case_organizer.document_text import index_document, search_text
 from local_case_organizer.claims import add_claim, read_claims, set_review_status
 from local_case_organizer.comparison import add_comparison, comparison_report
@@ -26,7 +27,7 @@ from local_case_organizer.export.builder import build_export_package
 from local_case_organizer.export.dossier import dossier_preview
 from local_case_organizer.export.history import read_export_history
 from local_case_organizer.imports.ingest import import_sources
-from local_case_organizer.paths import create_local_workspace, describe_workspace, get_workspace_paths
+from local_case_organizer.paths import create_local_workspace, describe_workspace, get_repo_root, get_workspace_paths
 from local_case_organizer.register.generator import build_document_register
 from local_case_organizer.register.store import REGISTER_FIELDS, read_register_rows, write_register_rows
 from local_case_organizer.timeline.suggestions import accept_candidate, propose_events
@@ -88,6 +89,22 @@ HTML = """<!doctype html>
     </div>
 
     <div class=\"next-step\" id=\"next-step\">Loading next step...</div>
+
+    <h2 class=\"section-title\">Choose your case</h2>
+    <div class=\"editor\">
+      <p class=\"hint\">Each case has its own private local workspace. Switching cases reloads the browser; save any unsaved changes first.</p>
+      <div class=\"editor-actions\">
+        <label>Case <select id=\"case-selector\"></select></label>
+        <button type=\"button\" class=\"secondary\" onclick=\"openSelectedCase()\">Open selected case</button>
+        <button type=\"button\" class=\"ghost\" onclick=\"loadCaseHub()\">Refresh case list</button>
+      </div>
+      <div class=\"editor-actions\">
+        <label>New case ID <input id=\"new-case-id\" type=\"text\" placeholder=\"my-case\" maxlength=\"48\"></label>
+        <label>Display title <input id=\"new-case-title\" type=\"text\" placeholder=\"Optional private title\" maxlength=\"120\"></label>
+        <button type=\"button\" onclick=\"createCaseFromUI()\">Create a separate case</button>
+      </div>
+      <div id=\"case-hub-result\" class=\"hint\" aria-live=\"polite\"></div>
+    </div>
 
     <h2 class=\"section-title\">Current status</h2>
     <div class=\"grid\" id=\"cards\"></div>
@@ -263,6 +280,58 @@ HTML = """<!doctype html>
   </div>
 
   <script>
+    const originalCaseFetch = window.fetch.bind(window);
+    const CASE_CHOICE_KEY = 'lco_active_case_tab';
+    window.fetch = (url, opts = {}) => {
+      if (typeof url !== 'string' || !url.startsWith('/api/')) {
+        return originalCaseFetch(url, opts);
+      }
+      const headers = new Headers(opts.headers || {});
+      const selected = sessionStorage.getItem(CASE_CHOICE_KEY);
+      if (selected) headers.set('X-LCO-Case', selected);
+      return originalCaseFetch(url, {...opts, headers});
+    };
+
+    async function loadCaseHub() {
+      const response = await fetch('/api/cases');
+      const data = await response.json();
+      const select = document.getElementById('case-selector');
+      const previous = sessionStorage.getItem(CASE_CHOICE_KEY) || data.selected_case;
+      select.replaceChildren();
+      for (const item of [{case_id:'legacy-default',title:'Legacy default workspace'}, ...(data.cases || [])]) {
+        const option = document.createElement('option');
+        option.value = item.case_id;
+        option.textContent = item.title + ' (' + item.case_id + ')';
+        option.selected = item.case_id === previous;
+        select.appendChild(option);
+      }
+      document.getElementById('case-hub-result').textContent = 'Current case: ' + previous;
+    }
+
+    function openSelectedCase() {
+      const selected = document.getElementById('case-selector').value;
+      if (!selected) return;
+      if (!window.confirm('Save any unsaved work before switching to ' + selected + '. Continue?')) return;
+      sessionStorage.setItem(CASE_CHOICE_KEY, selected);
+      window.location.reload();
+    }
+
+    async function createCaseFromUI() {
+      const box = document.getElementById('case-hub-result');
+      try {
+        const case_id = document.getElementById('new-case-id').value.trim();
+        const title = document.getElementById('new-case-title').value.trim();
+        const response = await fetch('/api/create-case', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({case_id, title}),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Case could not be created');
+        await loadCaseHub();
+        box.textContent = 'Created case ' + result.case_id + '. Select it above to open.';
+      } catch(error) { box.textContent = String(error); }
+    }
+
     let registerRows = [];
     let registerFields = [];
     let timelineRows = [];
@@ -911,6 +980,7 @@ HTML = """<!doctype html>
       await loadSourcedClaims();
     }
 
+    loadCaseHub();
     refreshAll();
   </script>
 </body>
@@ -1192,11 +1262,25 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
             self.wfile.write(body)
 
         def do_GET(self) -> None:
+            try:
+                chosen = requested_case(self.headers.get("X-LCO-Case"), active_case, get_repo_root())
+            except (ValueError, OSError) as exc:
+                self._send(400, "application/json; charset=utf-8", _json_bytes({"error": str(exc)}))
+                return
+            with using_case(chosen):
+                self._handle_get()
+
+        def _handle_get(self) -> None:
             parsed = urlparse(self.path)
             if parsed.path == "/":
-                label = html.escape(active_case or "legacy-default", quote=True)
+                label = html.escape(get_active_case() or "legacy-default", quote=True)
                 page = HTML.replace("</h1>", "</h1><p class='note'>Active case: " + label + "</p>", 1)
                 self._send(200, "text/html; charset=utf-8", page.encode("utf-8"))
+                return
+            if parsed.path == "/api/cases":
+                self._send(200, "application/json; charset=utf-8",
+                           _json_bytes({"selected_case": get_active_case() or "legacy-default",
+                                        "cases": list_cases(get_repo_root())}))
                 return
             if parsed.path == "/api/status":
                 self._send(200, "application/json; charset=utf-8", _json_bytes(_status_payload()))
@@ -1234,8 +1318,25 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
             self._send(404, "application/json; charset=utf-8", _json_bytes({"error": "not found"}))
 
         def do_POST(self) -> None:
+            try:
+                chosen = requested_case(self.headers.get("X-LCO-Case"), active_case, get_repo_root())
+            except (ValueError, OSError) as exc:
+                self._send(400, "application/json; charset=utf-8", _json_bytes({"error": str(exc)}))
+                return
+            with using_case(chosen):
+                self._handle_post()
+
+        def _handle_post(self) -> None:
             parsed = urlparse(self.path)
-            if parsed.path == "/api/setup":
+            if parsed.path == "/api/create-case":
+                try:
+                    body = _read_json_body(self)
+                    payload = create_case(get_repo_root(), str(body.get("case_id", "")),
+                                          str(body.get("title", "")))
+                except (ValueError, OSError, FileExistsError, TypeError) as exc:
+                    self._send(400, "application/json; charset=utf-8", _json_bytes({"error": str(exc)}))
+                    return
+            elif parsed.path == "/api/setup":
                 payload = {"created": describe_workspace(create_local_workspace())}
             elif parsed.path == "/api/upload":
                 payload = _save_uploaded_files(self)
