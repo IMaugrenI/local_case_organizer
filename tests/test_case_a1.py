@@ -70,3 +70,21 @@ def test_integrity_and_link_graph(tmp_path, monkeypatch):
     with using_case("beta"):
         with pytest.raises(ValueError, match="Unknown case"):
             paths.get_workspace_paths()
+
+
+def test_case_symlink_alias_is_blocked(tmp_path, monkeypatch):
+    root = tmp_path / "repo"
+    monkeypatch.setattr(paths, "get_repo_root", lambda: root)
+    create_case(root, "alpha")
+    create_case(root, "beta")
+    private_data = root / "cases" / "alpha" / "data"
+    # Replace empty data directory with a link into another case.
+    import shutil
+    shutil.rmtree(private_data)
+    try:
+        private_data.symlink_to(root / "cases" / "beta" / "data", target_is_directory=True)
+    except OSError:
+        pytest.skip("Symlinks not supported in this environment")
+    with using_case("alpha"):
+        with pytest.raises(ValueError, match="symlinks"):
+            paths.get_workspace_paths()
