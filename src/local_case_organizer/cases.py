@@ -35,7 +35,11 @@ def using_case(case_id: str | None):
 
 def _case_base(root: Path, case_id: str) -> Path:
     validate_case_id(case_id)
+    if (root / "cases").is_symlink():
+        raise ValueError("Private case root cannot be a symlink")
     base = root / "cases" / case_id
+    if base.is_symlink():
+        raise ValueError("Case directory cannot be a symlink")
     # Refuse symlinks escaping the designated private case root.
     resolved_root = (root / "cases").resolve()
     if not base.resolve().is_relative_to(resolved_root):
@@ -48,6 +52,10 @@ def selected_data_root(root: Path) -> Path:
     if active is None:
         return root
     base = _case_base(root, active)
+    protected = ("data", "data/inbox", "data/originals", "data/register",
+                 "data/working", "exports", "logs", "workspace", "case.json")
+    if any((base / name).is_symlink() for name in protected):
+        raise ValueError("Case workspace paths cannot be symlinks")
     if not (base / "case.json").is_file():
         raise ValueError("Unknown case ID; create it explicitly with create-case")
     return base
