@@ -11,6 +11,7 @@ from pathlib import Path
 from local_case_organizer.cases import create_case, get_active_case, list_cases, using_case
 from local_case_organizer.comparison import comparison_report
 from local_case_organizer.audit import recent_changes
+from local_case_organizer.tasks import add_task, update_task, task_board
 from local_case_organizer.document_text import index_document, search_text
 from local_case_organizer.claims import add_claim, read_claims, set_review_status
 from local_case_organizer.integrity import verify_integrity
@@ -39,6 +40,16 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("propose-events", help="Suggest unverified dates from registered plaintext sources")
     subparsers.add_parser("compare-claims", help="Report manually grouped possible claim discrepancies")
     subparsers.add_parser("audit-history", help="List committed local CSV metadata changes")
+    subparsers.add_parser("tasks", help="List manually managed local reminders")
+    task_create = subparsers.add_parser("add-task", help="Create a manual case reminder")
+    task_create.add_argument("title")
+    task_create.add_argument("--due", default="", help="Operator-entered date YYYY-MM-DD")
+    task_create.add_argument("--priority", choices=["low", "normal", "high"], default="normal")
+    task_create.add_argument("--linked-file-ids", default="", help="Comma-separated local register file IDs")
+    task_create.add_argument("--note", default="")
+    task_update = subparsers.add_parser("update-task", help="Change manual task status")
+    task_update.add_argument("task_id")
+    task_update.add_argument("--status", choices=["open", "in_progress", "done", "cancelled"], required=True)
     index_parser = subparsers.add_parser("index-document", help="Manually index a verified imported document for offline text search")
     index_parser.add_argument("file_id")
     index_parser.add_argument("--ocr", action="store_true", help="Explicitly enable optional offline OCR")
@@ -245,6 +256,16 @@ def _dispatch(args: argparse.Namespace) -> int:
         return 0
     if args.command == "compare-claims":
         print(json.dumps(comparison_report(), indent=2, ensure_ascii=False))
+        return 0
+    if args.command == "tasks":
+        print(json.dumps(task_board(), indent=2, ensure_ascii=False))
+        return 0
+    if args.command == "add-task":
+        print(json.dumps(add_task(args.title, args.due, args.priority,
+                                  args.linked_file_ids, args.note), indent=2, ensure_ascii=False))
+        return 0
+    if args.command == "update-task":
+        print(json.dumps(update_task(args.task_id, args.status), indent=2, ensure_ascii=False))
         return 0
     if args.command == "audit-history":
         print(json.dumps({"changes": recent_changes()}, indent=2, ensure_ascii=False))

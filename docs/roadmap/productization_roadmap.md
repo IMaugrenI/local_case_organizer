@@ -180,3 +180,16 @@ Target:
   und synthetische Tests. Der vorhandene Startweg bleibt verbindlich.
 - Abnahme weiterhin gesammelt nach dem Ausbau. Keine Runtime-Prüfung oder
   Installation auf Betreibergeräten.
+
+
+## CASE-A9 – Aufgaben und manuelle Wiedervorlagen (Entwicklung)
+
+- Bedienerseitig eingegebene Aufgaben mit Datum, Priorität, Status und Links
+  auf im jeweiligen Fall bekannte Datei-IDs.
+
+- Statusanzeige für eingegebene Termine: bevorstehend/heute/vergangen;
+  **keine** automatische Berechnung juristischer Fristen.
+- Browser und bestehende CLI (`tasks`, `add-task`, `update-task`).
+- Fallgebundene Aufgaben unter `data/register/tasks.csv` mit dem bestehenden
+  metadatenbasierten Audit-Journal.
+- Keine Hintergrunddienste, Timer, E-Mail, externe Kalender oder Cloud.

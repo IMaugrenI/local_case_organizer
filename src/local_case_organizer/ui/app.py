@@ -20,6 +20,7 @@ from local_case_organizer.document_text import index_document, search_text
 from local_case_organizer.claims import add_claim, read_claims, set_review_status
 from local_case_organizer.comparison import add_comparison, comparison_report
 from local_case_organizer.audit import recent_changes
+from local_case_organizer.tasks import add_task, update_task, task_board
 from local_case_organizer.graph import evidence_graph
 from local_case_organizer.integrity import recent_integrity_runs, verify_integrity
 from local_case_organizer.entities.store import ENTITY_FIELDS, read_entity_rows, write_entity_rows
@@ -258,6 +259,21 @@ HTML = """<!doctype html>
       <p class=\"hint\">Local, metadata-only record of saved edits. No document contents or verified
       operator identity; incomplete transactions are not presented as committed.</p>
       <div id=\"case-audit\" aria-live=\"polite\"></div>
+    </div>
+
+    <h2 class=\"section-title\">Tasks and operator-entered reminders</h2>
+    <div class=\"editor\">
+      <p class=\"hint\">Manual organizational dates only. Not calculated legal deadlines.
+      No background notifications or automatic actions.</p>
+      <div class=\"editor-actions\">
+        <label>Task <input id=\"task-title\" type=\"text\" maxlength=\"180\" placeholder=\"Review document\"></label>
+        <label>Due date <input id=\"task-date\" type=\"date\"></label>
+        <label>Priority <select id=\"task-priority\"><option value=\"normal\">Normal</option><option value=\"high\">High</option><option value=\"low\">Low</option></select></label>
+        <label>Linked documents <input id=\"task-files\" type=\"text\" placeholder=\"DOC-1,DOC-2\"></label>
+        <button type=\"button\" onclick=\"createCaseTask()\">Add reminder</button>
+        <button type=\"button\" class=\"secondary\" onclick=\"loadCaseTasks()\">Refresh task list</button>
+      </div>
+      <div id=\"task-board\" aria-live=\"polite\"></div>
     </div>
 
     <h2 class=\"section-title\">Export history</h2>
@@ -812,7 +828,64 @@ HTML = """<!doctype html>
         });
         await loadClaimComparisons();
       await loadCaseAudit();
+      await loadCaseTasks();
       } catch (error) { area.textContent = String(error); }
+    }
+
+    async function createCaseTask() {
+      const area = document.getElementById('task-board');
+      try {
+        await casePost('/api/add-task', {
+          title: document.getElementById('task-title').value.trim(),
+          due_date: document.getElementById('task-date').value,
+          priority: document.getElementById('task-priority').value,
+          linked_file_ids: document.getElementById('task-files').value.trim()
+        });
+        document.getElementById('task-title').value = '';
+        await loadCaseTasks();
+      } catch(error) { area.textContent = String(error); }
+    }
+
+    async function loadCaseTasks() {
+      const area = document.getElementById('task-board');
+      try {
+        const response = await fetch('/api/tasks');
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Tasks unavailable');
+        area.replaceChildren();
+        const note = document.createElement('p');
+        note.textContent = data.as_of + ' · ' + data.note;
+        area.appendChild(note);
+        for (const task of data.tasks || []) {
+          const row = document.createElement('div');
+          row.style.cssText = 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px;border-bottom:1px solid #7774';
+          const label = document.createElement('span');
+          label.textContent = task.title + ' · ' + (task.due_date || 'No date') +
+            ' · ' + task.date_indicator + ' · ' + task.priority +
+            (task.linked_file_ids ? ' · ' + task.linked_file_ids : '');
+          const select = document.createElement('select');
+          select.style.maxWidth = '155px';
+          for (const status of ['open','in_progress','done','cancelled']) {
+            const choice = document.createElement('option');
+            choice.value = status; choice.textContent = status;
+            choice.selected = task.status === status; select.appendChild(choice);
+          }
+          const save = document.createElement('button');
+          save.type = 'button'; save.className = 'secondary'; save.textContent = 'Update';
+          save.addEventListener('click', async () => {
+            try {
+              await casePost('/api/update-task', {task_id: task.task_id, status:select.value});
+              await loadCaseTasks();
+            } catch(error) { area.textContent = String(error); }
+          });
+          row.appendChild(label);row.appendChild(select);row.appendChild(save);area.appendChild(row);
+        }
+        if (!(data.tasks || []).length) {
+          const empty = document.createElement('p');
+          empty.textContent = 'No reminders in this case.';
+          area.appendChild(empty);
+        }
+      } catch(error) { area.textContent = String(error); }
     }
 
     async function loadCaseAudit() {
@@ -1300,6 +1373,9 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
             if parsed.path == "/api/integrity-history":
                 self._send(200, "application/json; charset=utf-8", _json_bytes({"runs": recent_integrity_runs()}))
                 return
+            if parsed.path == "/api/tasks":
+                self._send(200, "application/json; charset=utf-8", _json_bytes(task_board()))
+                return
             if parsed.path == "/api/audit-history":
                 self._send(200, "application/json; charset=utf-8", _json_bytes({"changes": recent_changes()}))
                 return
@@ -1363,10 +1439,18 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
                 except ValueError as exc:
                     self._send(400, "application/json; charset=utf-8", _json_bytes({"error": str(exc)}))
                     return
-            elif parsed.path in {"/api/index-document", "/api/search-text", "/api/add-claim", "/api/review-claim", "/api/add-comparison"}:
+            elif parsed.path in {"/api/index-document", "/api/search-text", "/api/add-claim", "/api/review-claim", "/api/add-comparison", "/api/add-task", "/api/update-task"}:
                 try:
                     body = _read_json_body(self)
-                    if parsed.path == "/api/add-comparison":
+                    if parsed.path == "/api/add-task":
+                        payload = add_task(str(body.get("title", "")), str(body.get("due_date", "")),
+                                           str(body.get("priority", "normal")),
+                                           str(body.get("linked_file_ids", "")),
+                                           str(body.get("note", "")))
+                    elif parsed.path == "/api/update-task":
+                        payload = update_task(str(body.get("task_id", "")),
+                                              str(body.get("status", "")))
+                    elif parsed.path == "/api/add-comparison":
                         payload = add_comparison(str(body.get("claim_id", "")),
                                                  str(body.get("topic", "")),
                                                  str(body.get("kind", "")),
