@@ -85,3 +85,20 @@ Target:
 - A local append-only journal records verification results by file ID (no file contents).
 - Evidence map displays only manually entered document-event-entity links.
 - These are development features, not an operator acceptance or legal assessment.
+
+
+## CASE-A2 (development branch) – provenance-based timeline suggestions
+
+- Explicit \`python run.py [--case ID] propose-events\` and browser button.
+- Reads only verified, registered, imported originals (.txt/.md/.csv/.eml, UTF-8)
+  under a strict per-file byte limit; does not OCR, invoke an LLM or use the network.
+- Extracts unverified YYYY-MM-DD and DD.MM.YYYY date mentions with source file ID,
+  line number, excerpt, and deterministic suggestion ID.
+- A user must **explicitly accept** a suggestion to append a draft timeline row.
+  Before writing, the exact source is read and hash-checked again.
+- Detects identical-content hashes across imported, scanned text items as
+  a review hint. No automatic claims about truth, legality or completeness.
+- Existing timelines, original files, imports, exports and legacy workspace
+  remain in place; accepted events use the existing timeline CSV format.
+- No private files, proposal excerpts or original source paths are committed
+  to GitHub. This package is not the final acceptance.

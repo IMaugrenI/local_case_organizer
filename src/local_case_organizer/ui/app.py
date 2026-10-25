@@ -24,6 +24,7 @@ from local_case_organizer.imports.ingest import import_sources
 from local_case_organizer.paths import create_local_workspace, describe_workspace, get_workspace_paths
 from local_case_organizer.register.generator import build_document_register
 from local_case_organizer.register.store import REGISTER_FIELDS, read_register_rows, write_register_rows
+from local_case_organizer.timeline.suggestions import accept_candidate, propose_events
 from local_case_organizer.timeline.generator import build_timeline_template
 from local_case_organizer.timeline.store import TIMELINE_FIELDS, read_timeline_rows, write_timeline_rows
 
@@ -138,6 +139,16 @@ HTML = """<!doctype html>
           <div id=\"timeline-editor\" class=\"hint\">Timeline will appear here.</div>
         </div>
       </div>
+    </div>
+
+    <h2 class=\"section-title\">Suggested timeline dates (manual review)</h2>
+    <div class=\"editor\">
+      <div class=\"editor-actions\">
+        <button type=\"button\" onclick=\"loadTimelineCandidates()\">Find date mentions in imported text</button>
+      </div>
+      <p class=\"hint\">Only verified UTF-8 TXT, MD, CSV and EML originals; no OCR or cloud.
+      Suggestions are NOT verified events. Click Add draft for each item you choose.</p>
+      <div id=\"timeline-candidates\" aria-live=\"polite\">No suggestions requested.</div>
     </div>
 
     <h2 class=\"section-title\">Entities / people / institutions</h2>
@@ -482,6 +493,58 @@ HTML = """<!doctype html>
       appendLog(JSON.stringify(data, null, 2));
       await loadEntities();
       await refreshStatus();
+    }
+
+    async function loadTimelineCandidates() {
+      const area = document.getElementById('timeline-candidates');
+      area.textContent = 'Scanning verified local text originals ...';
+      try {
+        const response = await fetch('/api/propose-events', {method:'POST'});
+        const report = await response.json();
+        if (!response.ok) throw new Error(report.error || 'Could not build suggestions');
+        area.replaceChildren();
+        const note = document.createElement('p');
+        note.textContent = (report.candidates || []).length + ' date mentions found; ' +
+          (report.warnings || []).length + ' source warnings; ' +
+          (report.duplicate_content || []).length + ' duplicate-content groups.';
+        area.appendChild(note);
+        if ((report.warnings || []).length) {
+          const w = document.createElement('p');
+          w.textContent = 'Skipped sources: ' + (report.warnings || []).map(x => x.file_id + ' (' + x.reason + ')').join(', ');
+          area.appendChild(w);
+        }
+        for (const item of report.candidates || []) {
+          const row = document.createElement('div');
+          row.style.cssText = 'padding:12px;border-bottom:1px solid #7774;display:flex;gap:12px;align-items:center;flex-wrap:wrap';
+          const description = document.createElement('span');
+          description.textContent = item.date + ' · ' + item.original_name + ' · line ' + item.line +
+            ' · ' + item.excerpt;
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'secondary';
+          button.textContent = 'Add draft';
+          button.addEventListener('click', async () => {
+            button.disabled = true;
+            try {
+              const response = await fetch('/api/accept-candidate', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({candidate_id:item.candidate_id}),
+              });
+              const data = await response.json();
+              if (!response.ok) throw new Error(data.error || 'Could not add draft');
+              button.textContent = data.status === 'already_recorded' ? 'Already added' : 'Draft added';
+              await loadTimeline();
+              await loadEvidenceGraph();
+            } catch (error) {
+              button.disabled = false;
+              appendLog(String(error));
+            }
+          });
+          row.appendChild(description);row.appendChild(button);area.appendChild(row);
+        }
+      } catch (error) {
+        area.textContent = String(error);
+      }
     }
 
     async function loadEvidenceGraph() {
@@ -934,6 +997,15 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
                 payload = _save_entities_payload(self)
             elif parsed.path == "/api/verify-integrity":
                 payload = verify_integrity()
+            elif parsed.path == "/api/propose-events":
+                payload = propose_events()
+            elif parsed.path == "/api/accept-candidate":
+                body = _read_json_body(self)
+                try:
+                    payload = accept_candidate(str(body.get("candidate_id", "")))
+                except ValueError as exc:
+                    self._send(400, "application/json; charset=utf-8", _json_bytes({"error": str(exc)}))
+                    return
             elif parsed.path == "/api/export-package":
                 export_dir = build_export_package()
                 payload = {

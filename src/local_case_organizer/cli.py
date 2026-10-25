@@ -10,6 +10,7 @@ from pathlib import Path
 
 from local_case_organizer.cases import create_case, get_active_case, list_cases, using_case
 from local_case_organizer.integrity import verify_integrity
+from local_case_organizer.timeline.suggestions import propose_events
 from local_case_organizer.export.builder import build_export_package
 from local_case_organizer.imports.ingest import import_sources
 from local_case_organizer.paths import create_local_workspace, describe_workspace, get_workspace_paths
@@ -31,6 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
     new_case.add_argument("--title", default="", help="Optional local display title")
     subparsers.add_parser("list-cases", help="List locally registered case IDs")
     subparsers.add_parser("verify-integrity", help="Explicitly verify original document hashes")
+    subparsers.add_parser("propose-events", help="Suggest unverified dates from registered plaintext sources")
 
     subparsers.add_parser("setup", aliases=["init-workspace"], help="Prepare ignored local workspace folders")
     subparsers.add_parser("check", help="Show repository and local workspace status")
@@ -217,6 +219,9 @@ def _dispatch(args: argparse.Namespace) -> int:
         return 0
     if args.command == "verify-integrity":
         print(json.dumps(verify_integrity(), indent=2))
+        return 0
+    if args.command == "propose-events":
+        print(json.dumps(propose_events(), indent=2, ensure_ascii=False))
         return 0
     if args.command in {"setup", "init-workspace"}:
         return cmd_setup()
