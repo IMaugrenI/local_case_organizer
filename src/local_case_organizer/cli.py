@@ -9,6 +9,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from local_case_organizer.cases import create_case, get_active_case, list_cases, using_case
+from local_case_organizer.document_text import index_document, search_text
+from local_case_organizer.claims import add_claim, read_claims, set_review_status
 from local_case_organizer.integrity import verify_integrity
 from local_case_organizer.timeline.suggestions import propose_events
 from local_case_organizer.export.builder import build_export_package
@@ -33,6 +35,20 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("list-cases", help="List locally registered case IDs")
     subparsers.add_parser("verify-integrity", help="Explicitly verify original document hashes")
     subparsers.add_parser("propose-events", help="Suggest unverified dates from registered plaintext sources")
+    index_parser = subparsers.add_parser("index-document", help="Manually index a verified imported document for offline text search")
+    index_parser.add_argument("file_id")
+    index_parser.add_argument("--ocr", action="store_true", help="Explicitly enable optional offline OCR")
+    search_parser = subparsers.add_parser("search-text", help="Search local verified derivative text")
+    search_parser.add_argument("query")
+    subparsers.add_parser("list-claims", help="List sourced claims for selected case")
+    claim_parser = subparsers.add_parser("add-claim", help="Record a draft claim bound to a source passage")
+    claim_parser.add_argument("file_id")
+    claim_parser.add_argument("--page", type=int, required=True)
+    claim_parser.add_argument("--quote", required=True)
+    claim_parser.add_argument("--statement", required=True)
+    review_parser = subparsers.add_parser("review-claim", help="Set manual review metadata for a claim")
+    review_parser.add_argument("claim_id")
+    review_parser.add_argument("--status", choices=["draft", "needs_review", "reviewed"], required=True)
 
     subparsers.add_parser("setup", aliases=["init-workspace"], help="Prepare ignored local workspace folders")
     subparsers.add_parser("check", help="Show repository and local workspace status")
@@ -222,6 +238,21 @@ def _dispatch(args: argparse.Namespace) -> int:
         return 0
     if args.command == "propose-events":
         print(json.dumps(propose_events(), indent=2, ensure_ascii=False))
+        return 0
+    if args.command == "index-document":
+        print(json.dumps(index_document(args.file_id, use_ocr=args.ocr), indent=2))
+        return 0
+    if args.command == "search-text":
+        print(json.dumps(search_text(args.query), indent=2, ensure_ascii=False))
+        return 0
+    if args.command == "list-claims":
+        print(json.dumps({"claims": read_claims()}, indent=2, ensure_ascii=False))
+        return 0
+    if args.command == "add-claim":
+        print(json.dumps(add_claim(args.file_id, args.page, args.quote, args.statement), indent=2, ensure_ascii=False))
+        return 0
+    if args.command == "review-claim":
+        print(json.dumps(set_review_status(args.claim_id, args.status), indent=2))
         return 0
     if args.command in {"setup", "init-workspace"}:
         return cmd_setup()

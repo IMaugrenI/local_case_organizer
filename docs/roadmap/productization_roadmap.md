@@ -102,3 +102,29 @@ Target:
   remain in place; accepted events use the existing timeline CSV format.
 - No private files, proposal excerpts or original source paths are committed
   to GitHub. This package is not the final acceptance.
+
+
+## CASE-A3/A4 (development branch) – Local PDF/OCR index and sourced claims
+
+- Extraction is **explicit**, opt-in, and scoped to a case's verified imported
+  original: \`python run.py --case <id> index-document <DOC-ID> [--ocr]\`.
+  The default legacy workspace remains available without \`--case\`.
+- Supported local plaintext: UTF-8 TXT/MD/CSV/EML. PDFs use installed
+  \`pdftotext\` (preferred) or optional Python \`pypdf\`.
+  OCR requires explicit \`--ocr\` and preinstalled \`tesseract\`; scanned
+  PDFs also require \`pdftoppm\`. No tool installs or network calls occur.
+- The indexed derivative is a bounded JSON document under the existing ignored
+  \`data/working/text_index/\` scoped to the selected case. The raw original is
+  never altered or committed. Per-file size, page count, text and execution
+  duration are bounded. Search verifies the original hash and excludes stale
+  indexes: \`python run.py --case <id> search-text "needle"\`.
+- Source-linked claims contain file ID, exact quote, page reference, a separate
+  human-entered statement, and manual review status.
+  Creating/reviewing a claim verifies the original source and matches the
+  quote to the indexed page verbatim. Reviewed means a human reviewed the
+  record; it does **not** certify truth or legal conclusions.
+- Claims appear in the evidence graph and, when a user explicitly builds
+  a handoff export, in \`claims.csv\`; private text-index derivatives are
+  never included in exports by default.
+- No server beyond the existing local browser UI, no forced dependencies,
+  no cloud LLM, no automatic legal evaluation, no production installation.

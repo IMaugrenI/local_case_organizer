@@ -1,6 +1,7 @@
 """Source-linked, non-inferential evidence relationship candidates for a local case."""
 from __future__ import annotations
 
+from local_case_organizer.claims import read_claims
 from local_case_organizer.entities.store import read_entity_rows
 from local_case_organizer.register.store import read_register_rows
 from local_case_organizer.timeline.store import read_timeline_rows
@@ -20,6 +21,7 @@ def evidence_graph(max_nodes: int = 180) -> dict[str, object]:
     files = read_register_rows()
     events = read_timeline_rows()
     entities = read_entity_rows()
+    claims = read_claims()
     valid_files = {str(row.get("file_id", "")).strip() for row in files}
 
     for row in files:
@@ -44,6 +46,19 @@ def evidence_graph(max_nodes: int = 180) -> dict[str, object]:
                 else:
                     edges.append({"source": source, "target": "file:" + file_id,
                                   "relation": "linked_file"})
+    for row in claims[:500]:
+        claim_id = str(row.get("claim_id", "")).strip()
+        file_id = str(row.get("file_id", "")).strip()
+        if not claim_id:
+            continue
+        source = "claim:" + claim_id
+        nodes.append({"id": source, "kind": "claim",
+                      "label": str(row.get("statement") or claim_id)[:120]})
+        if file_id in valid_files:
+            edges.append({"source": source, "target": "file:" + file_id,
+                          "relation": "quoted_source"})
+        else:
+            unknown.append({"source": source, "missing_file_id": file_id})
     limited = nodes[:max_nodes]
     allowed = {item["id"] for item in limited}
     return {"nodes": limited,

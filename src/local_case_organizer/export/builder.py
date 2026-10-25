@@ -17,6 +17,7 @@ from local_case_organizer.paths import create_local_workspace, get_workspace_pat
 EXPORT_FILES = [
     "document_register.csv",
     "timeline.csv",
+    "claims.csv",
 ]
 
 

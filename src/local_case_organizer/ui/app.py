@@ -15,6 +15,8 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from local_case_organizer.cases import get_active_case, using_case
+from local_case_organizer.document_text import index_document, search_text
+from local_case_organizer.claims import add_claim, read_claims, set_review_status
 from local_case_organizer.graph import evidence_graph
 from local_case_organizer.integrity import recent_integrity_runs, verify_integrity
 from local_case_organizer.entities.store import ENTITY_FIELDS, read_entity_rows, write_entity_rows
@@ -178,6 +180,38 @@ HTML = """<!doctype html>
       </div>
       <p class=\"hint\">Manual, read-only hash verification. Results are recorded in a local append-only journal.</p>
       <div id=\"integrity-history\" class=\"hint\"></div>
+    </div>
+
+    <h2 class=\"section-title\">Private PDF / OCR text index</h2>
+    <div class=\"editor\">
+      <p class=\"hint\">Manual offline extraction from an imported, hash-verified document. OCR runs only when explicitly selected and the optional local tools are installed. Indexed text stays in the private working folder, never inside original evidence files.</p>
+      <div class=\"editor-actions\">
+        <label>Document ID <input id=\"text-file-id\" type=\"text\" placeholder=\"DOC-...\"></label>
+        <label><input id=\"text-use-ocr\" type=\"checkbox\"> Enable offline OCR</label>
+        <button type=\"button\" onclick=\"indexSelectedDocument()\">Index selected document</button>
+      </div>
+      <div class=\"editor-actions\" style=\"margin-top:16px\">
+        <label>Search indexed documents <input id=\"text-query\" type=\"text\" placeholder=\"Search term\"></label>
+        <button type=\"button\" class=\"secondary\" onclick=\"searchIndexedDocuments()\">Search local text</button>
+      </div>
+      <div id=\"text-index-status\" class=\"hint\" aria-live=\"polite\"></div>
+      <div id=\"text-search-results\" class=\"hint\"></div>
+    </div>
+
+    <h2 class=\"section-title\">Source-linked claims</h2>
+    <div class=\"editor\">
+      <p class=\"hint\">Claims remain user assertions, even after review. Paste an exact quote from an indexed page. Every new claim starts as a draft; review is a separate manual step.</p>
+      <div class=\"editor-actions\">
+        <label>Document ID <input type=\"text\" id=\"claim-file-id\" placeholder=\"DOC-...\"></label>
+        <label>Page <input type=\"number\" id=\"claim-page\" min=\"1\" max=\"100\" value=\"1\" style=\"width:100px\"></label>
+      </div>
+      <label>Verbatim source passage<textarea id=\"claim-quote\" maxlength=\"500\"></textarea></label>
+      <label>Claim / interpretation (not a verified fact)<textarea id=\"claim-statement\" maxlength=\"800\"></textarea></label>
+      <div class=\"editor-actions\">
+        <button type=\"button\" onclick=\"saveSourcedClaim()\">Add draft claim</button>
+        <button type=\"button\" class=\"secondary\" onclick=\"loadSourcedClaims()\">Refresh claims</button>
+      </div>
+      <div id=\"claim-results\" aria-live=\"polite\"></div>
     </div>
 
     <h2 class=\"section-title\">Export history</h2>
@@ -547,6 +581,117 @@ HTML = """<!doctype html>
       }
     }
 
+    async function casePost(url, payload) {
+      const response = await fetch(url, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload || {}),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Local action failed');
+      return data;
+    }
+
+    async function indexSelectedDocument() {
+      const area = document.getElementById('text-index-status');
+      area.textContent = 'Indexing the selected verified original locally ...';
+      try {
+        const result = await casePost('/api/index-document', {
+          file_id: document.getElementById('text-file-id').value.trim(),
+          use_ocr: document.getElementById('text-use-ocr').checked
+        });
+        area.textContent = result.file_id + ': ' + result.method + ', ' +
+          result.pages + ' pages, ' + result.characters + ' characters indexed privately.';
+      } catch (error) { area.textContent = String(error); }
+    }
+
+    async function searchIndexedDocuments() {
+      const area = document.getElementById('text-search-results');
+      area.textContent = 'Searching ...';
+      try {
+        const data = await casePost('/api/search-text', {
+          query: document.getElementById('text-query').value.trim(),
+        });
+        area.replaceChildren();
+        const info = document.createElement('p');
+        info.textContent = (data.matches || []).length + ' matching pages from ' +
+          data.indexed_files + ' verified indexed documents.';
+        area.appendChild(info);
+        for (const hit of data.matches || []) {
+          const row = document.createElement('div');
+          row.style.cssText = 'padding:10px;border-bottom:1px solid #7774';
+          const description = document.createElement('p');
+          description.textContent = hit.file_id + ' · ' + hit.original_name +
+            ' · page ' + hit.page + ': ' + hit.excerpt;
+          const selected = document.createElement('button');
+          selected.type = 'button';
+          selected.className = 'ghost';
+          selected.textContent = 'Use source for claim';
+          selected.addEventListener('click', () => {
+            document.getElementById('claim-file-id').value = hit.file_id;
+            document.getElementById('claim-page').value = hit.page;
+            document.getElementById('claim-quote').value = hit.excerpt.trim().slice(0,500);
+            document.getElementById('claim-statement').focus();
+          });
+          row.appendChild(description); row.appendChild(selected); area.appendChild(row);
+        }
+      } catch (error) { area.textContent = String(error); }
+    }
+
+    async function saveSourcedClaim() {
+      const area = document.getElementById('claim-results');
+      try {
+        const row = await casePost('/api/add-claim', {
+          file_id: document.getElementById('claim-file-id').value.trim(),
+          page: Number(document.getElementById('claim-page').value),
+          quote: document.getElementById('claim-quote').value,
+          statement: document.getElementById('claim-statement').value,
+        });
+        appendLog('Created draft claim ' + row.claim_id);
+        await loadSourcedClaims();
+        await loadEvidenceGraph();
+      } catch (error) { area.textContent = String(error); }
+    }
+
+    async function loadSourcedClaims() {
+      const area = document.getElementById('claim-results');
+      try {
+        const response = await fetch('/api/claims');
+        const data = await response.json();
+        area.replaceChildren();
+        if (!(data.claims || []).length) {
+          area.textContent = 'No source-linked claims yet.';
+          return;
+        }
+        for (const claim of data.claims || []) {
+          const item = document.createElement('div');
+          item.style.cssText = 'padding:12px;border-bottom:1px solid #7774';
+          const description = document.createElement('p');
+          description.textContent = claim.claim_id + ' · ' + claim.file_id +
+            ' page ' + claim.source_page + ' · ' + claim.review_status +
+            '\nQuote: ' + claim.source_quote + '\nStatement: ' + claim.statement;
+          description.style.whiteSpace = 'pre-wrap';
+          item.appendChild(description);
+          const status = document.createElement('select');
+          for (const s of ['draft','needs_review','reviewed']) {
+            const option = document.createElement('option');
+            option.value = s; option.textContent = s;
+            option.selected = s === claim.review_status;
+            status.appendChild(option);
+          }
+          const save = document.createElement('button');
+          save.type = 'button'; save.className = 'secondary';
+          save.textContent = 'Update review status';
+          save.addEventListener('click', async () => {
+            try {
+              await casePost('/api/review-claim', {claim_id:claim.claim_id, status:status.value});
+              await loadSourcedClaims();
+            } catch (error) { appendLog(String(error)); }
+          });
+          item.appendChild(status);item.appendChild(save);area.appendChild(item);
+        }
+      } catch (error) { area.textContent = String(error); }
+    }
+
     async function loadEvidenceGraph() {
       const response = await fetch('/api/evidence-graph');
       const data = await response.json();
@@ -665,6 +810,7 @@ HTML = """<!doctype html>
       await loadExportHistory();
       await loadEvidenceGraph();
       await loadIntegrityHistory();
+      await loadSourcedClaims();
     }
 
     refreshAll();
@@ -972,6 +1118,9 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
             if parsed.path == "/api/integrity-history":
                 self._send(200, "application/json; charset=utf-8", _json_bytes({"runs": recent_integrity_runs()}))
                 return
+            if parsed.path == "/api/claims":
+                self._send(200, "application/json; charset=utf-8", _json_bytes({"claims": read_claims()}))
+                return
             if parsed.path == "/api/export-history":
                 self._send(200, "application/json; charset=utf-8", _json_bytes(_export_history_payload()))
                 return
@@ -1005,6 +1154,26 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
                     payload = accept_candidate(str(body.get("candidate_id", "")))
                 except ValueError as exc:
                     self._send(400, "application/json; charset=utf-8", _json_bytes({"error": str(exc)}))
+                    return
+            elif parsed.path in {"/api/index-document", "/api/search-text", "/api/add-claim", "/api/review-claim"}:
+                try:
+                    body = _read_json_body(self)
+                    if parsed.path == "/api/index-document":
+                        payload = index_document(str(body.get("file_id", "")),
+                                                 use_ocr=body.get("use_ocr") is True)
+                    elif parsed.path == "/api/search-text":
+                        payload = search_text(str(body.get("query", "")))
+                    elif parsed.path == "/api/add-claim":
+                        payload = add_claim(
+                            str(body.get("file_id", "")), body.get("page"),
+                            body.get("quote", ""), body.get("statement", "")
+                        )
+                    else:
+                        payload = set_review_status(str(body.get("claim_id", "")),
+                                                    str(body.get("status", "")))
+                except (ValueError, TypeError, OSError) as exc:
+                    self._send(400, "application/json; charset=utf-8",
+                               _json_bytes({"error": str(exc)}))
                     return
             elif parsed.path == "/api/export-package":
                 export_dir = build_export_package()
