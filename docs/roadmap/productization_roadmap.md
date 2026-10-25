@@ -159,3 +159,24 @@ Target:
 - This is *not* a signed or tamper-proof compliance trail and does not store
   earlier full document versions. Multi-process serialization is not guaranteed.
   Final acceptance remains separate at the end of expansion.
+
+## CASE-A7/A8 – Browser-Fallverwaltung und neutraler Dossier-Export (Entwicklung)
+
+- Im bestehenden lokalen Browser können separate Fälle erstellt, aufgelistet und bewusst
+  ausgewählt werden. Pro Tab wird die Fall-ID in Session Storage gehalten; sie wird
+  als Header an die vorhandenen lokalen API-Routen weitergereicht. Jeder Request
+  validiert die Fall-ID erneut, bevor auf fallbezogene Daten zugegriffen wird.
+- Auswahl des Legacy-Standard-Arbeitsbereichs bleibt möglich. Nicht gespeicherte
+  Änderungen werden beim Wechsel nicht automatisch übertragen.
+- Die bestehende Export-Funktion ergänzt DOSSIER.md und EVIDENCE_INDEX.csv im
+  bisherigen ZIP, Manifest und SHA-256-Checksumme. Nur explizit für den Export
+  ausgewählte Originale werden als Anlage kopiert und vorher hash-verifiziert.
+- Dossier: Belegverzeichnis, Timeline-Einträge, quellenbezogene Aussagen und deren
+  Review-Status. Ein Reviewstatus ist keine Tatsachenbestätigung. Keine
+  juristische Bewertung und keine ungeprüften oder automatisch getroffenen Aussagen.
+- Die Browser-Vorschau zählt ausgewählte Unterlagen, Timeline-Einträge und
+  verknüpfte Aussagen, führt aber selbst keine Originalkopie durch.
+- Datenschutz: Die Fallinhalte bleiben lokal; auf GitHub liegen nur Programmcode
+  und synthetische Tests. Der vorhandene Startweg bleibt verbindlich.
+- Abnahme weiterhin gesammelt nach dem Ausbau. Keine Runtime-Prüfung oder
+  Installation auf Betreibergeräten.
