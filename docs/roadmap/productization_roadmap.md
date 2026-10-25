@@ -216,3 +216,18 @@ Target:
 - Dieses Paket ist eine **Integrationsnaht**, kein eingebautes generatives
   Modell und keine installierte Drittanbieter-KI. Die vollständige KI-Integration
   bleibt bei Bedarf eine gesonderte Entscheidung im bestehenden ToF-Ökosystem.
+
+
+## Sicherheitsnachbesserung vor Feature-Freeze – lokales Browser-Gateway
+
+- Der Browser-Startweg verweigert jetzt Nicht-Loopback-Adressen. Keine
+  direkte öffentliche HTTP-Freigabe; keine Nutzerverwaltung vorhanden.
+- Browser-POST-Requests müssen einen spezifischen, same-origin gesetzten
+  HTTP-Header besitzen. Cross-site Navigations-/Formular-POSTs werden
+  abgewiesen; vorhandene Browser-UI setzt den Header automatisch.
+- Origin und Sec-Fetch-Site werden geprüft, soweit vorhanden, und die
+  HTTP-Anfragegröße begrenzt. Dies ist **kein** Authentifizierungs- oder
+  Berechtigungssystem für andere lokale Prozesse.
+- Reservierte Kennung \`legacy-default\` kann nicht als zusätzliche Fallakte
+  erzeugt werden, um die Legacy-Auswahl nicht zu überlagern.
+- Betriebs-/Gesamtabnahme wie vereinbart erst nach dem Ausbaumodus.

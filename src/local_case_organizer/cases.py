@@ -15,6 +15,8 @@ _ID = re.compile(r"^[a-z0-9][a-z0-9_-]{0,47}$")
 def validate_case_id(case_id: str) -> str:
     if not isinstance(case_id, str) or not _ID.fullmatch(case_id):
         raise ValueError("Case ID must be 1–48 lowercase ASCII characters: a-z, 0-9, _ or -")
+    if case_id == "legacy-default":
+        raise ValueError("Reserved legacy workspace identifier")
     return case_id
 
 

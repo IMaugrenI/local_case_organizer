@@ -16,6 +16,7 @@ from urllib.parse import urlparse
 
 from local_case_organizer.cases import create_case, get_active_case, list_cases, using_case
 from local_case_organizer.ui.case_selection import requested_case
+from local_case_organizer.ui.ui_security import allow_local_post, allowed_ui_host
 from local_case_organizer.document_text import index_document, search_text
 from local_case_organizer.claims import add_claim, read_claims, set_review_status
 from local_case_organizer.comparison import add_comparison, comparison_report
@@ -324,6 +325,7 @@ HTML = """<!doctype html>
       const headers = new Headers(opts.headers || {});
       const selected = sessionStorage.getItem(CASE_CHOICE_KEY);
       if (selected) headers.set('X-LCO-Case', selected);
+      if ((opts.method || 'GET').toUpperCase() === 'POST') headers.set('X-LCO-UI', 'same-origin-ui');
       return originalCaseFetch(url, {...opts, headers});
     };
 
@@ -1396,6 +1398,8 @@ def _json_bytes(payload: dict[str, object]) -> bytes:
 
 
 def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True) -> int:
+    if not allowed_ui_host(host):
+        raise ValueError("The private case UI may only bind to localhost; no authentication is implemented")
     create_local_workspace()
 
     active_case = get_active_case()
@@ -1477,6 +1481,18 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
             self._send(404, "application/json; charset=utf-8", _json_bytes({"error": "not found"}))
 
         def do_POST(self) -> None:
+            if not allow_local_post(self.headers):
+                self._send(403, "application/json; charset=utf-8",
+                           _json_bytes({"error": "Same-origin local UI request required"}))
+                return
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+            except ValueError:
+                length = -1
+            if length < 0 or length > 32 * 1024 * 1024:
+                self._send(413, "application/json; charset=utf-8",
+                           _json_bytes({"error": "Request exceeds local size limit"}))
+                return
             try:
                 chosen = requested_case(self.headers.get("X-LCO-Case"), active_case, get_repo_root())
             except (ValueError, OSError) as exc:
