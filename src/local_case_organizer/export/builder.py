@@ -41,7 +41,7 @@ def build_export_package() -> Path:
         included_files.append(sanitized_provenance.name)
 
     copied_selected = copy_selected_files(export_dir)
-    included_files.extend(write_dossier(export_dir, copied_selected))
+    write_dossier(export_dir, copied_selected)
 
     readme = export_dir / "README.txt"
     readme.write_text(
