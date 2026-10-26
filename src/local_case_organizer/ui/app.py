@@ -417,7 +417,7 @@ HTML = """<!doctype html>
       tableNo: ["Nein", "No"],
       tableYes: ["Ja", "Yes"],
       indexFailed: ["Dokument konnte nicht indiziert werden", "Could not index document"],
-      editSaved: ["Änderungen gespeichert", "Changes saved"],,
+      editSaved: ["Änderungen gespeichert", "Changes saved"],
     };
     function uiText(key) {
       const localized = UI_MESSAGES[key];
