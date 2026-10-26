@@ -34,6 +34,13 @@ body:not(.lco-simple-mode) #lco-easy-home{display:none!important}
 #lco-easy-home .lco-easy-documents small{display:block;opacity:.75;margin-top:4px}
 #lco-easy-home .lco-easy-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
 #lco-easy-home .lco-easy-actions button{padding:11px 14px}
+.lco-quick-export{padding:8px 0 16px;border-bottom:1px solid var(--lco-border,#7775);margin-bottom:14px}
+.lco-quick-export p{line-height:1.55;max-width:700px}
+.lco-quick-export .lco-quick-export-actions{display:flex;gap:10px;flex-wrap:wrap}
+.lco-quick-export button{font-size:.92rem}
+.lco-quick-export-result{min-height:26px;padding:10px 0}
+.lco-quick-export-result[data-kind=error]{color:#e6a692}
+body.lco-light .lco-quick-export-result[data-kind=error]{color:#8c3223}
 body.lco-light #lco-easy-home .lco-easy-card{background:#fbf8f2}
 body.lco-light #lco-easy-home .lco-easy-intro p,
 body.lco-light #lco-easy-home .lco-easy-drop p,
@@ -64,6 +71,12 @@ const L={
   listTitle:"3. Deine Dokumente",empty:"Noch keine Dokumente in diesem Fall.",
   openDocuments:"Register bearbeiten",openTimeline:"Zeitlinie bearbeiten",openExport:"Übergabe vorbereiten",
   advanced:"Erweiterte Ansicht",basic:"Einfache Ansicht",
+  exportHelp:"Markiere zuerst im Dokumentenregister die gewünschten Unterlagen für die Übergabe. Ein Export startet erst nach deiner Bestätigung.",
+  chooseExport:"Dokumente für Übergabe auswählen",exportNow:"Übergabepaket erstellen",
+  exportConfirm:"Jetzt ein neues lokales Übergabepaket aus den markierten Dokumenten erstellen?",
+  exportNothing:"Noch keine Dokumente für die Übergabe markiert. Bitte zuerst im Register auswählen.",
+  exportDone:"Übergabepaket lokal erstellt. Es wurde nichts versendet.",
+  exportFailed:"Übergabepaket konnte nicht erstellt werden. Bitte Auswahl und Integritätsprüfung kontrollieren.",
   busy:"Dateien werden lokal übernommen und eingeordnet …",
   noFiles:"Bitte zuerst Dateien auswählen.",size:"Bitte kleinere Pakete auswählen (maximal 30 Dateien und 30 MB).",
   blockedFolder:"Ordner lassen sich hier nicht direkt ablegen. Bitte einzelne Dateien auswählen.",
@@ -87,6 +100,12 @@ const L={
   listTitle:"3. Your documents",empty:"No documents in this case yet.",
   openDocuments:"Edit register",openTimeline:"Edit timeline",openExport:"Prepare handoff",
   advanced:"Advanced view",basic:"Simple view",
+  exportHelp:"First mark the documents to include in the handoff in the document register. Export starts only after your confirmation.",
+  chooseExport:"Select documents for handoff",exportNow:"Create handoff package",
+  exportConfirm:"Create a local handoff package from the selected documents now?",
+  exportNothing:"No documents marked for handoff yet. Select documents in the register first.",
+  exportDone:"Local handoff package created. Nothing was transmitted.",
+  exportFailed:"Could not create the handoff package. Check the selection and integrity review.",
   busy:"Adding and organizing files locally …",
   noFiles:"Choose files first.",size:"Please use smaller batches (up to 30 files and 30 MB).",
   blockedFolder:"Folders cannot be dropped here. Please select individual files.",
@@ -100,7 +119,7 @@ const L={
   count:"{count} document(s) in the register",status:"Review status",imported:"Registered",unchecked:"Not reviewed"
  }
 };
-let cachedRows=[],lastNotice=null,busy=false;
+let cachedRows=[],lastNotice=null,exportNotice=null,busy=false;
 const lang=()=>String(localStorage.getItem("local_case_organizer_ui_lang")||"de").startsWith("de")?"de":"en";
 const t=(key)=>L[lang()][key]||key;
 const el=(id)=>document.getElementById(id);
@@ -128,11 +147,13 @@ function renderRows(){
  }
 }
 function copy(){
- document.querySelectorAll("#lco-easy-home [data-simple-copy]").forEach(node=>{node.textContent=t(node.dataset.simpleCopy)});
+ document.querySelectorAll("#lco-easy-home [data-simple-copy],#lco-quick-export [data-simple-copy]").forEach(node=>{node.textContent=t(node.dataset.simpleCopy)});
  const fallback=el("lco-simple-cases")?.querySelector('option[value="legacy-default"]');
  if(fallback)fallback.textContent=t("fallback");
  if(el("lco-simple-return"))el("lco-simple-return").textContent=t("basic");
  if(lastNotice)notice(lastNotice.kind,lastNotice.key,lastNotice.details);
+ const exportStatus=el("lco-quick-export-result");
+ if(exportStatus&&exportNotice)exportStatus.textContent=t(exportNotice);
  renderRows();
 }
 function setMode(simple){
@@ -273,6 +294,35 @@ function build(){
  });
  function openView(id){
    setMode(false);el("lco-tab-"+id)?.click();
+ }
+ const exportEditor=el("export-history")?.closest(".editor");
+ if(exportEditor&&!el("lco-quick-export")){
+   const panel=document.createElement("div");
+   panel.id="lco-quick-export";
+   panel.className="lco-quick-export";
+   panel.innerHTML=[
+     '<p data-simple-copy="exportHelp"></p><div class="lco-quick-export-actions">',
+     '<button type="button" id="lco-quick-export-choose" class="secondary" data-simple-copy="chooseExport"></button>',
+     '<button type="button" id="lco-quick-export-now" data-simple-copy="exportNow"></button></div>',
+     '<div id="lco-quick-export-result" class="lco-quick-export-result" role="status" aria-live="polite"></div>'
+   ].join("");
+   exportEditor.insertBefore(panel,exportEditor.firstChild);
+   el("lco-quick-export-choose").addEventListener("click",()=>openView("documents"));
+   el("lco-quick-export-now").addEventListener("click",async()=>{
+     const button=el("lco-quick-export-now");if(button.disabled)return;
+     button.disabled=true;
+     const output=el("lco-quick-export-result");
+     const show=(key,kind)=>{exportNotice=key;output.dataset.kind=kind;output.textContent=t(key)};
+     try{
+       const status=await responseJson(await fetch("/api/status"));
+       if(!(status.summary?.selected_export_count>0)){show("exportNothing","error");return}
+       if(!window.confirm(t("exportConfirm")))return;
+       await responseJson(await fetch("/api/export-package",{method:"POST"}));
+       show("exportDone","ok");
+       if(typeof window.loadExportHistory==="function")await window.loadExportHistory();
+     }catch(error){console.warn("Local handoff export failed",error);show("exportFailed","error")}
+     finally{button.disabled=false}
+   });
  }
  el("lco-simple-documents").addEventListener("click",()=>openView("documents"));
  el("lco-simple-timeline").addEventListener("click",()=>openView("timeline"));
