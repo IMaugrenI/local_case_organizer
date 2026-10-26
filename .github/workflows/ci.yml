@@ -41,3 +41,21 @@ jobs:
 
       - name: Run tests
         run: pytest -q
+
+  python314-compat:
+    name: Python 3.14 targeted compatibility
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Install test tooling
+        run: |
+          python -m pip install pytest
+          python -m pip install -e .
+      - name: Verify original entrypoint and upload parser
+        run: |
+          python run.py --help
+          python -m pytest -q tests/test_ui_multipart_python314.py
+

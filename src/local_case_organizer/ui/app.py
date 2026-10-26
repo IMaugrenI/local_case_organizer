@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import cgi
 import html
 import json
 import os
 import platform
-import shutil
 import subprocess
 import sys
 import webbrowser
@@ -17,6 +15,7 @@ from urllib.parse import urlparse
 from local_case_organizer.cases import create_case, get_active_case, list_cases, using_case
 from local_case_organizer.ui.case_selection import requested_case
 from local_case_organizer.ui.ui_security import allow_local_post, allowed_ui_host
+from local_case_organizer.ui.multipart_upload import parse_multipart_files
 from local_case_organizer.document_text import index_document, search_text
 from local_case_organizer.claims import add_claim, read_claims, set_review_status
 from local_case_organizer.comparison import add_comparison, comparison_report
@@ -1297,27 +1296,25 @@ def _open_path_in_file_manager(path: Path) -> dict[str, object]:
 
 
 def _save_uploaded_files(handler: BaseHTTPRequestHandler) -> dict[str, object]:
+    # Validate the entire bounded request before modifying the selected case.
+    uploads = parse_multipart_files(handler)
     paths = create_local_workspace()
-    form = cgi.FieldStorage(
-        fp=handler.rfile,
-        headers=handler.headers,
-        environ={
-            "REQUEST_METHOD": "POST",
-            "CONTENT_TYPE": handler.headers.get("Content-Type", ""),
-        },
-    )
-    files_field = form["files"] if "files" in form else []
-    if not isinstance(files_field, list):
-        files_field = [files_field]
-
+    if paths.inbox_dir.is_symlink():
+        raise ValueError("Inbox must not be a symlink")
     saved: list[str] = []
-    for item in files_field:
-        filename = Path(item.filename or "uploaded_file").name
-        target = _next_available_path(paths.inbox_dir / filename)
-        with target.open("wb") as handle:
-            shutil.copyfileobj(item.file, handle)
-        saved.append(str(target.relative_to(paths.inbox_dir)))
-
+    written: list[Path] = []
+    try:
+        for filename, content in uploads:
+            target = _next_available_path(paths.inbox_dir / filename)
+            # Exclusive creation prevents overwriting originals or racing uploads.
+            with target.open("xb") as handle:
+                written.append(target)
+                handle.write(content)
+            saved.append(str(target.relative_to(paths.inbox_dir)))
+    except Exception:
+        for target in written:
+            target.unlink(missing_ok=True)
+        raise
     return {
         "uploaded_files": saved,
         "inbox_dir": str(paths.inbox_dir),
