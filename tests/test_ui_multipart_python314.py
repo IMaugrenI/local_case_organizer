@@ -17,6 +17,7 @@ BOUNDARY = "----tof-safe-upload"
 def request(files, *, declared=None, boundary=BOUNDARY):
     body = bytearray()
     for filename, data in files:
+        filename = filename.replace("\\", "\\\\")
         body.extend(("--" + boundary + "\r\n" +
                      f'Content-Disposition: form-data; name="files"; filename="{filename}"\r\n' +
                      "Content-Type: application/octet-stream\r\n\r\n").encode())
