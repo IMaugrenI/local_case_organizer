@@ -5,11 +5,10 @@ temporary file, so no local server or real case workspace is touched.
 """
 from __future__ import annotations
 
-import json
 import re
 import shutil
-from pathlib import Path
 import subprocess
+from pathlib import Path
 
 import pytest
 
