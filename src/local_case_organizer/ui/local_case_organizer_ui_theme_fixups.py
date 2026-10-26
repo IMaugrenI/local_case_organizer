@@ -181,29 +181,51 @@ THEME_FIXUP_SCRIPT = r'''
 
   function ensureThemeButton() {
     const langButton = document.getElementById('lang-toggle');
-    if (!langButton) return;
-    const container = langButton.parentElement;
-    if (!container) return;
+    const header = document.getElementById('lco-brandbar');
+    if (!langButton || !header) return;
 
-    let row = container.querySelector('.lco-top-toggles');
+    // The original language toggle is created by the existing onload handler
+    // inside the hero. Move that *same* button (and its event listener) to the
+    // global brand row, so it remains available in every workspace section.
+    let row = header.querySelector('.lco-top-toggles');
     if (!row) {
       row = document.createElement('div');
       row.className = 'lco-top-toggles';
-      container.insertBefore(row, langButton);
-      row.appendChild(langButton);
+      row.setAttribute('role', 'group');
+      row.setAttribute('aria-label', lang() === 'de' ? 'Sprache und Darstellung' : 'Language and appearance');
+      header.appendChild(row);
     }
+    if (langButton.parentElement !== row) row.appendChild(langButton);
+    langButton.type = 'button';
+    langButton.classList.add('lco-header-control');
+
+    const langState = document.getElementById('lang-state');
+    if (langState) {
+      langState.classList.add('lco-screen-reader-only');
+      if (langState.parentElement !== row) row.appendChild(langState);
+    }
+    const formerBox = document.querySelector('.hero .lang-box');
+    if (formerBox && !formerBox.children.length) formerBox.remove();
 
     let button = document.getElementById('theme-toggle');
     if (!button) {
       button = document.createElement('button');
       button.id = 'theme-toggle';
       button.type = 'button';
-      button.className = 'lco-theme-toggle';
+      button.className = 'lco-theme-toggle lco-header-control';
       button.addEventListener('click', toggleTheme);
-      row.appendChild(button);
     }
-
+    if (button.parentElement !== row) row.appendChild(button);
+    row.setAttribute('aria-label', lang() === 'de' ? 'Sprache und Darstellung' : 'Language and appearance');
     updateThemeButton();
+    updateHeaderHeight();
+  }
+
+  function updateHeaderHeight() {
+    const header = document.getElementById('lco-brandbar');
+    if (!header) return;
+    const height = Math.ceil(header.getBoundingClientRect().height);
+    if (height > 0) document.documentElement.style.setProperty('--lco-brandbar-height', height + 'px');
   }
 
   function updateThemeButton() {
@@ -238,6 +260,11 @@ THEME_FIXUP_SCRIPT = r'''
   window.addEventListener('load', () => {
     ensureThemeButton();
     applyTheme();
+    const header = document.getElementById('lco-brandbar');
+    if (header && typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(updateHeaderHeight).observe(header);
+    }
+    window.addEventListener('resize', updateHeaderHeight);
     document.getElementById('lang-toggle')?.addEventListener('click', () => {
       setTimeout(() => { ensureThemeButton(); updateThemeButton(); }, 140);
     });

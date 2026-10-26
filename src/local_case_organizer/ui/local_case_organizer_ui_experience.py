@@ -209,6 +209,88 @@ body .lco-feedback{padding:16px 20px!important;line-height:1.55;}
 body .hero .lang-state,body .hero .lang-status{font-size:.92rem!important;}
 body .lco-process-step strong{font-size:.94rem!important;line-height:1.45;}
 body.lco-light .hero .lang-state,body.lco-light .hero .lang-status{color:#3a332b!important;}
+
+/* Global controls: fixed in the top brand row, never inside a hidden work area. */
+body .wrap #lco-brandbar{
+  position:sticky;
+  top:0;
+  z-index:35;
+  min-height:64px;
+  margin:0 0 14px!important;
+  padding:8px 0;
+  box-sizing:border-box;
+  background:var(--lco-bg,#0d0d0c)!important;
+  border-bottom:1px solid var(--lco-border,rgba(244,240,232,.10));
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px 22px;
+}
+body .wrap #lco-workspace-nav{
+  top:var(--lco-brandbar-height,64px);
+  margin-top:0!important;
+}
+body .wrap #lco-brandbar .lco-top-toggles{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:center;
+  margin:0 0 0 auto;
+  padding:0;
+}
+body #lco-brandbar #lang-toggle,
+body #lco-brandbar #theme-toggle,
+body #lco-brandbar .lco-header-control{
+  min-height:42px!important;
+  min-width:94px;
+  font-size:.94rem!important;
+  font-weight:700;
+  padding:9px 15px!important;
+  border-radius:10px!important;
+  border:1px solid #81715b!important;
+  background:#211e18!important;
+  color:#f4f0e8!important;
+}
+body.lco-light .wrap #lco-brandbar{background:#efe9df!important}
+body.lco-light #lco-brandbar #lang-toggle,
+body.lco-light #lco-brandbar #theme-toggle,
+body.lco-light #lco-brandbar .lco-header-control{
+  background:#ece4d9!important;
+  color:#211d18!important;
+  border-color:#8b8070!important;
+}
+body #lco-brandbar .lco-header-control:focus-visible{
+  outline:3px solid var(--lco-gold-bright,#e1b969)!important;
+  outline-offset:3px;
+}
+.lco-screen-reader-only{
+  position:absolute!important;
+  width:1px;height:1px;
+  padding:0;margin:-1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  white-space:nowrap;
+  border:0;
+}
+/* No card effect on the introduction: the page background shines through. */
+body .wrap .hero,
+body.lco-light .wrap .hero{
+  background:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  border:0!important;
+  border-bottom:1px solid var(--lco-border,rgba(244,240,232,.10))!important;
+  padding:18px 0 24px!important;
+  border-radius:0!important;
+}
+body .wrap .hero .hero-top,
+body .wrap .hero .hero-copy{background:transparent!important;box-shadow:none!important}
+@media(max-width:640px){
+  body .wrap #lco-brandbar{min-height:0;}
+  body .wrap #lco-brandbar .lco-top-toggles{width:100%;justify-content:flex-end}
+  body #lco-brandbar #lang-toggle,body #lco-brandbar #theme-toggle{min-width:0}
+}
 </style>'''
 EXPERIENCE_SCRIPT = r'''<script>
 (() => {

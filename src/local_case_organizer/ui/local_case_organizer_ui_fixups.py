@@ -747,7 +747,7 @@ FIXUP_SCRIPT = r'''
         showFeedback(copy().actionDone, 'ok');
         return result;
       } catch (error) {
-        showFeedback(copy().actionFailed, 'attention');
+        showFeedback(copy().actionFailed + ' ' + (error?.message || ''), 'attention');
         const log = document.getElementById('log');
         if (log) log.textContent = `Action failed: ${error}\n\n` + log.textContent;
       }
@@ -767,7 +767,7 @@ FIXUP_SCRIPT = r'''
         showFeedback(copy().uploadDone, 'ok');
         return result;
       } catch (error) {
-        showFeedback(copy().actionFailed, 'attention');
+        showFeedback(copy().actionFailed + ' ' + (error?.message || ''), 'attention');
         const log = document.getElementById('log');
         if (log) log.textContent = `Upload failed: ${error}\n\n` + log.textContent;
       }

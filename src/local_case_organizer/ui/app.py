@@ -590,6 +590,7 @@ HTML = """<!doctype html>
         body: JSON.stringify({ rows: registerRows }),
       });
       const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Save failed (HTTP ' + response.status + ')');
       appendLog(JSON.stringify(data, null, 2));
       await loadRegister();
       await refreshStatus();
@@ -631,6 +632,7 @@ HTML = """<!doctype html>
         body: JSON.stringify({ rows: timelineRows }),
       });
       const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Save failed (HTTP ' + response.status + ')');
       appendLog(JSON.stringify(data, null, 2));
       await loadTimeline();
       await refreshStatus();
@@ -669,6 +671,7 @@ HTML = """<!doctype html>
         body: JSON.stringify({ rows: entityRows }),
       });
       const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Save failed (HTTP ' + response.status + ')');
       appendLog(JSON.stringify(data, null, 2));
       await loadEntities();
       await refreshStatus();
@@ -1099,6 +1102,10 @@ HTML = """<!doctype html>
       appendLog(`Running ${action} ...`);
       const response = await fetch(`/api/${action}`, { method: 'POST' });
       const data = await response.json();
+      if (!response.ok) {
+        appendLog('Action ' + action + ' failed: ' + (data.error || response.status));
+        throw new Error(data.error || 'Action failed (HTTP ' + response.status + ')');
+      }
       appendLog(JSON.stringify(data, null, 2));
       await refreshAll();
     }
@@ -1116,6 +1123,10 @@ HTML = """<!doctype html>
       appendLog(`Uploading ${input.files.length} file(s) to inbox ...`);
       const response = await fetch('/api/upload', { method: 'POST', body: form });
       const data = await response.json();
+      if (!response.ok) {
+        appendLog('Upload failed: ' + (data.error || response.status));
+        throw new Error(data.error || 'Upload failed (HTTP ' + response.status + ')');
+      }
       appendLog(JSON.stringify(data, null, 2));
       input.value = '';
       await refreshStatus();
@@ -1496,7 +1507,13 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
                 self._send(400, "application/json; charset=utf-8", _json_bytes({"error": str(exc)}))
                 return
             with using_case(chosen):
-                self._handle_post()
+                try:
+                    self._handle_post()
+                except (ValueError, TypeError, OSError) as exc:
+                    # Invalid user input (including an empty inbox) is an API
+                    # response, not a broken connection or thread traceback.
+                    self._send(400, "application/json; charset=utf-8",
+                               _json_bytes({"error": str(exc)}))
 
         def _handle_post(self) -> None:
             parsed = urlparse(self.path)
