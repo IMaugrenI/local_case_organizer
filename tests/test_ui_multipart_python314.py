@@ -86,4 +86,4 @@ def test_duplicate_files_are_bounded():
 
 def test_cli_override_is_importable_without_cgi():
     from local_case_organizer.ui.app import HTML
-    assert "id=\\"case-selector\\"" in HTML
+    assert 'id="case-selector"' in HTML
