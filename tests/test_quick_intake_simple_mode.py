@@ -70,8 +70,17 @@ def test_quick_intake_refuses_symlinks_and_oversized_batches(tmp_path, monkeypat
     (paths.inbox_dir / "shortcut").unlink()
     for index in range(65):
         (paths.inbox_dir / ("doc-%03d.txt" % index)).write_text("one", encoding="utf-8")
-    with pytest.raises(ValueError, match="64"):
-        quick_intake.quick_organize_inbox()
+    # A large inbox is processed in safe batches, not blocked forever.
+    monkeypatch.setattr(quick_intake, "import_sources", lambda source, *, selected_files: None)
+    monkeypatch.setattr(quick_intake, "build_document_register", lambda: None)
+    result = quick_intake.quick_organize_inbox()
+    assert result["imported_files"] == 64
+    assert result["remaining_files"] == 1
+
+    with pytest.raises(ValueError, match="Invalid inbox filename"):
+        quick_intake.quick_organize_inbox(["../outside.txt"])
+    with pytest.raises(ValueError, match="missing or unsafe"):
+        quick_intake.quick_organize_inbox(["does-not-exist.pdf"])
 
 
 def test_simple_mode_is_opt_in_for_processing_and_expert_view_remains():
@@ -79,6 +88,7 @@ def test_simple_mode_is_opt_in_for_processing_and_expert_view_remains():
     assert "lco-simple-drop" in SIMPLE_SCRIPT
     assert '"/api/upload"' in SIMPLE_SCRIPT
     assert '"/api/quick-organize"' in SIMPLE_SCRIPT
+    assert "organize(saved.uploaded_files)" in SIMPLE_SCRIPT
     assert "event.preventDefault()" in SIMPLE_SCRIPT
     assert '"advanced"' in SIMPLE_SCRIPT
     assert 'openView("export")' in SIMPLE_SCRIPT

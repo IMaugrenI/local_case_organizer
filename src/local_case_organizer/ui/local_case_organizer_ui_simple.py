@@ -68,6 +68,7 @@ const L={
   noFiles:"Bitte zuerst Dateien auswählen.",size:"Bitte kleinere Pakete auswählen (maximal 30 Dateien und 30 MB).",
   blockedFolder:"Ordner lassen sich hier nicht direkt ablegen. Bitte einzelne Dateien auswählen.",
   done:"{added} Datei(en) neu eingeordnet. {skipped} bereits vorhandene Datei(en) übersprungen.",
+  more:"Weitere {remaining} Datei(en) warten. Noch einmal auf „Inbox-Dateien einordnen“ klicken.",
   noNew:"Keine neuen Dateien. Bereits bekannte Unterlagen wurden nicht doppelt importiert.",
   savedOnly:"Die Dateien liegen sicher im Eingangsordner. Die Einordnung wurde nicht abgeschlossen. Über „Inbox-Dateien einordnen“ erneut starten.",
   failure:"Der Vorgang konnte nicht abgeschlossen werden. Die bisherigen Unterlagen bleiben erhalten.",
@@ -90,6 +91,7 @@ const L={
   noFiles:"Choose files first.",size:"Please use smaller batches (up to 30 files and 30 MB).",
   blockedFolder:"Folders cannot be dropped here. Please select individual files.",
   done:"{added} new file(s) organized; {skipped} existing file(s) skipped.",
+  more:"{remaining} more file(s) are waiting. Select “Organize inbox files” again.",
   noNew:"No new files. Previously registered documents were not imported twice.",
   savedOnly:"Files are safely in the inbox, but registration did not finish. Use “Organize inbox files” to retry.",
   failure:"Could not finish the operation. Existing documents remain untouched.",
@@ -164,13 +166,17 @@ async function refreshCases(){
    picker.append(option);
  }
 }
-async function organize(){
+async function organize(fileNames){
  if(busy)return;
  busy=true;el("lco-simple-pick").disabled=true;el("lco-simple-inbox").disabled=true;
  notice("working","busy");
  try{
-  const result=await responseJson(await fetch("/api/quick-organize",{method:"POST"}));
+  const result=await responseJson(await fetch("/api/quick-organize",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({files:Array.isArray(fileNames)?fileNames:null})
+  }));
   notice("ok",result.imported_files?"done":"noNew",{added:result.imported_files||0,skipped:result.already_present||0});
+  if(result.remaining_files)notice("ok","more",{remaining:result.remaining_files});
   await refreshDocuments();
   if(typeof window.refreshStatus==="function")await window.refreshStatus();
  }catch(error){console.warn("Local intake failed",error);notice("error","savedOnly")}
@@ -186,9 +192,9 @@ async function upload(files){
  try{
   const form=new FormData();
   for(const file of batch)form.append("files",file,file.name);
-  await responseJson(await fetch("/api/upload",{method:"POST",body:form}));
+  const saved=await responseJson(await fetch("/api/upload",{method:"POST",body:form}));
   busy=false; // The next phase has its own one-at-a-time guard.
-  await organize();
+  await organize(saved.uploaded_files);
  }catch(error){
   console.warn("Local upload failed",error);
   notice("error","failure");
@@ -233,7 +239,7 @@ function build(){
  }
  el("lco-simple-pick").addEventListener("click",()=>el("lco-simple-files").click());
  el("lco-simple-files").addEventListener("change",event=>upload(event.target.files));
- el("lco-simple-inbox").addEventListener("click",organize);
+ el("lco-simple-inbox").addEventListener("click",()=>organize());
  const zone=el("lco-simple-drop");
  zone.addEventListener("dragover",event=>{event.preventDefault();zone.classList.add("dragging")});
  zone.addEventListener("dragleave",()=>zone.classList.remove("dragging"));

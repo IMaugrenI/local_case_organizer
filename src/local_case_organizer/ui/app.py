@@ -1642,7 +1642,9 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
             elif parsed.path == "/api/import":
                 payload = import_sources(None)
             elif parsed.path == "/api/quick-organize":
-                payload = quick_organize_inbox()
+                body = _read_json_body(self)
+                files = body.get("files")
+                payload = quick_organize_inbox(files)
             elif parsed.path == "/api/build-register":
                 payload = {"register_path": str(build_document_register())}
             elif parsed.path == "/api/build-timeline":
