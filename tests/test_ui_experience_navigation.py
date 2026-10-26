@@ -38,6 +38,8 @@ print("UI_EXPERIENCE_OK")
 
 def test_layer_has_no_new_data_calls():
     assert "fetch('/api/" not in EXPERIENCE_SCRIPT
-    assert "document.createElement('section')" in EXPERIENCE_SCRIPT
-    assert "target.appendChild(node)" in EXPERIENCE_SCRIPT
+    assert "document.createElement('nav')" in EXPERIENCE_SCRIPT
+    assert "groupNode(source(ref),view)" in EXPERIENCE_SCRIPT
+    assert "node.hidden=(selected!==view)" in EXPERIENCE_SCRIPT
+    assert "target.appendChild(node)" not in EXPERIENCE_SCRIPT
     assert "position:sticky" in EXPERIENCE_CSS

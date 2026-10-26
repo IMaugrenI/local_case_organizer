@@ -538,6 +538,10 @@ FIXUP_SCRIPT = r'''
 
     const anchor = log || paths || helpfulActions;
     if (!anchor || !anchor.parentNode) return;
+    // Capture the insertion point BEFORE moving any children. The old code
+    // used anchor.parentNode after the move, creating a DOM hierarchy cycle.
+    const placeholder = document.createComment('lco-technical-details');
+    anchor.parentNode.insertBefore(placeholder, anchor.nextSibling);
 
     const details = document.createElement('details');
     details.id = 'lco-tech-details';
@@ -568,7 +572,7 @@ FIXUP_SCRIPT = r'''
       if (el) el.classList.add('lco-hidden-heading');
     });
 
-    anchor.parentNode.appendChild(details);
+    placeholder.replaceWith(details);
   }
 
   function applyHumanCopy() {

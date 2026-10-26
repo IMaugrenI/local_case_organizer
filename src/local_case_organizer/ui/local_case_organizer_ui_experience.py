@@ -4,6 +4,7 @@ B02: keep all original nodes, callbacks and local-only data paths intact.
 No second UI or external dependency.
 """
 EXPERIENCE_CSS = r'''<style>
+[hidden]{display:none!important}
 /* B02 usability correction: keep the original backend, HTML, handlers and theme. */
 html{font-size:16px;scroll-behavior:smooth}
 body{font-size:1rem!important;line-height:1.55}
@@ -18,33 +19,33 @@ body .lco-process{margin:22px 0!important}
 body .lco-process-step{padding:11px!important}
 .lco-workspace-nav{position:sticky;top:0;z-index:20;display:flex;gap:8px;align-items:center;overflow-x:auto;padding:11px;margin:18px 0 24px;background:var(--lco-bg,#0d0d0c);border:1px solid var(--lco-border,rgba(244,240,232,.13));border-radius:16px;box-shadow:0 8px 28px rgba(0,0,0,.13)}
 .lco-workspace-nav button{flex:0 0 auto;white-space:nowrap;font-size:.99rem!important;min-height:44px!important;padding:11px 16px!important;background:transparent!important;color:var(--lco-muted,#aaa49a)!important;border:1px solid transparent!important}
-.lco-workspace-nav button[aria-selected=true]{background:var(--lco-gold,#c69a52)!important;color:#1b160e!important}
-.lco-workspace-nav button:hover:not([aria-selected=true]){color:var(--lco-text,#f4f0e8)!important;background:var(--lco-surface,#181612)!important}
-.lco-workspace-view[hidden]{display:none!important}
-.lco-workspace-view{min-height:250px}
-.lco-workspace-view .section-title{font-size:clamp(1.4rem,2.2vw,1.85rem)!important;margin-top:28px!important;margin-bottom:12px!important}
-.lco-workspace-view>.editor,.lco-workspace-view>.file-list,.lco-workspace-view>.upload-box,.lco-workspace-view>.actions,.lco-workspace-view>.grid,.lco-workspace-view>.lco-tech-details{margin-bottom:24px!important}
-.lco-workspace-view .editor,.lco-workspace-view .upload-box{padding:clamp(17px,2vw,28px)!important}
-.lco-workspace-view .hint,.lco-workspace-view .note{font-size:.96rem!important;line-height:1.65!important;color:#c5beb3!important}
-.lco-workspace-view p{line-height:1.65}
-.lco-workspace-view .editor-actions,.lco-workspace-view .upload-row{gap:12px!important;align-items:flex-end;margin-bottom:15px}
-.lco-workspace-view .editor-actions>label{display:flex;flex:1 1 205px;min-width:180px;flex-direction:column;gap:8px;font-size:.98rem}
-.lco-workspace-view .editor-actions>label:has(input[type=checkbox]){flex:0 0 auto;min-width:unset;flex-direction:row;align-items:center}
-.lco-workspace-view input[type=text],.lco-workspace-view input[type=date],.lco-workspace-view input[type=number],.lco-workspace-view textarea,.lco-workspace-view select{box-sizing:border-box;min-height:44px;max-width:100%;padding:10px 12px;font-size:1rem!important}
-.lco-workspace-view input[type=checkbox]{width:18px;height:18px;accent-color:var(--lco-gold,#c69a52)}
-.lco-workspace-view textarea{min-height:100px;margin:9px 0 15px}
-.lco-workspace-view button{font-size:.96rem!important;padding:12px 16px!important}
-.lco-workspace-view .actions{grid-template-columns:repeat(auto-fit,minmax(215px,1fr))!important}
-.lco-workspace-view .grid{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))!important}
-.lco-workspace-view table{font-size:.93rem}
-.lco-workspace-view table th{font-size:.88rem!important}
-.lco-workspace-view td.readonly{font-size:.87rem!important}
-.lco-workspace-view [aria-live=polite]{overflow-wrap:anywhere}
+.lco-workspace-nav button[aria-current=page]{background:var(--lco-gold,#c69a52)!important;color:#1b160e!important}
+.lco-workspace-nav button:hover:not([aria-current=page]){color:var(--lco-text,#f4f0e8)!important;background:var(--lco-surface,#181612)!important}
+[hidden].lco-hidden-by-view{display:none!important}
+.wrap{min-height:250px}
+.wrap .section-title{font-size:clamp(1.4rem,2.2vw,1.85rem)!important;margin-top:28px!important;margin-bottom:12px!important}
+.wrap>.editor,.wrap>.file-list,.wrap>.upload-box,.wrap>.actions,.wrap>.grid,.wrap>.lco-tech-details{margin-bottom:24px!important}
+.wrap .editor,.wrap .upload-box{padding:clamp(17px,2vw,28px)!important}
+.wrap .hint,.wrap .note{font-size:.96rem!important;line-height:1.65!important;color:#c5beb3!important}
+.wrap p{line-height:1.65}
+.wrap .editor-actions,.wrap .upload-row{gap:12px!important;align-items:flex-end;margin-bottom:15px}
+.wrap .editor-actions>label{display:flex;flex:1 1 205px;min-width:180px;flex-direction:column;gap:8px;font-size:.98rem}
+.wrap .editor-actions>label:has(input[type=checkbox]){flex:0 0 auto;min-width:unset;flex-direction:row;align-items:center}
+.wrap input[type=text],.wrap input[type=date],.wrap input[type=number],.wrap textarea,.wrap select{box-sizing:border-box;min-height:44px;max-width:100%;padding:10px 12px;font-size:1rem!important}
+.wrap input[type=checkbox]{width:18px;height:18px;accent-color:var(--lco-gold,#c69a52)}
+.wrap textarea{min-height:100px;margin:9px 0 15px}
+.wrap button{font-size:.96rem!important;padding:12px 16px!important}
+.wrap .actions{grid-template-columns:repeat(auto-fit,minmax(215px,1fr))!important}
+.wrap .grid{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))!important}
+.wrap table{font-size:.93rem}
+.wrap table th{font-size:.88rem!important}
+.wrap td.readonly{font-size:.87rem!important}
+.wrap [aria-live=polite]{overflow-wrap:anywhere}
 body.lco-light .lco-workspace-nav{background:#f6f1e8}
 body.lco-light .lco-workspace-nav button{color:#645746!important}
-body.lco-light .lco-workspace-nav button[aria-selected=true]{background:#9b7135!important;color:white!important}
-body.lco-light .lco-workspace-view .hint,body.lco-light .lco-workspace-view .note{color:#544d44!important}
-@media(max-width:680px){.lco-workspace-nav{margin:12px -4px 18px;padding:7px}.lco-workspace-view .editor-actions>label{min-width:100%}.lco-workspace-view .actions{grid-template-columns:1fr!important}body .lco-process{display:none}}
+body.lco-light .lco-workspace-nav button[aria-current=page]{background:#9b7135!important;color:white!important}
+body.lco-light .wrap .hint,body.lco-light .wrap .note{color:#544d44!important}
+@media(max-width:680px){.lco-workspace-nav{margin:12px -4px 18px;padding:7px}.wrap .editor-actions>label{min-width:100%}.wrap .actions{grid-template-columns:1fr!important}body .lco-process{display:none}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 
 
@@ -107,11 +108,11 @@ body .lco-workspace-nav button:not(.ghost):not(.light):not(.secondary):not(.lco-
   background:transparent!important;
   color:var(--lco-muted)!important;
 }
-body .lco-workspace-nav button:hover:not([aria-selected=true]):not(.ghost):not(.light):not(.secondary):not(.lco-theme-toggle){
+body .lco-workspace-nav button:hover:not([aria-current=page]):not(.ghost):not(.light):not(.secondary):not(.lco-theme-toggle){
   background:var(--lco-surface)!important;
   color:var(--lco-text)!important;
 }
-body .lco-workspace-nav button[aria-selected=true]:not(.ghost):not(.light):not(.secondary):not(.lco-theme-toggle){
+body .lco-workspace-nav button[aria-current=page]:not(.ghost):not(.light):not(.secondary):not(.lco-theme-toggle){
   background:var(--lco-contrast-primary-bg)!important;
   color:var(--lco-contrast-primary-fg)!important;
 }
@@ -137,18 +138,64 @@ body.lco-light .lco-skip-link{
   background:#80571b!important;
   color:#fff!important;
 }
-body.lco-light .lco-workspace-view .hint,
-body.lco-light .lco-workspace-view .note{
+body.lco-light .wrap .hint,
+body.lco-light .wrap .note{
   color:#544d44!important;
 }
 body .lco-workspace-nav button:focus-visible,
-body .lco-workspace-view button:focus-visible,
-body .lco-workspace-view input:focus-visible,
-body .lco-workspace-view select:focus-visible,
-body .lco-workspace-view textarea:focus-visible{
+body .wrap button:focus-visible,
+body .wrap input:focus-visible,
+body .wrap select:focus-visible,
+body .wrap textarea:focus-visible{
   outline:3px solid var(--lco-gold-bright)!important;
   outline-offset:3px;
 }
+
+/* Explicit readable light-mode foregrounds on every existing card/control. */
+body.lco-light .hero,
+body.lco-light .card,
+body.lco-light .editor,
+body.lco-light .upload-box,
+body.lco-light .file-list,
+body.lco-light .lco-tech-details{
+ color:#211d18!important;
+}
+body.lco-light :is(.editor,.upload-box,.file-list,.card) :is(p,li,blockquote,label),
+body.lco-light .hero :is(h1,.lead,.note){
+ color:#211d18!important;
+}
+body.lco-light :is(.editor,.upload-box,.file-list,.card) :is(.hint,.note,.readonly){
+ color:#4d463e!important;
+}
+body.lco-light .lco-feedback:not(.ok):not(.attention){
+ color:#211d18!important;
+ background:#fbf8f2!important;
+}
+body.lco-light button.ghost,
+body.lco-light button.light,
+body.lco-light button.secondary,
+body.lco-light #lang-toggle,
+body.lco-light .lco-theme-toggle{
+ background:#ece4d9!important;
+ color:#211d18!important;
+ border-color:#8b8070!important;
+}
+body.lco-light #lco-workspace-nav button:not([aria-current=page]){
+ background:transparent!important;
+ color:#302920!important;
+}
+body.lco-light #lco-workspace-nav button[aria-current=page]{
+ background:#80571b!important;
+ color:#ffffff!important;
+}
+body.lco-light a:not(.lco-skip-link){color:#16497b}
+body.lco-light table :is(th,td){color:#211d18!important}
+body.lco-light table th{background:#e5ddd1!important}
+body.lco-light td.readonly{color:#4d463e!important}
+body.lco-light .chip{color:#664515!important;background:#f7eddc!important}
+body.lco-light .lco-brand-name,
+body.lco-light .lco-product-name{color:#211d18!important}
+body.lco-light .lco-brand-mark{color:#80571b}
 </style>'''
 EXPERIENCE_SCRIPT = r'''<script>
 (() => {
@@ -243,44 +290,75 @@ function source(ref){
  if(node.parentElement?.parentElement?.classList.contains('two-col'))node=node.parentElement;
  return node;
 }
-function move(ref,target){
- const node=source(ref);if(!node||!node.parentNode||node.parentElement===target)return;
- const prev=node.previousElementSibling;
- if(prev?.matches('h2.section-title')&&!prev.classList.contains('lco-hidden-heading'))target.appendChild(prev);
- target.appendChild(node);
+const grouped = new Map();
+function groupNode(node,view){
+ if(!node || !node.parentNode) return;
+ const old = grouped.get(node);
+ if(old && old !== view) return; // Preserve one predictable section assignment.
+ grouped.set(node,view);
+ const heading = node.previousElementSibling;
+ if(heading?.matches('h2.section-title') && !heading.classList.contains('lco-hidden-heading')) {
+  grouped.set(heading,view);
+ }
+}
+function groupView(ref,view) {
+ groupNode(source(ref),view);
 }
 function activate(id,focus=false){
  selected=VIEWS.some(v=>v.id===id)?id:'overview';
- try{sessionStorage.setItem('lco_view_v2',selected)}catch{}
+ try{sessionStorage.setItem('lco_view_v3',selected)}catch{}
+ for(const [node,view] of grouped) {
+  node.hidden=(selected!==view);
+ }
+ // Preserve the original two-column wrappers; do not move register/timeline
+ // elements because the upstream translation layer uses sibling positions.
+ for(const wrapper of document.querySelectorAll('.two-col')) {
+  const children=[...wrapper.children];
+  if(children.some(child=>grouped.has(child))) {
+   wrapper.hidden=!children.some(child=>!child.hidden);
+   wrapper.style.gridTemplateColumns='minmax(0,1fr)';
+  }
+ }
+ const nav=document.getElementById('lco-workspace-nav');
  for(const view of VIEWS){
-  const panel=document.getElementById('lco-panel-'+view.id),tab=document.getElementById('lco-tab-'+view.id);
-  if(panel)panel.hidden=view.id!==selected;
-  if(tab){tab.setAttribute('aria-selected',String(view.id===selected));tab.tabIndex=view.id===selected?0:-1}
+  const tab=document.getElementById('lco-tab-'+view.id);
+  if(!tab)continue;
+  if(view.id===selected)tab.setAttribute('aria-current','page');
+  else tab.removeAttribute('aria-current');
  }
  if(focus)document.getElementById('lco-tab-'+selected)?.focus();
 }
 function build(){
  if(document.getElementById('lco-workspace-nav'))return;
  const wrap=document.querySelector('.wrap');
- const anchor=document.getElementById('lco-process')||document.getElementById('next-step');
- if(!wrap||!anchor||anchor.parentElement!==wrap)return;
- const nav=document.createElement('nav');nav.id='lco-workspace-nav';nav.className='lco-workspace-nav';nav.setAttribute('role','tablist');
- const container=document.createElement('div');container.id='lco-workspace-views';
- anchor.insertAdjacentElement('afterend',nav);nav.insertAdjacentElement('afterend',container);
+ if(!wrap)return;
+ const nav=document.createElement('nav');nav.id='lco-workspace-nav';
+ nav.className='lco-workspace-nav';nav.setAttribute('aria-label','Arbeitsbereiche');
+ const brand=document.getElementById('lco-brandbar');
+ if(brand?.parentElement===wrap)brand.insertAdjacentElement('afterend',nav);
+ else wrap.insertBefore(nav,wrap.firstChild);
+
  for(const view of VIEWS){
-  const button=document.createElement('button');button.type='button';button.id='lco-tab-'+view.id;button.setAttribute('role','tab');button.setAttribute('aria-controls','lco-panel-'+view.id);
-  button.addEventListener('click',()=>activate(view.id));nav.appendChild(button);
-  const panel=document.createElement('section');panel.id='lco-panel-'+view.id;panel.className='lco-workspace-view';panel.setAttribute('role','tabpanel');panel.setAttribute('aria-labelledby',button.id);panel.tabIndex=-1;container.appendChild(panel);
-  view.refs.forEach(ref=>move(ref,panel));
+  const button=document.createElement('button');
+  button.type='button';button.id='lco-tab-'+view.id;
+  button.addEventListener('click',()=>activate(view.id));
+  nav.appendChild(button);
+  for(const ref of view.refs)groupView(ref,view.id);
  }
- for(const columns of wrap.querySelectorAll('.two-col'))if(!columns.children.length)columns.remove();
+ // Hero, next-step and progress belong to overview; the live feedback box
+ // stays visible so users can see errors even after switching areas.
+ for(const id of ['next-step','lco-process']){
+  const node=document.getElementById(id);if(node)groupNode(node,'overview');
+ }
+ const hero=wrap.querySelector('.hero');if(hero)groupNode(hero,'overview');
+
  nav.addEventListener('keydown',e=>{
   if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
   e.preventDefault();const i=VIEWS.findIndex(v=>v.id===selected);
   const next=e.key==='Home'?0:e.key==='End'?VIEWS.length-1:(i+(e.key==='ArrowRight'?1:-1)+VIEWS.length)%VIEWS.length;
   activate(VIEWS[next].id,true);
  });
- let remembered='overview';try{remembered=sessionStorage.getItem('lco_view_v2')||remembered}catch{}
+ let remembered='overview';try{remembered=sessionStorage.getItem('lco_view_v3')||remembered}catch{}
  activate(remembered);
 }
 function copy(){
@@ -307,6 +385,7 @@ function copy(){
  const legacy=document.querySelector('#case-selector option[value=legacy-default]');if(legacy)legacy.textContent=(isDe()?'Standard-Arbeitsbereich':'Legacy workspace')+' (legacy-default)';
 }
 document.addEventListener('DOMContentLoaded',()=>{
+ // Existing scripts finish their initial DOM translations before navigation attaches.
  build();copy();
  document.getElementById('lang-toggle')?.addEventListener('click',()=>{setTimeout(copy,120);setTimeout(copy,500)});
  document.addEventListener('click',()=>setTimeout(copy,250),true);
