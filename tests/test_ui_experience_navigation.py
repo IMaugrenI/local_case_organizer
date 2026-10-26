@@ -19,7 +19,7 @@ html = ui.run_ui.__globals__["HTML"]
 assert "lco-workspace-nav" in html
 assert "VIEWS=[" in html
 assert "Dokumente" in html and "Beziehungen" in html
-assert "lco-workspace-view[hidden]" in html
+assert "[hidden]{display:none!important}" in html
 assert 'id="case-selector"' in html
 assert 'id="fileInput"' in html
 assert 'id="task-board"' in html

@@ -43,7 +43,7 @@ def test_contrast_applies_to_real_widget_types_and_navigation():
     assert "body.lco-light .next-step" in EXPERIENCE_CSS
     assert "body.lco-light .lco-feedback.ok" in EXPERIENCE_CSS
     assert "body.lco-light .lco-feedback.attention" in EXPERIENCE_CSS
-    assert "button[aria-selected=true]:not(.ghost)" in EXPERIENCE_CSS
+    assert "button[aria-current=page]:not(.ghost)" in EXPERIENCE_CSS
     assert "color-scheme:dark" in EXPERIENCE_CSS
     assert "color-scheme:light" in EXPERIENCE_CSS
 
