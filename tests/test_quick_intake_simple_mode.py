@@ -69,7 +69,7 @@ def test_quick_intake_refuses_symlinks_and_oversized_batches(tmp_path, monkeypat
         quick_intake.quick_organize_inbox()
     (paths.inbox_dir / "shortcut").unlink()
     for index in range(65):
-        (paths.inbox_dir / ("doc-%03d.txt" % index)).write_text("one", encoding="utf-8")
+        (paths.inbox_dir / ("doc-%03d.txt" % index)).write_text("one-%d" % index, encoding="utf-8")
     # A large inbox is processed in safe batches, not blocked forever.
     monkeypatch.setattr(quick_intake, "import_sources", lambda source, *, selected_files: None)
     monkeypatch.setattr(quick_intake, "build_document_register", lambda: None)
