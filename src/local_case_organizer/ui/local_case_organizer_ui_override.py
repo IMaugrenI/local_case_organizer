@@ -95,7 +95,20 @@ def _stable_ordered_script(source: str) -> str:
     language = "localStorage.getItem('local_case_organizer_ui_lang') || 'en'"
     if language not in source:
         raise RuntimeError("Unknown legacy language preference initialization")
-    return source.replace(language, "localStorage.getItem('local_case_organizer_ui_lang') || 'de'", 1)
+    source = source.replace(language, "localStorage.getItem('local_case_organizer_ui_lang') || 'de'", 1)
+    # The old asset intentionally delayed a whole-page rewrite by 50 ms.
+    # That ran after the keyed localization, visibly toggling words back.
+    late_pass = "      setTimeout(applyStatic, 50);"
+    if late_pass not in source:
+        raise RuntimeError("Unknown legacy UI initialization sequence")
+    source = source.replace(late_pass, "      applyStatic();", 1)
+    # A language click should perform one full refresh; the renderer pipeline
+    # applies the final translated text once data loading has completed.
+    eager_pass = "        applyStatic();\n        if (window.refreshAll) window.refreshAll();"
+    if eager_pass not in source:
+        raise RuntimeError("Unknown legacy language toggle sequence")
+    source = source.replace(eager_pass, "        if (window.refreshAll) window.refreshAll();\n        else applyStatic();", 1)
+    return source
 
 
 ORDERED_SCRIPT_SAFE = _stable_ordered_script(ORDERED_SCRIPT)
