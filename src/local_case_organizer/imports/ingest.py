@@ -113,7 +113,7 @@ def rebuild_provenance_table(paths: WorkspacePaths | None = None) -> Path:
     return output_path
 
 
-def import_sources(source: str | None = None) -> dict[str, object]:
+def import_sources(source: str | None = None, *, selected_files: list[Path] | None = None) -> dict[str, object]:
     paths = create_local_workspace()
     source_path = Path(source).expanduser().resolve() if source else paths.inbox_dir.resolve()
     source_label = "cli-source" if source else "local-inbox"
@@ -121,7 +121,25 @@ def import_sources(source: str | None = None) -> dict[str, object]:
     if not source_path.exists():
         raise FileNotFoundError(f"Source path does not exist: {source_path}")
 
-    files = _iter_source_files(source_path)
+    if selected_files is None:
+        files = _iter_source_files(source_path)
+    else:
+        # Reuse the existing importer for a bounded, explicitly selected batch.
+        # Check containment before resolving paths; do not follow symlinks.
+        if not source_path.is_dir():
+            raise ValueError("Selected imports require a directory source")
+        files = []
+        root = source_path.resolve(strict=True)
+        for candidate in selected_files:
+            candidate = Path(candidate)
+            if candidate.is_symlink() or not candidate.is_file():
+                raise ValueError("Selected source is not a regular file")
+            resolved = candidate.resolve(strict=True)
+            if not _within(root, resolved):
+                raise ValueError("Selected source is outside the inbox")
+            files.append(candidate)
+        if len(files) != len(set(files)):
+            raise ValueError("Selected source contains duplicates")
     if not files:
         raise ValueError(f"No files found to import: {source_path}")
 

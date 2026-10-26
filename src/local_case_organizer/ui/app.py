@@ -16,6 +16,7 @@ from local_case_organizer.cases import create_case, get_active_case, list_cases,
 from local_case_organizer.ui.case_selection import requested_case
 from local_case_organizer.ui.ui_security import allow_local_post, allowed_ui_host
 from local_case_organizer.ui.multipart_upload import parse_multipart_files
+from local_case_organizer.ui.quick_intake import quick_organize_inbox
 from local_case_organizer.document_text import index_document, search_text
 from local_case_organizer.claims import add_claim, read_claims, set_review_status
 from local_case_organizer.comparison import add_comparison, comparison_report
@@ -1640,6 +1641,8 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
                 payload = _save_uploaded_files(self)
             elif parsed.path == "/api/import":
                 payload = import_sources(None)
+            elif parsed.path == "/api/quick-organize":
+                payload = quick_organize_inbox()
             elif parsed.path == "/api/build-register":
                 payload = {"register_path": str(build_document_register())}
             elif parsed.path == "/api/build-timeline":
