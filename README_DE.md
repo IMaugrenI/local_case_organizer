@@ -147,8 +147,11 @@ Gemeinsame Starter in diesen Ordnern:
 1. Repository lokal klonen
 2. den passenden `start_here`-Starter für dein Betriebssystem ausführen
 3. die Browser-UI öffnet sich lokal
-4. private Dateien in `data/inbox/` ablegen oder den Inbox-Button aus der UI nutzen
-5. die großen UI-Buttons für Import, Register, Timeline und Export verwenden
+4. in der **einfachen Ansicht** einen Fall auswählen oder anlegen
+5. bis zu 30 Dateien (höchstens 30 MiB pro Auswahl) in das markierte Feld ziehen oder auswählen; diese bewusste Aktion lädt die Dateien hoch, importiert sie und aktualisiert das Dokumentenregister
+6. die Dokumentenliste prüfen; über **Erweiterte Ansicht** sind Zeitlinie, Integritätsprüfung, optionale lokale Textindizierung und manueller Export erreichbar
+
+Der Knopf **Bereits abgelegte Inbox-Dateien einordnen** verarbeitet Dateien, die zuvor in `data/inbox/` abgelegt wurden. Bereits importierte identische Dateiinhalte werden übersprungen; Eingangsdateien und Originalkopien bleiben erhalten. Größere Bestände werden in begrenzten Paketen übernommen. OCR, KI-Bewertung, externe Übertragung und Export starten niemals automatisch.
 
 ## Was Import zusätzlich bringt
 

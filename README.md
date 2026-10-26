@@ -147,8 +147,11 @@ Common launchers available across the sorted folders:
 1. clone the repository locally
 2. run the matching `start_here` launcher for your operating system
 3. the browser UI opens locally
-4. drop private files into `data/inbox/` or use the inbox folder button from the UI
-5. use the large UI buttons for import, register, timeline, and export
+4. in the **Simple view**, select or create a case
+5. drag up to 30 files (max. 30 MiB per selection) into the visible drop area or choose files; this explicit action uploads, imports and updates the document register
+6. review the document list; use **Advanced view** for timeline editing, verification, optional offline text indexing and manual export
+
+The **Organize inbox files** button handles files you previously placed in `data/inbox/`. The guided action skips already registered file contents, keeps inbox files and original copies intact, and processes large backlogs in bounded batches. No OCR, AI inference, external transmission or export is triggered automatically.
 
 ## What import adds
 
