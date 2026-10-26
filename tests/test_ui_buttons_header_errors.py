@@ -47,6 +47,11 @@ def test_hero_transparent_and_toolbar_is_global():
     assert "row.appendChild(langButton)" in THEME_FIXUP_SCRIPT
     assert "row.appendChild(button)" in THEME_FIXUP_SCRIPT
     assert "updateHeaderHeight" in THEME_FIXUP_SCRIPT
+    # Keep compact global controls legible and leave the language script intact.
+    assert "min-height:40px!important" in EXPERIENCE_CSS
+    assert "min-width:82px" in EXPERIENCE_CSS
+    assert "font-size:.88rem!important" in EXPERIENCE_CSS
+    assert "padding:8px 12px!important" in EXPERIENCE_CSS
 
 
 def test_empty_import_is_json_400_not_thread_exception(tmp_path, monkeypatch):

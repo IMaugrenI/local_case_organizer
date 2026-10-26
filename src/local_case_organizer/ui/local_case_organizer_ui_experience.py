@@ -234,7 +234,7 @@ body .wrap #lco-workspace-nav{
 body .wrap #lco-brandbar .lco-top-toggles{
   display:flex;
   flex-wrap:wrap;
-  gap:10px;
+  gap:8px;
   align-items:center;
   margin:0 0 0 auto;
   padding:0;
@@ -242,12 +242,12 @@ body .wrap #lco-brandbar .lco-top-toggles{
 body #lco-brandbar #lang-toggle,
 body #lco-brandbar #theme-toggle,
 body #lco-brandbar .lco-header-control{
-  min-height:42px!important;
-  min-width:94px;
-  font-size:.94rem!important;
+  min-height:40px!important;
+  min-width:82px;
+  font-size:.88rem!important;
   font-weight:700;
-  padding:9px 15px!important;
-  border-radius:10px!important;
+  padding:8px 12px!important;
+  border-radius:9px!important;
   border:1px solid #81715b!important;
   background:#211e18!important;
   color:#f4f0e8!important;
