@@ -270,7 +270,7 @@ function build(){
  }
  el("lco-simple-documents").addEventListener("click",()=>openView("documents"));
  el("lco-simple-timeline").addEventListener("click",()=>openView("timeline"));
- el("lco-simple-export").addEventListener("click",()=>openView("exports"));
+ el("lco-simple-export").addEventListener("click",()=>openView("export"));
  el("lco-simple-advanced").addEventListener("click",()=>setMode(false));
  const prior=window.LCOApplyExtraCopy;
  window.LCOApplyExtraCopy=function(){
