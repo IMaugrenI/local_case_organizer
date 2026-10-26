@@ -131,7 +131,11 @@ def test_simple_mode_is_opt_in_for_processing_and_expert_view_remains():
     assert 'openView("export")' in SIMPLE_SCRIPT
     assert "requestAnimationFrame" not in SIMPLE_SCRIPT
     assert "import-ai-review" not in SIMPLE_SCRIPT
-    assert "export-package" not in SIMPLE_SCRIPT
+    # Manual handoff lives in the export area and requires selection + confirmation.
+    assert '"/api/export-package"' in SIMPLE_SCRIPT
+    assert 'status.summary?.selected_export_count>0' in SIMPLE_SCRIPT
+    assert 'window.confirm(t("exportConfirm"))' in SIMPLE_SCRIPT
+    assert 'openView("documents")' in SIMPLE_SCRIPT
 
 
 def test_existing_entrypoint_injects_simple_view_with_advanced_ui():
