@@ -77,7 +77,9 @@ def _stable_ordered_script(source: str) -> str:
     localization contract. Existing fixup and experience scripts use known IDs
     and onclick handlers instead.
     """
-    first = "      const titles = document.querySelectorAll('.section-title');"
+    # This entire section overwrites the hero and guesses labels from element
+    # positions. It must never run: the stable UI layer owns visible copy.
+    first = "      const hero = document.querySelector('.hero');"
     last = "      const langToggle = document.getElementById('lang-toggle');"
     start = source.find(first)
     stop = source.find(last, start)
@@ -102,12 +104,17 @@ def _stable_ordered_script(source: str) -> str:
     if late_pass not in source:
         raise RuntimeError("Unknown legacy UI initialization sequence")
     source = source.replace(late_pass, "      applyStatic();", 1)
-    # A language click should perform one full refresh; the renderer pipeline
-    # applies the final translated text once data loading has completed.
+    # Avoid refreshing editable register/timeline forms when the language changes:
+    # a reload discards unsaved edits. One synchronous, stable copy pass owns
+    # navigation, hero, labels and table headings.
     eager_pass = "        applyStatic();\n        if (window.refreshAll) window.refreshAll();"
     if eager_pass not in source:
         raise RuntimeError("Unknown legacy language toggle sequence")
-    source = source.replace(eager_pass, "        if (window.refreshAll) window.refreshAll();\n        else applyStatic();", 1)
+    source = source.replace(
+        eager_pass,
+        "        applyStatic();\n        if (window.LCOApplyHumanCopy) window.LCOApplyHumanCopy();",
+        1,
+    )
     return source
 
 
