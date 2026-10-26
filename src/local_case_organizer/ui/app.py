@@ -317,6 +317,93 @@ HTML = """<!doctype html>
   <script>
     const originalCaseFetch = window.fetch.bind(window);
     const CASE_CHOICE_KEY = 'lco_active_case_tab';
+    // UI messages are keyed, not inferred from document contents or API data.
+    const UI_MESSAGES = {
+      caseCurrent: ["Aktueller Fall: ", "Current case: "],
+      switchStart: ["Ungespeicherte Änderungen vor dem Wechsel zu ", "Save unsaved changes before switching to "],
+      switchEnd: [" speichern. Wirklich fortfahren?", "? Continue?"],
+      caseCreated: ["Fall ", "Created case "],
+      caseCreatedEnd: [" erstellt. Wähle ihn oben aus, um ihn zu öffnen.", " created. Select it above to open."],
+      caseCreateError: ["Fall konnte nicht erstellt werden", "Case could not be created"],
+      noRecent: ["Keine neuen Dateien im Eingangsordner.", "No files are currently waiting in the inbox."],
+      noPackages: ["Noch keine Übergabepakete vorhanden.", "No export packages found yet."],
+      noRegister: ["Noch kein Dokumentenregister vorhanden. Erstelle zuerst eines.", "No register rows available yet. Build the register first."],
+      noTimeline: ["Noch keine Zeitlinie vorhanden. Erstelle zuerst eine.", "No timeline rows available yet. Build the timeline first."],
+      noEntities: ["Noch keine Einträge vorhanden.", "No entity rows available yet. Add your first row."],
+      noHints: ["Bekannte Dokumente erscheinen nach dem Laden des Registers.", "Known file IDs will appear here after the register is loaded."],
+      preview: ["Dossier-Vorschau: ", "Dossier preview: "],
+      selectedDocuments: [" ausgewählte Dokumente, ", " selected documents, "],
+      timelineEntries: [" Zeitlinieneinträge, ", " timeline entries, "],
+      linkedClaims: [" zugehörige Aussagen. ", " linked claims. "],
+      scanning: ["Lokale geprüfte Textquellen werden durchsucht …", "Scanning verified local text originals ..."],
+      dateFound: [" Datumsangaben gefunden; ", " date mentions found; "],
+      sourceWarnings: [" Quellenwarnungen; ", " source warnings; "],
+      duplicates: [" Gruppen mit doppelten Inhalten.", " duplicate-content groups."],
+      skippedSources: ["Übersprungene Quellen: ", "Skipped sources: "],
+      line: ["Zeile ", "line "],
+      addDraft: ["Entwurf hinzufügen", "Add draft"],
+      alreadyAdded: ["Bereits hinzugefügt", "Already added"],
+      draftAdded: ["Entwurf hinzugefügt", "Draft added"],
+      searching: ["Suche läuft …", "Searching ..."],
+      matchingPages: [" passende Seiten aus ", " matching pages from "],
+      verifiedIndexed: [" geprüften indizierten Dokumenten.", " verified indexed documents."],
+      page: ["Seite ", "page "],
+      useSource: ["Quelle für Aussage verwenden", "Use source for claim"],
+      noClaims: ["Noch keine quellengebundenen Aussagen vorhanden.", "No source-linked claims yet."],
+      quote: ["Zitat: ", "Quote: "],
+      statement: ["Aussage: ", "Statement: "],
+      updateReview: ["Prüfstatus aktualisieren", "Update review status"],
+      status_draft: ["Entwurf", "Draft"],
+      status_needs_review: ["Prüfung erforderlich", "Needs review"],
+      status_reviewed: ["Geprüft", "Reviewed"],
+      status_unreviewed: ["Ungeprüft", "Unreviewed"],
+      status_flagged: ["Markiert", "Flagged"],
+      status_selected_for_export: ["Für Übergabe markiert", "Selected for export"],
+      status_yes: ["Ja", "Yes"],
+      status_no: ["Nein", "No"],
+      status_open: ["Offen", "Open"],
+      status_in_progress: ["In Bearbeitung", "In progress"],
+      status_done: ["Erledigt", "Done"],
+      status_cancelled: ["Abgebrochen", "Cancelled"],
+      priority_normal: ["Normal", "Normal"],
+      priority_high: ["Hoch", "High"],
+      priority_low: ["Niedrig", "Low"],
+      noDate: ["Kein Datum", "No date"],
+      update: ["Aktualisieren", "Update"],
+      noReminders: ["Keine Wiedervorlagen in diesem Fall.", "No reminders in this case."],
+      aiConfirm: ["Private Textauszüge werden im Arbeitsbereich dieses Falls gespeichert. Fortfahren?", "Private text excerpts will be written to the selected case working folder. Continue?"],
+      savedPacket: ["Lokales Paket gespeichert: ", "Saved local packet: "],
+      savedPacketEnd: [". Es wurden keine Daten versendet. Private Quellen sorgfältig behandeln.", ". Nothing transmitted. Handle private source excerpts carefully."],
+      proposalsPending: [" Vorschläge warten auf manuelle Prüfung.", " proposals awaiting manual review."],
+      exactQuote: [" · Quellenzitat: ", " · exact quote: "],
+      draft: [" · Entwurf: ", " · draft: "],
+      reject: ["Ablehnen", "Reject"],
+      createDraftClaim: ["Aussagenentwurf erstellen", "Create draft claim"],
+      noAI: ["Keine KI-Vorschläge importiert.", "No AI suggestions imported."],
+      noAudits: ["Noch keine gespeicherten Änderungen vorhanden.", "No saved edits recorded yet."],
+      rows: [" Zeilen · ", " rows · "],
+      registeredComparisons: [" erfasste Vergleiche · ", " registered comparisons · "],
+      possibleDiscrepancies: [" mögliche Abweichungen.", " possible discrepancies."],
+      reviewSuggested: ["): Prüfung empfohlen", "): review suggested"],
+      noGraph: ["Noch keine Quellenverknüpfungen vorhanden.", "No linked evidence registered yet."],
+      unresolved: [" · ungeklärt: ", " · unresolved: "],
+      truncated: [" · gekürzte Darstellung", " · showing a limited view"],
+      noIntegrity: ["Noch keine Integritätsprüfungen protokolliert.", "No verification runs recorded yet."],
+      checked: [" geprüft · ", " checked · "],
+      graphAria: ["Beziehungsübersicht für Dokumente, Ereignisse und Einträge", "Document, event and entity relationship map"],
+      loadExport: ["Übergabeverlauf geladen.", "Export history loaded."],
+      actionFailed: ["Aktion fehlgeschlagen", "Action failed"],
+      saveFailed: ["Speichern fehlgeschlagen", "Save failed"],
+      emptyTaskNote: ["Manuelle Termine; keine automatische Fristberechnung.", "Manual dates only; no automatically calculated deadlines."],
+    };
+    function uiText(key) {
+      const localized = UI_MESSAGES[key];
+      return localized ? localized[(localStorage.getItem('local_case_organizer_ui_lang') || 'de').startsWith('de') ? 0 : 1] : key;
+    }
+    function localizedEnum(prefix, value) {
+      const id = prefix + '_' + value;
+      return Object.prototype.hasOwnProperty.call(UI_MESSAGES,id) ? uiText(id) : value;
+    }
     window.fetch = (url, opts = {}) => {
       if (typeof url !== 'string' || !url.startsWith('/api/')) {
         return originalCaseFetch(url, opts);
@@ -341,13 +428,13 @@ HTML = """<!doctype html>
         option.selected = item.case_id === previous;
         select.appendChild(option);
       }
-      document.getElementById('case-hub-result').textContent = 'Current case: ' + previous;
+      document.getElementById('case-hub-result').textContent = uiText('caseCurrent') + previous;
     }
 
     function openSelectedCase() {
       const selected = document.getElementById('case-selector').value;
       if (!selected) return;
-      if (!window.confirm('Save any unsaved work before switching to ' + selected + '. Continue?')) return;
+      if (!window.confirm(uiText('switchStart') + selected + uiText('switchEnd'))) return;
       sessionStorage.setItem(CASE_CHOICE_KEY, selected);
       window.location.reload();
     }
@@ -362,9 +449,9 @@ HTML = """<!doctype html>
           body:JSON.stringify({case_id, title}),
         });
         const result = await response.json();
-        if (!response.ok) throw new Error(result.error || 'Case could not be created');
+        if (!response.ok) throw new Error(result.error || uiText('caseCreateError'));
         await loadCaseHub();
-        box.textContent = 'Created case ' + result.case_id + '. Select it above to open.';
+        box.textContent = uiText('caseCreated') + result.case_id + uiText('caseCreatedEnd');
       } catch(error) { box.textContent = String(error); }
     }
 
@@ -403,7 +490,7 @@ HTML = """<!doctype html>
     function renderRecentFiles(items) {
       const root = document.getElementById('recent-files');
       if (!items || items.length === 0) {
-        root.textContent = 'No files are currently waiting in the inbox.';
+        root.textContent = uiText('noRecent');
         return;
       }
       const html = ['<ul>'];
@@ -422,7 +509,7 @@ HTML = """<!doctype html>
       const labels = registerRows.map(row => `${row.file_id || ''} — ${row.original_name || ''}`).filter(Boolean);
       const html = labels.length
         ? `<div class=\"chip-list\">${labels.map(label => `<span class=\"chip\">${escapeHtml(label)}</span>`).join('')}</div>`
-        : 'Known file IDs will appear here after the register is loaded.';
+        : uiText('noHints');
       document.getElementById('timeline-file-hints').innerHTML = html;
       document.getElementById('entity-file-hints').innerHTML = html;
     }
@@ -430,7 +517,7 @@ HTML = """<!doctype html>
     function renderExportHistory(items) {
       const root = document.getElementById('export-history');
       if (!items || items.length === 0) {
-        root.textContent = 'No export packages found yet.';
+        root.textContent = uiText('noPackages');
         return;
       }
       let html = '<table><thead><tr><th>export_dir</th><th>zip_name</th><th>manifest_name</th><th>selected_originals_count</th></tr></thead><tbody>';
@@ -444,7 +531,7 @@ HTML = """<!doctype html>
     function buildRegisterTable() {
       const root = document.getElementById('register-editor');
       if (!registerRows.length) {
-        root.textContent = 'No register rows available yet. Build the register first.';
+        root.textContent = uiText('noRegister');
         renderKnownFileHints();
         return;
       }
@@ -479,7 +566,7 @@ HTML = """<!doctype html>
     function buildTimelineTable() {
       const root = document.getElementById('timeline-editor');
       if (!timelineRows.length) {
-        root.textContent = 'No timeline rows available yet. Build the timeline first.';
+        root.textContent = uiText('noTimeline');
         return;
       }
       const html = ['<table><thead><tr>'];
@@ -506,7 +593,7 @@ HTML = """<!doctype html>
     function buildEntityTable() {
       const root = document.getElementById('entity-editor');
       if (!entityRows.length) {
-        root.textContent = 'No entity rows available yet. Add your first row.';
+        root.textContent = uiText('noEntities');
         return;
       }
       const html = ['<table><thead><tr>'];
@@ -567,9 +654,9 @@ HTML = """<!doctype html>
       try {
         const response = await fetch('/api/dossier-preview');
         const data = await response.json();
-        target.textContent = 'Dossier preview: ' + data.selected_documents +
-          ' selected documents, ' + data.entered_timeline_rows +
-          ' timeline entries, ' + data.claims_in_selection + ' linked claims. ' + data.note;
+        target.textContent = uiText('preview') + data.selected_documents +
+          uiText('selectedDocuments') + data.entered_timeline_rows +
+          uiText('timelineEntries') + data.claims_in_selection + uiText('linkedClaims') + data.note;
       } catch (error) { target.textContent = String(error); }
     }
 
@@ -679,32 +766,32 @@ HTML = """<!doctype html>
 
     async function loadTimelineCandidates() {
       const area = document.getElementById('timeline-candidates');
-      area.textContent = 'Scanning verified local text originals ...';
+      area.textContent = uiText('scanning');
       try {
         const response = await fetch('/api/propose-events', {method:'POST'});
         const report = await response.json();
         if (!response.ok) throw new Error(report.error || 'Could not build suggestions');
         area.replaceChildren();
         const note = document.createElement('p');
-        note.textContent = (report.candidates || []).length + ' date mentions found; ' +
-          (report.warnings || []).length + ' source warnings; ' +
-          (report.duplicate_content || []).length + ' duplicate-content groups.';
+        note.textContent = (report.candidates || []).length + uiText('dateFound') +
+          (report.warnings || []).length + uiText('sourceWarnings') +
+          (report.duplicate_content || []).length + uiText('duplicates');
         area.appendChild(note);
         if ((report.warnings || []).length) {
           const w = document.createElement('p');
-          w.textContent = 'Skipped sources: ' + (report.warnings || []).map(x => x.file_id + ' (' + x.reason + ')').join(', ');
+          w.textContent = uiText('skippedSources') + (report.warnings || []).map(x => x.file_id + ' (' + x.reason + ')').join(', ');
           area.appendChild(w);
         }
         for (const item of report.candidates || []) {
           const row = document.createElement('div');
           row.style.cssText = 'padding:12px;border-bottom:1px solid #7774;display:flex;gap:12px;align-items:center;flex-wrap:wrap';
           const description = document.createElement('span');
-          description.textContent = item.date + ' · ' + item.original_name + ' · line ' + item.line +
+          description.textContent = item.date + ' · ' + item.original_name + ' · ' + uiText('line') + item.line +
             ' · ' + item.excerpt;
           const button = document.createElement('button');
           button.type = 'button';
           button.className = 'secondary';
-          button.textContent = 'Add draft';
+          button.textContent = uiText('addDraft');
           button.addEventListener('click', async () => {
             button.disabled = true;
             try {
@@ -714,7 +801,7 @@ HTML = """<!doctype html>
               });
               const data = await response.json();
               if (!response.ok) throw new Error(data.error || 'Could not add draft');
-              button.textContent = data.status === 'already_recorded' ? 'Already added' : 'Draft added';
+              button.textContent = data.status === 'already_recorded' ? uiText('alreadyAdded') : uiText('draftAdded');
               await loadTimeline();
               await loadEvidenceGraph();
             } catch (error) {
@@ -754,26 +841,26 @@ HTML = """<!doctype html>
 
     async function searchIndexedDocuments() {
       const area = document.getElementById('text-search-results');
-      area.textContent = 'Searching ...';
+      area.textContent = uiText('searching');
       try {
         const data = await casePost('/api/search-text', {
           query: document.getElementById('text-query').value.trim(),
         });
         area.replaceChildren();
         const info = document.createElement('p');
-        info.textContent = (data.matches || []).length + ' matching pages from ' +
-          data.indexed_files + ' verified indexed documents.';
+        info.textContent = (data.matches || []).length + uiText('matchingPages') +
+          data.indexed_files + uiText('verifiedIndexed');
         area.appendChild(info);
         for (const hit of data.matches || []) {
           const row = document.createElement('div');
           row.style.cssText = 'padding:10px;border-bottom:1px solid #7774';
           const description = document.createElement('p');
           description.textContent = hit.file_id + ' · ' + hit.original_name +
-            ' · page ' + hit.page + ': ' + hit.excerpt;
+            ' · ' + uiText('page') + hit.page + ': ' + hit.excerpt;
           const selected = document.createElement('button');
           selected.type = 'button';
           selected.className = 'ghost';
-          selected.textContent = 'Use source for claim';
+          selected.textContent = uiText('useSource');
           selected.addEventListener('click', () => {
             document.getElementById('claim-file-id').value = hit.file_id;
             document.getElementById('claim-page').value = hit.page;
@@ -807,7 +894,7 @@ HTML = """<!doctype html>
         const data = await response.json();
         area.replaceChildren();
         if (!(data.claims || []).length) {
-          area.textContent = 'No source-linked claims yet.';
+          area.textContent = uiText('noClaims');
           return;
         }
         for (const claim of data.claims || []) {
@@ -815,20 +902,20 @@ HTML = """<!doctype html>
           item.style.cssText = 'padding:12px;border-bottom:1px solid #7774';
           const description = document.createElement('p');
           description.textContent = claim.claim_id + ' · ' + claim.file_id +
-            ' page ' + claim.source_page + ' · ' + claim.review_status +
-            '\\nQuote: ' + claim.source_quote + '\\nStatement: ' + claim.statement;
+            ' ' + uiText('page') + claim.source_page + ' · ' + localizedEnum('status',claim.review_status) +
+            '\\n' + uiText('quote') + claim.source_quote + '\\n' + uiText('statement') + claim.statement;
           description.style.whiteSpace = 'pre-wrap';
           item.appendChild(description);
           const status = document.createElement('select');
           for (const s of ['draft','needs_review','reviewed']) {
             const option = document.createElement('option');
-            option.value = s; option.textContent = s;
+            option.value = s; option.textContent = localizedEnum('status',s);
             option.selected = s === claim.review_status;
             status.appendChild(option);
           }
           const save = document.createElement('button');
           save.type = 'button'; save.className = 'secondary';
-          save.textContent = 'Update review status';
+          save.textContent = uiText('updateReview');
           save.addEventListener('click', async () => {
             try {
               await casePost('/api/review-claim', {claim_id:claim.claim_id, status:status.value});
@@ -883,18 +970,18 @@ HTML = """<!doctype html>
           const row = document.createElement('div');
           row.style.cssText = 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px;border-bottom:1px solid #7774';
           const label = document.createElement('span');
-          label.textContent = task.title + ' · ' + (task.due_date || 'No date') +
-            ' · ' + task.date_indicator + ' · ' + task.priority +
+          label.textContent = task.title + ' · ' + (task.due_date || uiText('noDate')) +
+            ' · ' + task.date_indicator + ' · ' + localizedEnum('priority',task.priority) +
             (task.linked_file_ids ? ' · ' + task.linked_file_ids : '');
           const select = document.createElement('select');
           select.style.maxWidth = '155px';
           for (const status of ['open','in_progress','done','cancelled']) {
             const choice = document.createElement('option');
-            choice.value = status; choice.textContent = status;
+            choice.value = status; choice.textContent = localizedEnum('status',status);
             choice.selected = task.status === status; select.appendChild(choice);
           }
           const save = document.createElement('button');
-          save.type = 'button'; save.className = 'secondary'; save.textContent = 'Update';
+          save.type = 'button'; save.className = 'secondary'; save.textContent = uiText('update');
           save.addEventListener('click', async () => {
             try {
               await casePost('/api/update-task', {task_id: task.task_id, status:select.value});
@@ -905,7 +992,7 @@ HTML = """<!doctype html>
         }
         if (!(data.tasks || []).length) {
           const empty = document.createElement('p');
-          empty.textContent = 'No reminders in this case.';
+          empty.textContent = uiText('noReminders');
           area.appendChild(empty);
         }
       } catch(error) { area.textContent = String(error); }
@@ -915,11 +1002,11 @@ HTML = """<!doctype html>
       const area = document.getElementById('ai-review-result');
       const raw = document.getElementById('ai-source-ids').value.trim();
       const files = raw.split(',').map(x => x.trim()).filter(Boolean);
-      if (!window.confirm('Private text excerpts will be written to the selected case working folder. Continue?')) return;
+      if (!window.confirm(uiText('aiConfirm'))) return;
       try {
         const output = await casePost('/api/prepare-ai-review', {file_ids:files});
-        area.textContent = 'Saved local packet: ' + output.path +
-          '. Nothing transmitted. Handle private source excerpts carefully.';
+        area.textContent = uiText('savedPacket') + output.path +
+          uiText('savedPacketEnd');
       } catch(error) { area.textContent = String(error); }
     }
 
@@ -928,7 +1015,7 @@ HTML = """<!doctype html>
       try {
         const parsed = JSON.parse(document.getElementById('ai-response-json').value);
         const outcome = await casePost('/api/import-ai-review', parsed);
-        area.textContent = outcome.accepted_as_pending + ' proposals awaiting manual review.';
+        area.textContent = outcome.accepted_as_pending + uiText('proposalsPending');
         await loadAiSuggestions();
       } catch(error) { area.textContent = String(error); }
     }
@@ -944,13 +1031,13 @@ HTML = """<!doctype html>
           const card = document.createElement('div');
           card.style.cssText = 'border-bottom:1px solid #7774;padding:12px';
           const line = document.createElement('p');
-          line.textContent = entry.file_id + ' · page ' + entry.page + ' · ' + entry.status +
-            ' · exact quote: ' + entry.source_quote + ' · draft: ' + entry.statement;
+          line.textContent = entry.file_id + ' · ' + uiText('page') + entry.page + ' · ' + localizedEnum('status',entry.status) +
+            uiText('exactQuote') + entry.source_quote + uiText('draft') + entry.statement;
           card.appendChild(line);
           if (entry.status === 'pending_review') {
             for (const choice of [
-              {decision:'reject',label:'Reject'},
-              {decision:'create_draft_claim',label:'Create draft claim'}
+              {decision:'reject',label:uiText('reject')},
+              {decision:'create_draft_claim',label:uiText('createDraftClaim')}
             ]) {
               const button = document.createElement('button');
               button.type='button'; button.className='secondary';button.textContent=choice.label;
@@ -967,7 +1054,7 @@ HTML = """<!doctype html>
           }
           area.appendChild(card);
         }
-        if (!(data.suggestions || []).length) area.textContent = 'No AI suggestions imported.';
+        if (!(data.suggestions || []).length) area.textContent = uiText('noAI');
       } catch(error) { area.textContent = String(error); }
     }
 
@@ -980,10 +1067,10 @@ HTML = """<!doctype html>
         for (const item of data.changes || []) {
           const line = document.createElement('p');
           line.textContent = item.at + ' · ' + item.area + ' · ' +
-            item.row_count + ' rows · ' + item.change_id;
+            item.row_count + uiText('rows') + item.change_id;
           root.appendChild(line);
         }
-        if (!(data.changes || []).length) root.textContent = 'No saved edits recorded yet.';
+        if (!(data.changes || []).length) root.textContent = uiText('noAudits');
       } catch(error) { root.textContent = String(error); }
     }
 
@@ -994,14 +1081,14 @@ HTML = """<!doctype html>
         const data = await response.json();
         area.replaceChildren();
         const intro = document.createElement('p');
-        intro.textContent = (data.records || []).length + ' registered comparisons · ' +
-          (data.review_candidates || []).length + ' possible discrepancies.';
+        intro.textContent = (data.records || []).length + uiText('registeredComparisons') +
+          (data.review_candidates || []).length + uiText('possibleDiscrepancies');
         area.appendChild(intro);
         for (const group of data.review_candidates || []) {
           const div = document.createElement('div');
           div.style.cssText = 'padding:12px;border-bottom:1px solid #7774';
           const title = document.createElement('strong');
-          title.textContent = group.topic + ' (' + group.kind + '): review suggested';
+          title.textContent = group.topic + ' (' + group.kind + uiText('reviewSuggested');
           div.appendChild(title);
           for (const source of group.sources || []) {
             const line = document.createElement('p');
@@ -1022,14 +1109,14 @@ HTML = """<!doctype html>
       const nodes = (data.nodes || []).slice(0, 60);
       const edges = data.edges || [];
       if (!nodes.length) {
-        root.textContent = 'No linked evidence registered yet.';
+        root.textContent = uiText('noGraph');
         return;
       }
       const ns = 'http://www.w3.org/2000/svg';
       const svg = document.createElementNS(ns, 'svg');
       svg.setAttribute('viewBox', '0 0 760 420');
       svg.setAttribute('role', 'img');
-      svg.setAttribute('aria-label', 'Document, event and entity relationship map');
+      svg.setAttribute('aria-label', uiText('graphAria'));
       svg.style.cssText = 'width:100%;min-width:540px;height:auto;max-height:560px';
       const columns = {document: 105, event: 380, entity: 655};
       const counts = {document:0, event:0, entity:0};
@@ -1066,8 +1153,8 @@ HTML = """<!doctype html>
       }
       root.appendChild(svg);
       const note = document.createElement('p');
-      note.textContent = 'Links: ' + edges.length + ' · unresolved: ' + (data.unresolved || []).length +
-        ((data.truncated || data.total_nodes > nodes.length) ? ' · showing a limited view' : '');
+      note.textContent = 'Links: ' + edges.length + uiText('unresolved') + (data.unresolved || []).length +
+        ((data.truncated || data.total_nodes > nodes.length) ? uiText('truncated') : '');
       root.appendChild(note);
     }
 
@@ -1076,8 +1163,8 @@ HTML = """<!doctype html>
       const data = await response.json();
       const root = document.getElementById('integrity-history');
       root.textContent = (data.runs || []).length
-        ? (data.runs || []).map(row => row.at + ' · ' + row.checked + ' checked · ' + JSON.stringify(row.counts)).join('\\n')
-        : 'No verification runs recorded yet.';
+        ? (data.runs || []).map(row => row.at + ' · ' + row.checked + uiText('checked') + JSON.stringify(row.counts)).join('\\n')
+        : uiText('noIntegrity');
       root.style.whiteSpace = 'pre-wrap';
     }
 
@@ -1085,7 +1172,7 @@ HTML = """<!doctype html>
       const response = await fetch('/api/export-history');
       const data = await response.json();
       renderExportHistory(data.rows || []);
-      appendLog('Export history loaded.');
+      appendLog(uiText('loadExport'));
     }
 
     async function refreshStatus() {
