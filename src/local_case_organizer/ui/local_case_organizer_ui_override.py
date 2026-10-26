@@ -70,12 +70,42 @@ def _normalized_status_payload() -> dict[str, object]:
 
 _original._status_payload = _normalized_status_payload
 
+def _stable_ordered_script(source: str) -> str:
+    """Keep legacy translations/renderers but drop unsafe positional DOM edits.
+
+    New case features add sections and actions; their ordering is not a stable
+    localization contract. Existing fixup and experience scripts use known IDs
+    and onclick handlers instead.
+    """
+    first = "      const titles = document.querySelectorAll('.section-title');"
+    last = "      const langToggle = document.getElementById('lang-toggle');"
+    start = source.find(first)
+    stop = source.find(last, start)
+    if start < 0 or stop <= start:
+        raise RuntimeError("Unknown ordered UI asset; cannot safely patch positional labels")
+    source = source[:start] + "      // Label translations handled by stable DOM selectors.\n" + source[stop:]
+
+    # Do not rebuild HTML from unescaped file names (local script injection).
+    unsafe = "items.forEach((item) => html.push(`<li>${item}</li>`));"
+    safe = "items.forEach((item) => html.push(`<li>${window.escapeHtml(String(item))}</li>`));"
+    if unsafe not in source:
+        raise RuntimeError("Unknown recent file renderer; cannot enforce safe text")
+    source = source.replace(unsafe, safe, 1)
+    # German first-use default. Explicitly selected English remains unchanged.
+    language = "localStorage.getItem('local_case_organizer_ui_lang') || 'en'"
+    if language not in source:
+        raise RuntimeError("Unknown legacy language preference initialization")
+    return source.replace(language, "localStorage.getItem('local_case_organizer_ui_lang') || 'de'", 1)
+
+
+ORDERED_SCRIPT_SAFE = _stable_ordered_script(ORDERED_SCRIPT)
+
 patched = _original.HTML.replace(
     '</head>',
     ORDERED_CSS + '\n' + FIXUP_CSS + '\n' + THEME_FIXUP_CSS + '\n' + EXPERIENCE_CSS + '\n</head>',
 ).replace(
     '</body>',
-    ORDERED_SCRIPT + '\n' + FIXUP_SCRIPT + '\n' + THEME_FIXUP_SCRIPT + '\n' + EXPERIENCE_SCRIPT + '\n</body>',
+    ORDERED_SCRIPT_SAFE + '\n' + FIXUP_SCRIPT + '\n' + THEME_FIXUP_SCRIPT + '\n' + EXPERIENCE_SCRIPT + '\n</body>',
 )
 _original.HTML = patched
 run_ui = _original.run_ui

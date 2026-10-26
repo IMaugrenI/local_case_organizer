@@ -235,6 +235,13 @@ THEME_FIXUP_SCRIPT = r'''
     applyTheme();
     setTimeout(() => { ensureThemeButton(); applyTheme(); }, 250);
   });
+  window.addEventListener('load', () => {
+    ensureThemeButton();
+    applyTheme();
+    document.getElementById('lang-toggle')?.addEventListener('click', () => {
+      setTimeout(() => { ensureThemeButton(); updateThemeButton(); }, 140);
+    });
+  });
 })();
 </script>
 '''

@@ -196,6 +196,19 @@ body.lco-light .chip{color:#664515!important;background:#f7eddc!important}
 body.lco-light .lco-brand-name,
 body.lco-light .lco-product-name{color:#211d18!important}
 body.lco-light .lco-brand-mark{color:#80571b}
+
+/* Unified card rhythm and readable help text without changing the workflow. */
+body .editor,body .upload-box,body .file-list{
+  padding:clamp(22px,2.5vw,32px)!important;
+  box-sizing:border-box;
+}
+body #cards .card{padding:19px 20px!important;min-width:0;box-sizing:border-box;}
+body #cards .card>div:first-child{font-size:.92rem!important;line-height:1.5;}
+body .editor-actions>label,body .editor>label{line-height:1.55;}
+body .lco-feedback{padding:16px 20px!important;line-height:1.55;}
+body .hero .lang-state,body .hero .lang-status{font-size:.92rem!important;}
+body .lco-process-step strong{font-size:.94rem!important;line-height:1.45;}
+body.lco-light .hero .lang-state,body.lco-light .hero .lang-status{color:#3a332b!important;}
 </style>'''
 EXPERIENCE_SCRIPT = r'''<script>
 (() => {
@@ -385,10 +398,15 @@ function copy(){
  const legacy=document.querySelector('#case-selector option[value=legacy-default]');if(legacy)legacy.textContent=(isDe()?'Standard-Arbeitsbereich':'Legacy workspace')+' (legacy-default)';
 }
 document.addEventListener('DOMContentLoaded',()=>{
- // Existing scripts finish their initial DOM translations before navigation attaches.
  build();copy();
- document.getElementById('lang-toggle')?.addEventListener('click',()=>{setTimeout(copy,120);setTimeout(copy,500)});
  document.addEventListener('click',()=>setTimeout(copy,250),true);
+});
+window.addEventListener('load',()=>{
+ // The existing runtime creates the language switch only on window.load.
+ const toggle=document.getElementById('lang-toggle');
+ if(toggle)toggle.addEventListener('click',()=>{setTimeout(copy,160);setTimeout(copy,520)});
+ setTimeout(copy,170);
+ setTimeout(copy,540);
 });
 })();
 </script>'''

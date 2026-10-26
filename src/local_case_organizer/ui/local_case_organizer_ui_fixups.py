@@ -819,6 +819,17 @@ FIXUP_SCRIPT = r'''
     setTimeout(applyHumanCopy, 250);
     setTimeout(applyHumanCopy, 900);
   });
+  window.addEventListener('load', () => {
+    // The existing asset regenerates the hero and installs the language toggle
+    // at window.load, after DOMContentLoaded. Apply keyed translations last.
+    const button = document.getElementById('lang-toggle');
+    if (button) button.addEventListener('click', () => {
+      setTimeout(applyHumanCopy, 110);
+      setTimeout(applyHumanCopy, 400);
+    });
+    setTimeout(applyHumanCopy, 130);
+    setTimeout(applyHumanCopy, 480);
+  });
 })();
 </script>
 '''
