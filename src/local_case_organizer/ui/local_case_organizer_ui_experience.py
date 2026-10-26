@@ -236,7 +236,8 @@ body .wrap #lco-brandbar .lco-top-toggles{
   flex-wrap:wrap;
   gap:8px;
   align-items:center;
-  margin:0 0 0 auto;
+  /* A small right-hand inset shifts both switches left as a group. */
+  margin:0 clamp(18px,3vw,36px) 0 auto;
   padding:0;
 }
 body #lco-brandbar #lang-toggle,
@@ -288,7 +289,7 @@ body .wrap .hero .hero-top,
 body .wrap .hero .hero-copy{background:transparent!important;box-shadow:none!important}
 @media(max-width:640px){
   body .wrap #lco-brandbar{min-height:0;}
-  body .wrap #lco-brandbar .lco-top-toggles{width:100%;justify-content:flex-end}
+  body .wrap #lco-brandbar .lco-top-toggles{width:100%;justify-content:flex-end;margin-right:0}
   body #lco-brandbar #lang-toggle,body #lco-brandbar #theme-toggle{min-width:0}
 }
 
