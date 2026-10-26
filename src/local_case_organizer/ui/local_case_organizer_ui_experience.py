@@ -397,7 +397,7 @@ const HINTS={
 'export-history':['Erstellte Pakete, ZIP-Dateien und Manifeste.','Created packages, ZIP archives and manifests.']
 };
 let selected='overview';
-const isDe=()=>String(localStorage.getItem('local_case_organizer_ui_lang')||document.documentElement.lang||'en').toLowerCase().startsWith('de');
+const isDe=()=>String(localStorage.getItem('local_case_organizer_ui_lang')||'de').toLowerCase().startsWith('de');
 function source(ref){
  if(ref==='_main')return [...document.querySelectorAll('button[onclick]')].find(x=>x.getAttribute('onclick')==="runAction('setup')")?.closest('.actions')||null;
  const el=document.getElementById(ref);if(!el)return null;

@@ -395,6 +395,28 @@ HTML = """<!doctype html>
       actionFailed: ["Aktion fehlgeschlagen", "Action failed"],
       saveFailed: ["Speichern fehlgeschlagen", "Save failed"],
       emptyTaskNote: ["Manuelle Termine; keine automatische Fristberechnung.", "Manual dates only; no automatically calculated deadlines."],
+      status_pending_review: ["Prüfung ausstehend", "Pending review"],
+      status_rejected: ["Abgelehnt", "Rejected"],
+      status_created_draft_claim: ["Als Entwurf übernommen", "Created draft claim"],
+      date_closed: ["Abgeschlossen", "Closed"],
+      date_unscheduled: ["Ohne Termin", "Unscheduled"],
+      date_overdue: ["Überfällig", "Overdue"],
+      date_due_today: ["Heute fällig", "Due today"],
+      date_upcoming: ["Anstehend", "Upcoming"],
+      date_invalid_manual_date: ["Ungültiges manuelles Datum", "Invalid manual date"],
+      indexing: ["Geprüftes Original wird lokal indiziert …", "Indexing the selected verified original locally ..."],
+      pages: [" Seiten, ", " pages, "],
+      characters: [" Zeichen lokal indiziert.", " characters indexed privately."],
+      taskNote: ["Termine werden manuell eingegeben. Angaben dienen nur der Organisation, nicht der rechtlichen Fristberechnung oder externen Benachrichtigungen.", "Dates are entered manually. Indicators are organizational only, not legally calculated deadlines or external notifications."],
+      kind_amount: ["Betrag", "Amount"],
+      kind_date: ["Datum", "Date"],
+      kind_text: ["Text", "Text"],
+      createdClaim: ["Aussagenentwurf erstellt: ", "Created draft claim "],
+      noTaskDate: ["Kein Datum", "No date"],
+      tableNo: ["Nein", "No"],
+      tableYes: ["Ja", "Yes"],
+      indexFailed: ["Dokument konnte nicht indiziert werden", "Could not index document"],
+      editSaved: ["Änderungen gespeichert", "Changes saved"],,
     };
     function uiText(key) {
       const localized = UI_MESSAGES[key];
@@ -547,11 +569,11 @@ HTML = """<!doctype html>
         html.push(`<td class=\"readonly\">${row.original_name || ''}</td>`);
         html.push(`<td class=\"readonly\">${row.relative_path || ''}</td>`);
         html.push(`<td><select data-register-row=\"${index}\" data-field=\"review_status\">` +
-          ['unreviewed','reviewed','flagged','selected_for_export'].map(v => `<option value=\"${v}\" ${row.review_status === v ? 'selected' : ''}>${v}</option>`).join('') +
+          ['unreviewed','reviewed','flagged','selected_for_export'].map(v => `<option value=\"${v}\" ${row.review_status === v ? 'selected' : ''}>${localizedEnum('status',v)}</option>`).join('') +
           '</select></td>');
         html.push(`<td><input type=\"text\" data-register-row=\"${index}\" data-field=\"document_group\" value=\"${escapeHtml(row.document_group || '')}\"></td>`);
         html.push(`<td><select data-register-row=\"${index}\" data-field=\"selected_for_export\">` +
-          ['no','yes'].map(v => `<option value=\"${v}\" ${row.selected_for_export === v ? 'selected' : ''}>${v}</option>`).join('') +
+          ['no','yes'].map(v => `<option value=\"${v}\" ${row.selected_for_export === v ? 'selected' : ''}>${localizedEnum('table',v)}</option>`).join('') +
           '</select></td>');
         html.push(`<td class=\"readonly\">${escapeHtml(row.linked_timeline_event_ids || '')}</td>`);
         html.push(`<td class=\"readonly\">${escapeHtml(row.linked_entity_ids || '')}</td>`);
@@ -828,14 +850,14 @@ HTML = """<!doctype html>
 
     async function indexSelectedDocument() {
       const area = document.getElementById('text-index-status');
-      area.textContent = 'Indexing the selected verified original locally ...';
+      area.textContent = uiText('indexing');
       try {
         const result = await casePost('/api/index-document', {
           file_id: document.getElementById('text-file-id').value.trim(),
           use_ocr: document.getElementById('text-use-ocr').checked
         });
         area.textContent = result.file_id + ': ' + result.method + ', ' +
-          result.pages + ' pages, ' + result.characters + ' characters indexed privately.';
+          result.pages + uiText('pages') + result.characters + uiText('characters');
       } catch (error) { area.textContent = String(error); }
     }
 
@@ -881,7 +903,7 @@ HTML = """<!doctype html>
           quote: document.getElementById('claim-quote').value,
           statement: document.getElementById('claim-statement').value,
         });
-        appendLog('Created draft claim ' + row.claim_id);
+        appendLog(uiText('createdClaim') + row.claim_id);
         await loadSourcedClaims();
         await loadEvidenceGraph();
       } catch (error) { area.textContent = String(error); }
@@ -964,14 +986,14 @@ HTML = """<!doctype html>
         if (!response.ok) throw new Error(data.error || 'Tasks unavailable');
         area.replaceChildren();
         const note = document.createElement('p');
-        note.textContent = data.as_of + ' · ' + data.note;
+        note.textContent = data.as_of + ' · ' + uiText('taskNote');
         area.appendChild(note);
         for (const task of data.tasks || []) {
           const row = document.createElement('div');
           row.style.cssText = 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px;border-bottom:1px solid #7774';
           const label = document.createElement('span');
           label.textContent = task.title + ' · ' + (task.due_date || uiText('noDate')) +
-            ' · ' + task.date_indicator + ' · ' + localizedEnum('priority',task.priority) +
+            ' · ' + localizedEnum('date',task.date_indicator) + ' · ' + localizedEnum('priority',task.priority) +
             (task.linked_file_ids ? ' · ' + task.linked_file_ids : '');
           const select = document.createElement('select');
           select.style.maxWidth = '155px';
@@ -1088,7 +1110,7 @@ HTML = """<!doctype html>
           const div = document.createElement('div');
           div.style.cssText = 'padding:12px;border-bottom:1px solid #7774';
           const title = document.createElement('strong');
-          title.textContent = group.topic + ' (' + group.kind + uiText('reviewSuggested');
+          title.textContent = group.topic + ' (' + localizedEnum('kind',group.kind) + uiText('reviewSuggested');
           div.appendChild(title);
           for (const source of group.sources || []) {
             const line = document.createElement('p');

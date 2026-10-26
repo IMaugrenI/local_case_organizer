@@ -380,7 +380,7 @@ FIXUP_SCRIPT = r'''
   };
 
   function currentLang() {
-    const value = localStorage.getItem('local_case_organizer_ui_lang') || document.documentElement.lang || 'en';
+    const value = localStorage.getItem('local_case_organizer_ui_lang') || 'de';
     return String(value).toLowerCase().startsWith('de') ? 'de' : 'en';
   }
 

@@ -112,6 +112,7 @@ def test_browser_js_string_newlines_survive_python_html_literal():
     # Python evaluates backslash escapes in the existing triple-quoted UI HTML.
     # JavaScript single-quoted strings must receive the escaped, not raw, newline.
     from local_case_organizer.ui.app import HTML
-    assert r"'\nQuote: '" in HTML
+    assert r"'\n' + uiText('quote')" in HTML
+    assert r"'\n' + uiText('statement')" in HTML
     assert r".join('\n')" in HTML
-    assert "'\nQuote: '" not in HTML
+    assert "'\n' + uiText('quote')" not in HTML
