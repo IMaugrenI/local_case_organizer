@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import re
 import shutil
+from pathlib import Path
 import subprocess
 
 import pytest
@@ -23,6 +24,8 @@ def test_browser_de_en_de_preserves_visible_text_and_unsaved_input(tmp_path):
     if browser is None:
         pytest.skip("Headless Chromium unavailable; browser acceptance still required")
 
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     import run
     import local_case_organizer.ui.app as ui
     html = ui.run_ui.__globals__["HTML"]
