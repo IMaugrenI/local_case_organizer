@@ -20,9 +20,10 @@ def contrast(foreground: str, background: str) -> float:
 
 
 def palette(selector: str) -> dict[str, str]:
-    match = re.search(re.escape(selector) + r"\s*\{([^{}]+)\}", EXPERIENCE_CSS)
-    assert match, f"Missing CSS theme palette: {selector}"
-    return dict(re.findall(r"(--lco-[a-z-]+):\s*(#[0-9a-fA-F]{6})", match.group(1)))
+    matches = re.finditer(re.escape(selector) + r"\s*\{([^{}]+)\}", EXPERIENCE_CSS)
+    blocks = [m.group(1) for m in matches if "--lco-control-bg" in m.group(1)]
+    assert len(blocks) == 1, f"Missing or duplicate CSS theme palette: {selector}"
+    return dict(re.findall(r"(--lco-[a-z-]+):\s*(#[0-9a-fA-F]{6})", blocks[0]))
 
 
 def test_both_themes_text_and_primary_buttons_meet_aa():
