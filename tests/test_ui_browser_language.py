@@ -53,6 +53,9 @@ window.addEventListener('load', () => {
       button: document.querySelector('button[onclick="uploadFiles()"]')?.textContent || '',
       toggle: document.getElementById('lang-toggle')?.textContent || '',
       custom: document.getElementById('new-case-id')?.value || '',
+      simpleTitle: document.querySelector('#lco-easy-home [data-simple-copy="headline"]')?.textContent || '',
+      simpleMode: document.body.classList.contains('lco-simple-mode'),
+      simpleDrop: !!document.getElementById('lco-simple-drop'),
     });
     const result = document.createElement('pre');
     result.id = 'lco-browser-smoke';
@@ -64,11 +67,16 @@ window.addEventListener('load', () => {
     // Force a known starting state without assuming persisted user choices.
     localStorage.setItem('local_case_organizer_ui_lang', 'de');
     window.LCOApplyHumanCopy?.();
+    document.getElementById('lco-simple-return')?.click();
     const before = get();
     first.click();
     const english = get();
     first.click();
     const after = get();
+    document.getElementById('lco-simple-advanced')?.click();
+    const expertOpened = !document.body.classList.contains('lco-simple-mode');
+    document.getElementById('lco-simple-return')?.click();
+    const simpleReturned = document.body.classList.contains('lco-simple-mode');
     const ok =
       before.lang === 'de' &&
       before.hero.includes('Sammle Dokumente') &&
@@ -82,7 +90,12 @@ window.addEventListener('load', () => {
       after.lang === 'de' &&
       after.hero.includes('Sammle Dokumente') &&
       after.nav === 'Dokumente' &&
-      after.custom === 'unsaved-test-case';
+      after.custom === 'unsaved-test-case' &&
+      before.simpleMode && before.simpleDrop &&
+      before.simpleTitle.includes('Deine Fallakte') &&
+      english.simpleTitle.includes('Your case') &&
+      after.simpleTitle.includes('Deine Fallakte') &&
+      expertOpened && simpleReturned;
     result.textContent = ok ? 'UI_BROWSER_SMOKE_OK' : 'UI_BROWSER_SMOKE_FAIL ' + JSON.stringify({before,english,after});
   }, 400);
 });
