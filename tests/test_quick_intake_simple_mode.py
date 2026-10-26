@@ -83,6 +83,43 @@ def test_quick_intake_refuses_symlinks_and_oversized_batches(tmp_path, monkeypat
         quick_intake.quick_organize_inbox(["does-not-exist.pdf"])
 
 
+
+
+def test_real_intake_preserves_existing_register_edits(tmp_path, monkeypatch):
+    """Exercise the actual importer and audited register on an isolated case."""
+    from local_case_organizer import paths as paths_module
+    from local_case_organizer.register.store import read_register_rows, write_register_rows
+
+    monkeypatch.setattr(paths_module, "get_repo_root", lambda: tmp_path)
+    paths = paths_module.create_local_workspace()
+    first_source = paths.inbox_dir / "first.pdf"
+    first_source.write_bytes(b"%PDF-1.4 test original")
+    initial = quick_intake.quick_organize_inbox()
+    assert initial["imported_files"] == 1
+    rows = read_register_rows()
+    assert len(rows) == 1
+    assert rows[0]["file_id"].startswith("DOC-")
+    registered_copy = paths.originals_dir / rows[0]["relative_path"]
+    assert registered_copy.read_bytes() == first_source.read_bytes()
+    rows[0]["note"] = "Keep this manual note"
+    write_register_rows(rows)
+
+    another = paths.inbox_dir / "second.txt"
+    another.write_text("Another document", encoding="utf-8")
+    second = quick_intake.quick_organize_inbox()
+    assert second["imported_files"] == 1
+    assert second["already_present"] == 1
+    after = read_register_rows()
+    assert len(after) == 2
+    original = next(row for row in after if row["original_name"] == "first.pdf")
+    assert original["note"] == "Keep this manual note"
+    assert original["file_id"] == rows[0]["file_id"]
+    assert registered_copy.read_bytes() == first_source.read_bytes()
+    assert first_source.exists() and another.exists()
+    retry = quick_intake.quick_organize_inbox()
+    assert retry["imported_files"] == 0
+    assert len(read_register_rows()) == 2
+
 def test_simple_mode_is_opt_in_for_processing_and_expert_view_remains():
     assert "lco-simple-mode" in SIMPLE_CSS
     assert "lco-simple-drop" in SIMPLE_SCRIPT
