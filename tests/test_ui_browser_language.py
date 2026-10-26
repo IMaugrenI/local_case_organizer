@@ -25,10 +25,22 @@ def test_browser_de_en_de_preserves_visible_text_and_unsaved_input(tmp_path):
         pytest.skip("Headless Chromium unavailable; browser acceptance still required")
 
     import sys
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    import run
-    import local_case_organizer.ui.app as ui
-    html = ui.run_ui.__globals__["HTML"]
+    # run.py remaps local_case_organizer.ui.app to the UI override. Launch it
+    # in a child process so other pytest cases keep the normal app module.
+    document = tmp_path / "ui_language_test.html"
+    program = """
+from pathlib import Path
+import sys
+import run
+import local_case_organizer.ui.app as ui
+Path(sys.argv[1]).write_text(ui.run_ui.__globals__['HTML'], encoding='utf-8')
+"""
+    subprocess.run(
+        [sys.executable, "-c", program, str(document)],
+        cwd=Path(__file__).resolve().parents[1],
+        capture_output=True, text=True, timeout=20, check=True,
+    )
+    html = document.read_text(encoding="utf-8")
     probe = r"""
 <script>
 window.addEventListener('load', () => {
@@ -79,7 +91,7 @@ window.addEventListener('load', () => {
 """
     # The UI's normal external APIs are unavailable in this isolated file.
     # They are not needed for testing translation or the header controls.
-    path = tmp_path / "ui_language_test.html"
+    path = document
     path.write_text(
         html.replace("</body>", probe + "\n</body>"), encoding="utf-8"
     )
@@ -92,6 +104,9 @@ window.addEventListener('load', () => {
     result = subprocess.run(
         cmd, capture_output=True, text=True, timeout=30, check=True,
     )
-    found = re.search(r'UI_BROWSER_SMOKE_(?:OK|FAIL)[^<]*', result.stdout)
+    found = re.search(
+        r'<pre id="lco-browser-smoke">(UI_BROWSER_SMOKE_(?:OK|FAIL)[^<]*)</pre>',
+        result.stdout,
+    )
     assert found, f"Browser did not complete language probe: {result.stderr[-1500:]}"
-    assert found.group(0) == "UI_BROWSER_SMOKE_OK", found.group(0)
+    assert found.group(1) == "UI_BROWSER_SMOKE_OK", found.group(1)
