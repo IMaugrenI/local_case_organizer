@@ -291,6 +291,27 @@ body .wrap .hero .hero-copy{background:transparent!important;box-shadow:none!imp
   body .wrap #lco-brandbar .lco-top-toggles{width:100%;justify-content:flex-end}
   body #lco-brandbar #lang-toggle,body #lco-brandbar #theme-toggle{min-width:0}
 }
+
+/* Compact, single-line desktop navigation; smaller type only in the tabs. */
+body .wrap #lco-workspace-nav{
+ gap:4px!important;
+ padding:8px!important;
+ flex-wrap:nowrap!important;
+ overflow-x:auto;
+}
+body .wrap #lco-workspace-nav button{
+ font-size:.84rem!important;
+ font-weight:680!important;
+ letter-spacing:0!important;
+ min-height:39px!important;
+ padding:8px 10px!important;
+ line-height:1.15!important;
+ white-space:nowrap;
+ flex:0 0 auto;
+}
+@media (min-width:1080px){
+ body .wrap #lco-workspace-nav{justify-content:space-between}
+}
 </style>'''
 EXPERIENCE_SCRIPT = r'''<script>
 (() => {
@@ -479,16 +500,12 @@ function copy(){
  for(const option of document.querySelectorAll('#compare-kind option,#task-priority option')){if(opts[option.value])option.textContent=opts[option.value][i];}
  const legacy=document.querySelector('#case-selector option[value=legacy-default]');if(legacy)legacy.textContent=(isDe()?'Standard-Arbeitsbereich':'Legacy workspace')+' (legacy-default)';
 }
+// The human-copy layer owns the single post-render translation pass.
+window.LCOApplyExtraCopy=copy;
 document.addEventListener('DOMContentLoaded',()=>{
- build();copy();
- document.addEventListener('click',()=>setTimeout(copy,250),true);
+ build();
+ copy();
 });
-window.addEventListener('load',()=>{
- // The existing runtime creates the language switch only on window.load.
- const toggle=document.getElementById('lang-toggle');
- if(toggle)toggle.addEventListener('click',()=>{setTimeout(copy,160);setTimeout(copy,520)});
- setTimeout(copy,170);
- setTimeout(copy,540);
-});
+window.addEventListener('load',copy);
 })();
 </script>'''

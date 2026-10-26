@@ -489,16 +489,27 @@ FIXUP_SCRIPT = r'''
       root.className = 'lco-process';
       next.insertAdjacentElement('afterend', root);
     }
+    if (root.dataset.lang === currentLang() && root.children.length) return;
+    root.dataset.lang = currentLang();
     root.innerHTML = copy().process.map((label,index) =>
       `<div class="lco-process-step"><span>0${index+1}</span><strong>${label}</strong></div>`
     ).join('');
   }
 
   function humanizeTables() {
-    const labels = copy().table;
+    // Reverse-map both languages so an existing table can switch back
+    // without a rebuild and without modifying user-entered cell values.
+    const reverse = new Map();
+    for (const labels of [COPY.de.table, COPY.en.table]) {
+      for (const [key,label] of Object.entries(labels)) reverse.set(label,key);
+    }
     document.querySelectorAll('table th').forEach(th => {
-      const key = th.textContent.trim();
-      if (labels[key]) th.textContent = labels[key];
+      const displayed = th.textContent.trim();
+      const field = th.dataset.lcoColumn || reverse.get(displayed) || displayed;
+      if (Object.prototype.hasOwnProperty.call(copy().table, field)) {
+        th.dataset.lcoColumn = field;
+        th.textContent = copy().table[field];
+      }
     });
   }
 
@@ -703,38 +714,43 @@ FIXUP_SCRIPT = r'''
     humanizeTables();
   }
 
+  // A single, idempotent localization pass after an actual render.
+  // A separate experience layer owns extra ID-specific labels.
+  function synchronizeCopy() {
+    applyHumanCopy();
+    if (typeof window.LCOApplyExtraCopy === 'function') window.LCOApplyExtraCopy();
+  }
+  window.LCOApplyHumanCopy = synchronizeCopy;
+
   const originalRenderNextStep = window.renderNextStep;
   if (typeof originalRenderNextStep === 'function') {
     window.renderNextStep = function(value) {
       return originalRenderNextStep.call(this, humanizeNextStep(value));
     };
   }
-
   ['buildRegisterTable','buildTimelineTable','buildEntityTable','renderExportHistory'].forEach(name => {
     const original = window[name];
     if (typeof original === 'function') {
       window[name] = function() {
         const result = original.apply(this, arguments);
-        setTimeout(() => { humanizeTables(); applyHumanCopy(); }, 0);
+        humanizeTables();
         return result;
       };
     }
   });
-
   const originalRefreshAll = window.refreshAll;
   if (typeof originalRefreshAll === 'function') {
     window.refreshAll = async function() {
       const result = await originalRefreshAll.apply(this, arguments);
-      setTimeout(applyHumanCopy, 0);
+      synchronizeCopy();
       return result;
     };
   }
-
   const originalRefreshStatus = window.refreshStatus;
   if (typeof originalRefreshStatus === 'function') {
     window.refreshStatus = async function() {
       const result = await originalRefreshStatus.apply(this, arguments);
-      setTimeout(applyHumanCopy, 0);
+      synchronizeCopy();
       return result;
     };
   }
@@ -753,7 +769,6 @@ FIXUP_SCRIPT = r'''
       }
     };
   }
-
   const originalUploadFiles = window.uploadFiles;
   if (typeof originalUploadFiles === 'function') {
     window.uploadFiles = async function() {
@@ -773,7 +788,6 @@ FIXUP_SCRIPT = r'''
       }
     };
   }
-
   ['saveRegister','saveTimeline','saveEntities'].forEach(name => {
     const original = window[name];
     if (typeof original === 'function') {
@@ -783,53 +797,20 @@ FIXUP_SCRIPT = r'''
           showFeedback(copy().saveDone, 'ok');
           return result;
         } catch (error) {
-          showFeedback(copy().actionFailed, 'attention');
+          showFeedback(copy().actionFailed + ' ' + (error?.message || ''), 'attention');
           const log = document.getElementById('log');
           if (log) log.textContent = `${name} failed: ${error}\n\n` + log.textContent;
         }
       };
     }
   });
-
-  window.addEventListener('unhandledrejection', event => {
+  window.addEventListener('unhandledrejection', () => {
     showFeedback(copy().actionFailed, 'attention');
   });
 
-  const originalToggleLanguage = window.toggleLanguage;
-  if (typeof originalToggleLanguage === 'function') {
-    window.toggleLanguage = function() {
-      const result = originalToggleLanguage.apply(this, arguments);
-      setTimeout(applyHumanCopy, 0);
-      setTimeout(applyHumanCopy, 80);
-      return result;
-    };
-  }
-
-  const originalApplyLanguage = window.applyLanguage;
-  if (typeof originalApplyLanguage === 'function') {
-    window.applyLanguage = function() {
-      const result = originalApplyLanguage.apply(this, arguments);
-      setTimeout(applyHumanCopy, 0);
-      return result;
-    };
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    applyHumanCopy();
-    setTimeout(applyHumanCopy, 250);
-    setTimeout(applyHumanCopy, 900);
-  });
-  window.addEventListener('load', () => {
-    // The existing asset regenerates the hero and installs the language toggle
-    // at window.load, after DOMContentLoaded. Apply keyed translations last.
-    const button = document.getElementById('lang-toggle');
-    if (button) button.addEventListener('click', () => {
-      setTimeout(applyHumanCopy, 110);
-      setTimeout(applyHumanCopy, 400);
-    });
-    setTimeout(applyHumanCopy, 130);
-    setTimeout(applyHumanCopy, 480);
-  });
+  document.addEventListener('DOMContentLoaded', synchronizeCopy);
+  // The legacy asset creates the language button during window.load.
+  window.addEventListener('load', synchronizeCopy);
 })();
 </script>
 '''
