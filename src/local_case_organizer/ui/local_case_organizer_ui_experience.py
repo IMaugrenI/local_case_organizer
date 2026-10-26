@@ -46,6 +46,109 @@ body.lco-light .lco-workspace-nav button[aria-selected=true]{background:#9b7135!
 body.lco-light .lco-workspace-view .hint,body.lco-light .lco-workspace-view .note{color:#544d44!important}
 @media(max-width:680px){.lco-workspace-nav{margin:12px -4px 18px;padding:7px}.lco-workspace-view .editor-actions>label{min-width:100%}.lco-workspace-view .actions{grid-template-columns:1fr!important}body .lco-process{display:none}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+
+/* B02 contrast patch: foreground/background pairs validated against WCAG 2.x AA.
+   Regular text >=4.5:1, interactive boundaries >=3:1.
+   Use opaque form surfaces: native date inputs, selects and dropdowns must never
+   render light text on the browser's default light widget background. */
+body{
+  --lco-control-bg:#201e1a;
+  --lco-control-fg:#f4f0e8;
+  --lco-control-placeholder:#bdb4a7;
+  --lco-control-border:#8d806e;
+  --lco-contrast-primary-bg:#c69a52;
+  --lco-contrast-primary-fg:#17120d;
+  color-scheme:dark;
+}
+body.lco-light{
+  --lco-control-bg:#fbf8f2;
+  --lco-control-fg:#211d18;
+  --lco-control-placeholder:#665b4f;
+  --lco-control-border:#8b8070;
+  --lco-contrast-primary-bg:#80571b;
+  --lco-contrast-primary-fg:#ffffff;
+  color-scheme:light;
+}
+body input[type=text],
+body input[type=number],
+body input[type=date],
+body input[type=email],
+body input[type=search],
+body input[type=file],
+body select,
+body textarea{
+  background:var(--lco-control-bg)!important;
+  color:var(--lco-control-fg)!important;
+  border:1px solid var(--lco-control-border)!important;
+}
+body input::placeholder,
+body textarea::placeholder{
+  color:var(--lco-control-placeholder)!important;
+  opacity:1!important;
+}
+body select option{
+  background:var(--lco-control-bg)!important;
+  color:var(--lco-control-fg)!important;
+}
+body input[type=file]::file-selector-button{
+  border:1px solid var(--lco-control-border);
+  border-radius:9px;
+  background:var(--lco-control-bg);
+  color:var(--lco-control-fg);
+  padding:9px 12px;
+  cursor:pointer;
+}
+body button:not(.ghost):not(.light):not(.secondary):not(.lco-theme-toggle){
+  background:var(--lco-contrast-primary-bg)!important;
+  color:var(--lco-contrast-primary-fg)!important;
+}
+body .lco-workspace-nav button:not(.ghost):not(.light):not(.secondary):not(.lco-theme-toggle){
+  background:transparent!important;
+  color:var(--lco-muted)!important;
+}
+body .lco-workspace-nav button:hover:not([aria-selected=true]):not(.ghost):not(.light):not(.secondary):not(.lco-theme-toggle){
+  background:var(--lco-surface)!important;
+  color:var(--lco-text)!important;
+}
+body .lco-workspace-nav button[aria-selected=true]:not(.ghost):not(.light):not(.secondary):not(.lco-theme-toggle){
+  background:var(--lco-contrast-primary-bg)!important;
+  color:var(--lco-contrast-primary-fg)!important;
+}
+body.lco-light .next-step{
+  color:#544d44!important;
+  background:#fbf8f2!important;
+}
+body.lco-light .next-step::before,
+body.lco-light .lco-process-step span,
+body.lco-light .lco-tech-details>summary::after,
+body.lco-light .lco-tech-label{
+  color:#80571b!important;
+}
+body.lco-light .lco-feedback.ok{
+  color:#256145!important;
+  background:#eef7f0!important;
+}
+body.lco-light .lco-feedback.attention{
+  color:#81530d!important;
+  background:#fff4df!important;
+}
+body.lco-light .lco-skip-link{
+  background:#80571b!important;
+  color:#fff!important;
+}
+body.lco-light .lco-workspace-view .hint,
+body.lco-light .lco-workspace-view .note{
+  color:#544d44!important;
+}
+body .lco-workspace-nav button:focus-visible,
+body .lco-workspace-view button:focus-visible,
+body .lco-workspace-view input:focus-visible,
+body .lco-workspace-view select:focus-visible,
+body .lco-workspace-view textarea:focus-visible{
+  outline:3px solid var(--lco-gold-bright)!important;
+  outline-offset:3px;
+}
 </style>'''
 EXPERIENCE_SCRIPT = r'''<script>
 (() => {
