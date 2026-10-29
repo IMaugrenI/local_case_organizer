@@ -345,8 +345,9 @@ function bind(){
  });
  bindButton("lco-ws-export",async()=>{
   try{
-   await loadDocs();
-   const selected=cachedDocs.filter(row=>row.selected_for_export==="yes").length;
+   // Read current selection from disk without replacing unsaved note inputs.
+   const summary=await request("/api/status");
+   const selected=Number(summary.summary?.selected_export_count||0);
    if(!selected){message("lco-ws-export-msg","exportNone","error");return}
    if(!window.confirm(fmt("exportConfirm",{n:selected})))return;
    await request("/api/export-package",{});
@@ -354,7 +355,10 @@ function bind(){
   }catch(error){console.warn(error);message("lco-ws-export-msg","error","error")}
  });
  bindButton("lco-ws-open-exports",async()=>{
-  try{await request("/api/open-exports",{})}catch(error){console.warn(error);message("lco-ws-export-msg","error","error")}
+  try{
+   const result=await request("/api/open-exports",{});
+   if(result.error)throw new Error(result.error);
+  }catch(error){console.warn(error);message("lco-ws-export-msg","error","error")}
  });
  bindButton("lco-ws-verify",async()=>{
   try{await request("/api/verify-integrity",{});message("lco-ws-security-msg","verified","ok")}
