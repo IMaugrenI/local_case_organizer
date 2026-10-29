@@ -163,6 +163,8 @@ On the existing simple page, expand **Other specialized tools → Optional AI ex
 
 Only after an explicit click and confirmation are up to **two shortened, hash-verified source excerpts** from the selected document submitted to that loopback service. The model's response must contain an exact quote, document ID and page. Unverifiable suggestions are discarded; valid suggestions remain **pending human review** and are never promoted into confirmed claims, timeline entries or exported facts automatically. Duplicates are suppressed. The briefing shows only pending suggestions whose original source still verifies against the quote.
 
+**Review entire case locally:** Following one explicit confirmation, the same loopback Ollama service may review eligible indexed case documents one at a time. Progress is stored as source hashes and statuses only in the case-private working area. You can pause, resume and explicitly retry failed sources. Visiting a page never initiates analysis. Processing is bounded to 300 locally indexed sources; each source is verified against its original before inference and resulting hints always require individual review.
+
 **Trust boundary:** The organizer controls its loopback connection, not the configuration or trustworthiness of the separately operated local Ollama service. Without Ollama, document intake, case organization and manual AI exchange remain available. No model inference is started automatically after import or page load.
 
 ## Case overview and lawyer-ready handoff
