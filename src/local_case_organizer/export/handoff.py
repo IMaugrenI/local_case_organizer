@@ -12,6 +12,8 @@ from pathlib import Path
 from local_case_organizer.claims import read_claims
 from local_case_organizer.entities.store import read_entity_rows
 from local_case_organizer.paths import get_workspace_paths
+from local_case_organizer.timeline.suggestions import propose_events
+from local_case_organizer.ui.document_triage import document_type_hints
 from local_case_organizer.register.store import read_register_rows
 from local_case_organizer.tasks import read_tasks
 from local_case_organizer.timeline.store import read_timeline_rows
@@ -111,6 +113,28 @@ def write_lawyer_start_here(export_dir: Path, selection: set[str]) -> Path:
                      + " — " + _safe(event.get("event_title"), 160)
                      + " (Quellen: " + _safe(refs, 180) + "; "
                      + _safe(event.get("status") or "draft", 30) + ")")
+    # Optional, source-bound search aids. Never promote unreviewed hints
+    # into the curated event timeline or legal conclusions.
+    guesses = [hint for hint in document_type_hints()["hints"]
+               if hint["file_id"] in selection][:60]
+    lines.extend(["", "## Automatisch vorgeschlagene Dokumentarten (nicht geprüft)", ""])
+    if not guesses:
+        lines.append("- Keine belastbaren Stichwort-Hinweise in den ausgewählten Dateien.")
+    for guess in guesses:
+        lines.append("- " + _safe(guess["file_id"], 110) + ": "
+                     + _safe(guess["label_de"], 90)
+                     + " (Suchhilfe aus " + _safe(guess["evidence_source"], 40) + ")")
+    date_hints = [item for item in propose_events()["candidates"]
+                  if item["file_id"] in selection][:35]
+    lines.extend(["", "## Automatisch gefundene Datumsstellen (unbestätigt)", ""])
+    if not date_hints:
+        lines.append("- Keine passenden Fundstellen in den geeigneten ausgewählten Quellen.")
+    for item in date_hints:
+        lines.append("- " + _safe(item["date"], 12) + " · "
+                     + _safe(item["file_id"], 110) + " · Seite "
+                     + str(int(item.get("page", 1))) + ", Zeile "
+                     + str(int(item["line"])) + ": "
+                     + _safe(item["excerpt"], 200))
     lines.extend(["", "## Vom Anwalt bzw. Betreiber zu prüfen", "",
         "- Welche Unterlagen sind für die konkrete Frage oder das Verfahren relevant?",
         "- Stimmen die Datumsangaben mit den Originalen und dem Aktenstand überein?",

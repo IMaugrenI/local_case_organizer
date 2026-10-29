@@ -85,6 +85,7 @@ def case_briefing() -> dict[str, object]:
                 "date": str(row["date"]),
                 "original_name": str(row["original_name"]),
                 "line": row["line"],
+                "page": row.get("page", 1),
                 "excerpt": str(row["excerpt"]),
             }
             for row in candidates[:8]
