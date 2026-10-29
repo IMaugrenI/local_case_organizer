@@ -19,6 +19,7 @@ from local_case_organizer.ui.multipart_upload import parse_multipart_files
 from local_case_organizer.ui.quick_intake import quick_organize_inbox
 from local_case_organizer.ui.autopilot import autopilot_status, process_autopilot
 from local_case_organizer.ui.case_briefing import case_briefing
+from local_case_organizer.local_model import installed_local_models, propose_with_local_model
 from local_case_organizer.ui.simple_actions import update_document, add_manual_event, add_manual_entity, prepare_local_search, bulk_export_selection
 from local_case_organizer.document_text import index_document, search_text
 from local_case_organizer.claims import add_claim, read_claims, set_review_status
@@ -1587,6 +1588,14 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
                 self._send(200, "application/json; charset=utf-8",
                            _json_bytes({"suggestions": read_ai_suggestions()}))
                 return
+            if parsed.path == "/api/local-models":
+                try:
+                    models = installed_local_models()
+                    self._send(200, "application/json; charset=utf-8", _json_bytes(models))
+                except (ValueError, OSError) as exc:
+                    self._send(503, "application/json; charset=utf-8",
+                               _json_bytes({"error": str(exc)}))
+                return
             if parsed.path == "/api/tasks":
                 self._send(200, "application/json; charset=utf-8", _json_bytes(task_board()))
                 return
@@ -1644,6 +1653,9 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
                 except (ValueError, OSError, FileExistsError, TypeError) as exc:
                     self._send(400, "application/json; charset=utf-8", _json_bytes({"error": str(exc)}))
                     return
+            elif parsed.path == "/api/local-model-review":
+                body = _read_json_body(self)
+                payload = propose_with_local_model(body.get("model"), body.get("file_ids"))
             elif parsed.path == "/api/quick-update-document":
                 payload = update_document(_read_json_body(self))
             elif parsed.path == "/api/quick-bulk-export":
