@@ -17,6 +17,7 @@ from local_case_organizer.ui.case_selection import requested_case
 from local_case_organizer.ui.ui_security import allow_local_post, allowed_ui_host
 from local_case_organizer.ui.multipart_upload import parse_multipart_files
 from local_case_organizer.ui.quick_intake import quick_organize_inbox
+from local_case_organizer.ui.autopilot import autopilot_status, process_autopilot
 from local_case_organizer.ui.case_briefing import case_briefing
 from local_case_organizer.ui.simple_actions import update_document, add_manual_event, add_manual_entity, prepare_local_search
 from local_case_organizer.document_text import index_document, search_text
@@ -1561,6 +1562,9 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
             if parsed.path == "/api/status":
                 self._send(200, "application/json; charset=utf-8", _json_bytes(_status_payload()))
                 return
+            if parsed.path == "/api/autopilot-status":
+                self._send(200, "application/json; charset=utf-8", _json_bytes(autopilot_status()))
+                return
             if parsed.path == "/api/case-briefing":
                 self._send(200, "application/json; charset=utf-8", _json_bytes(case_briefing()))
                 return
@@ -1649,6 +1653,12 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
             elif parsed.path == "/api/quick-prepare-search":
                 body = _read_json_body(self)
                 payload = prepare_local_search(include_pdf=body.get("include_pdf") is True)
+            elif parsed.path == "/api/autopilot-process":
+                body = _read_json_body(self)
+                payload = process_autopilot(
+                    use_ocr=body.get("use_ocr") is True,
+                    retry_failed=body.get("retry_failed") is True,
+                )
             elif parsed.path == "/api/setup":
                 payload = {"created": describe_workspace(create_local_workspace())}
             elif parsed.path == "/api/upload":
