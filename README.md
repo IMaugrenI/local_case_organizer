@@ -10,7 +10,7 @@ Local Case Organizer helps you import files, assign stable document references, 
 
 **Get started:** [First run](START_HERE.md) · [German README](README_DE.md) · [ToF Systems overview](https://github.com/IMaugrenI/tof-showcase)
 
-**Workflow:** **Import → Register → Timeline → Export**. Each stage helps make the resulting dossier easier to inspect, discuss, and hand over. The repository is the independent **Structure** tool; it does not perform knowledge retrieval or AI generation by itself.
+**Workflow:** **Import → Register → Timeline → Export**. Each stage helps make the resulting dossier easier to inspect, discuss, and hand over. The repository remains an independent **Structure** tool. An optional connection to an already-running local Ollama model can prepare unreviewed, source-linked hints; no model is called by default.
 
 **Boundary:** this is an organization tool, not a legal-advice engine, court system, or guarantee of legal or regulatory compliance. Review sensitive material before sharing an exported package.
 
@@ -26,8 +26,8 @@ Yes.
 - `tof_local_knowledge` for organizing extracted evidence
 
 ### Not intended for
-- triggering generation processes
-- acting as a knowledge retrieval system
+- unattended AI fact assertions, legal conclusions or automatic data sharing
+- serving as a standalone cloud or knowledge-retrieval platform
 
 ## Fastest safe start
 
@@ -153,9 +153,17 @@ Common launchers available across the sorted folders:
 
 The **Organize inbox files** button processes existing inbox documents. Identical content is skipped and original copies remain untouched.
 
-**Case autopilot:** Processing starts only after an intentional file drop/selection and runs in bounded, resumable batches. The case-private progress journal lives in the selected case's `data/working/autopilot_state.json`. Use **Continue processing** after interruption. Registered text files and PDFs are prepared locally for searching when suitable offline tools exist. Unsupported or unreadable files appear as review warnings. The **Explicitly allow local OCR** checkbox is off by default: OCR runs only when selected and installed locally. The application does not install OCR tools, connect to an LLM/cloud, make legal conclusions, approve uncertain facts, or transmit files.
+**Case autopilot:** Processing starts only after an intentional file drop/selection and runs in bounded, resumable batches. The case-private progress journal lives in the selected case's `data/working/autopilot_state.json`. Use **Continue processing** after interruption. Registered text files and PDFs are prepared locally for searching when suitable offline tools exist. Unsupported or unreadable files appear as review warnings. The **Explicitly allow local OCR** checkbox is off by default: OCR runs only when selected and installed locally. Automatic case preparation never calls an LLM/cloud, makes legal conclusions, approves uncertain facts or transmits files. A **separately approved, opt-in connection to local Ollama** is described below.
 
 The briefing offers **unverified document-type hints** grounded in filenames or locally verified indexed text. Source-bound date hints from eligible text/PDF sources stay unverified and are included in the lawyer reading guide only for intentionally selected documents. **Select all documents** requires an explicit privacy confirmation; creating an export still requires a separate confirmation.
+
+## Optional on-device AI suggestions (Ollama)
+
+On the existing simple page, expand **Other specialized tools → Optional AI exchange** to discover installed models on a running Ollama service at `127.0.0.1:11434`. The organizer never installs or starts Ollama/models and cannot select other network endpoints.
+
+Only after an explicit click and confirmation are up to **two shortened, hash-verified source excerpts** from the selected document submitted to that loopback service. The model's response must contain an exact quote, document ID and page. Unverifiable suggestions are discarded; valid suggestions remain **pending human review** and are never promoted into confirmed claims, timeline entries or exported facts automatically. Duplicates are suppressed. The briefing shows only pending suggestions whose original source still verifies against the quote.
+
+**Trust boundary:** The organizer controls its loopback connection, not the configuration or trustworthiness of the separately operated local Ollama service. Without Ollama, document intake, case organization and manual AI exchange remain available. No model inference is started automatically after import or page load.
 
 ## Case overview and lawyer-ready handoff
 

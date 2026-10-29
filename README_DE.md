@@ -10,7 +10,7 @@ Local Case Organizer unterstützt beim Import von Dateien, bei stabilen Dokument
 
 **Einstieg:** [Schnellstart](START_HERE_DE.md) · [English README](README.md) · [ToF Systems Übersicht](https://github.com/IMaugrenI/tof-showcase)
 
-**Ablauf:** **Import → Register → Timeline → Export**. Jeder Schritt macht das Dossier leichter nachvollziehbar, besprechbar und übergebbar. Das Repository ist das eigenständige **Structure**-Werkzeug; Wissenssuche oder KI-Generierung führt es nicht selbst aus.
+**Ablauf:** **Import → Register → Timeline → Export**. Jeder Schritt macht das Dossier leichter nachvollziehbar, besprechbar und übergebbar. Das Repository ist das eigenständige **Structure**-Werkzeug. Eine optionale Anbindung an ein bereits lokal laufendes Ollama-Modell kann ungeprüfte, quellengebundene Vorschläge liefern; standardmäßig erfolgt keine Modellanfrage.
 
 **Grenze:** Dieses Organisationswerkzeug ist weder Rechtsberatung noch Gerichtssystem noch Garantie rechtlicher oder regulatorischer Konformität. Sensible Inhalte müssen vor der Weitergabe eines Exportpakets geprüft werden.
 
@@ -26,8 +26,8 @@ Ja.
 - `tof_local_knowledge` zur Ordnung extrahierter Evidenz
 
 ### Nicht gedacht für
-- Generierungsprozesse auszulösen
-- als Knowledge-Retrieval-System zu dienen
+- unbeaufsichtigte KI-Feststellungen, rechtliche Schlussfolgerungen oder automatische Datenweitergabe
+- als eigenständige Cloud- oder Knowledge-Retrieval-Plattform zu dienen
 
 ## Einfachster sicherer Einstieg
 
@@ -153,9 +153,17 @@ Gemeinsame Starter in diesen Ordnern:
 
 Der Knopf **Bereits abgelegte Inbox-Dateien einordnen** verarbeitet schon vorhandene Inbox-Dateien. Identische Dateiinhalte werden übersprungen; Eingangsdateien und Originalkopien bleiben erhalten.
 
-**Aktenautopilot:** Die Verarbeitung erfolgt nach einer bewussten Dateiablage schrittweise und fallbezogen. Der private Fortschritt liegt unter `data/working/autopilot_state.json` im ausgewählten Fall; **„Weiterverarbeiten“** setzt einen unterbrochenen Durchlauf fort. Textdateien und PDFs werden lokal für die Suche aufbereitet, soweit vorhandene Werkzeuge und Ressourcenlimits das erlauben. Ungeeignete und nicht lesbare Dateien erscheinen als Prüfbedarf. Die Checkbox **„Lokale OCR ... zulassen“** ist standardmäßig ausgeschaltet: Sie erlaubt ausschließlich nach bewusster Auswahl die lokal installierten OCR-Werkzeuge; es werden keine Programme automatisch nachinstalliert. Es gibt keine Cloud-/LLM-Anbindung, automatische rechtliche Bewertung, Quellenfreigabe oder automatische Weitergabe.
+**Aktenautopilot:** Die Verarbeitung erfolgt nach einer bewussten Dateiablage schrittweise und fallbezogen. Der private Fortschritt liegt unter `data/working/autopilot_state.json` im ausgewählten Fall; **„Weiterverarbeiten“** setzt einen unterbrochenen Durchlauf fort. Textdateien und PDFs werden lokal für die Suche aufbereitet, soweit vorhandene Werkzeuge und Ressourcenlimits das erlauben. Ungeeignete und nicht lesbare Dateien erscheinen als Prüfbedarf. Die Checkbox **„Lokale OCR ... zulassen“** ist standardmäßig ausgeschaltet: Sie erlaubt ausschließlich nach bewusster Auswahl die lokal installierten OCR-Werkzeuge; es werden keine Programme automatisch nachinstalliert. Die automatische Aktenvorbereitung ruft weder Cloud noch LLM auf, gibt keine Quellen frei und versendet nichts. Eine **separat und ausdrücklich gestartete lokale Ollama-Analyse** ist unten beschrieben.
 
 Die Fallübersicht schlägt aus Dateinamen oder verifizierten lokalen Textstellen **mögliche Dokumentarten** vor. Datumsstellen aus geeigneten Textdateien und indizierten PDFs bleiben unbestätigte, quellenbezogene Hinweise. Die Anwalts-Lesehilfe berücksichtigt diese Vorschläge ausschließlich für bewusst zum Export ausgewählte Unterlagen. Über **„Alle Dokumente markieren“** kann die Auswahl nach ausdrücklicher Warnung in einem Schritt gesetzt werden; die eigentliche Übergabe benötigt weiterhin eine weitere Bestätigung.
+
+## Optionale lokale KI-Analyse (Ollama)
+
+In der bestehenden einfachen Seite unter **Weitere Spezialfunktionen → Optionaler KI-Austausch** können lokal installierte Ollama-Modelle erkannt und für ein bewusst ausgewähltes Dokument genutzt werden. Erforderlich ist eine bereits laufende Ollama-Instanz unter `127.0.0.1:11434`; der Organizer installiert und startet weder Ollama noch ein Modell und wählt keinen fremden Netzwerkendpunkt.
+
+Ein ausdrücklicher Klick mit Bestätigung erlaubt die Übertragung von höchstens **zwei hash-geprüften, gekürzten Textstellen** des gewählten Dokuments an **diesen lokalen Dienst**. Die Antworten müssen wörtliche Quellenstellen, Dokument-ID und Seite enthalten. Nicht belegbare Modellbehauptungen werden verworfen; gültige Vorschläge bleiben **ungeprüft** und werden niemals automatisch zu bestätigten Aussagen, Zeitlinieneinträgen oder exportierten Fakten. Bereits bekannte Vorschläge werden nicht doppelt gespeichert. Die Fallübersicht zeigt nur Hinweise, deren Originalquelle noch zur Zitatstelle passt.
+
+**Wichtige Grenze:** Der Organizer kann nur die Verbindung zum Loopback-Dienst kontrollieren. Die tatsächliche Konfiguration und Vertrauenswürdigkeit der lokal betriebenen Ollama-Instanz liegt beim Betreiber. Ohne Ollama funktioniert die Aktenorganisation weiterhin vollständig; die manuelle KI-Austauschfunktion bleibt verfügbar. Keine KI-Analyse läuft unbeaufsichtigt nach Import oder Seitenaufruf.
 
 ## Aktenübersicht und anwaltstaugliche Übergabe
 
