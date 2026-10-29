@@ -21,13 +21,13 @@ def _case(tmp_path, monkeypatch):
     monkeypatch.setattr(paths, "get_repo_root", lambda: tmp_path / "repo")
     workspace = paths.create_local_workspace()
     (workspace.inbox_dir / "gericht_2020.txt").write_text(
-        "Absender: Kanzlei Alpha\\nAktenvermerk vom 03.04.2020. Strittiger Betrag: 100 EUR.", encoding="utf-8",
+        "Absender: Kanzlei Alpha\nAktenvermerk vom 03.04.2020. Strittiger Betrag: 100 EUR.", encoding="utf-8",
     )
     (workspace.inbox_dir / "schreiben_2021.txt").write_text(
         "Schreiben vom 05.06.2021. Strittiger Betrag: 200 EUR.", encoding="utf-8",
     )
     (workspace.inbox_dir / "secret_private.txt").write_text(
-        "Beklagter: PRIVATE PERSON NAME\\nTOP SECRET PRIVATE NAME; Termin am 09.09.2025; 999 EUR.", encoding="utf-8",
+        "Beklagter: PRIVATE PERSON NAME\nTOP SECRET PRIVATE NAME; Termin am 09.09.2025; 999 EUR.", encoding="utf-8",
     )
     assert quick_organize_inbox()["imported_files"] == 3
     rows = read_register_rows()
