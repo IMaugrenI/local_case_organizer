@@ -219,7 +219,11 @@ function bind(){
  }
  el("lco-special-claims-pane").addEventListener("toggle",()=>{if(el("lco-special-claims-pane").open)loadClaims().catch(console.warn)});
  el("lco-special-ai-pane").addEventListener("toggle",()=>{if(el("lco-special-ai-pane").open)loadSuggestions().catch(console.warn)});
- el("lco-special-comparisons-pane").addEventListener("toggle",()=>{if(el("lco-special-comparisons-pane").open)loadComparisons().catch(console.warn)});
+ el("lco-special-comparisons-pane").addEventListener("toggle",()=>{
+  if(el("lco-special-comparisons-pane").open){
+   loadClaims().then(loadComparisons).catch(console.warn);
+  }
+ });
 }
 function init(){
  const root=el("lco-ws-technical")?.querySelector(".lco-ws-body");
