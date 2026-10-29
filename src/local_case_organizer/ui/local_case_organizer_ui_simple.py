@@ -121,7 +121,7 @@ const L={
   count:"{count} document(s) in the register",status:"Review status",imported:"Registered",unchecked:"Not reviewed"
  }
 };
-let cachedRows=[],lastNotice=null,exportNotice=null,busy=false;
+let cachedRows=[],lastNotice=null,exportNotice=null,busy=false,uploading=false;
 const lang=()=>String(localStorage.getItem("local_case_organizer_ui_lang")||"de").startsWith("de")?"de":"en";
 const t=(key)=>L[lang()][key]||key;
 const el=(id)=>document.getElementById(id);
@@ -190,7 +190,7 @@ async function refreshCases(){
  }
 }
 async function organize(fileNames){
- if(busy)return;
+ if(busy)return false;
  busy=true;el("lco-simple-pick").disabled=true;el("lco-simple-inbox").disabled=true;
  notice("working","busy");
  try{
@@ -209,11 +209,12 @@ async function organize(fileNames){
     await window.LCOAutopilot.runAfterImport();
   }
   if(typeof window.refreshStatus==="function")await window.refreshStatus();
- }catch(error){console.warn("Local intake failed",error);notice("error","savedOnly")}
- finally{busy=false;el("lco-simple-pick").disabled=false;el("lco-simple-inbox").disabled=false}
+  return true;
+ }catch(error){console.warn("Local intake failed",error);notice("error","savedOnly");return false}
+ finally{busy=false;el("lco-simple-pick").disabled=uploading;el("lco-simple-inbox").disabled=uploading}
 }
 async function upload(files){
- if(busy)return;
+ if(busy||uploading)return;
  if(!files?.length){notice("error","noFiles");return}
  const selected=Array.from(files);
  if(selected.length>160||selected.reduce((size,file)=>size+file.size,0)>150*1024*1024){
@@ -230,7 +231,7 @@ async function upload(files){
    batch.push(file);bytes+=file.size;
  }
  if(batch.length)batches.push(batch);
- busy=true;el("lco-simple-pick").disabled=true;el("lco-simple-inbox").disabled=true;
+ busy=true;uploading=true;el("lco-simple-pick").disabled=true;el("lco-simple-inbox").disabled=true;
  try{
    for(let index=0;index<batches.length;index++){
      notice("working","uploading",{current:index+1,total:batches.length});
@@ -239,14 +240,15 @@ async function upload(files){
      const saved=await responseJson(await fetch("/api/upload",{method:"POST",body:form}));
      // The importer and autopilot both use their existing bounded APIs.
      busy=false;
-     await organize(saved.uploaded_files);
+     const done=await organize(saved.uploaded_files);
+     if(!done)throw new Error("A locally saved batch has not been registered");
      busy=true;
    }
  }catch(error){
    console.warn("Upload or case import stopped",error);
-   notice("error","savedOnly");
+   notice("error","failure");
  }finally{
-   busy=false;el("lco-simple-pick").disabled=false;el("lco-simple-inbox").disabled=false;
+   uploading=false;busy=false;el("lco-simple-pick").disabled=false;el("lco-simple-inbox").disabled=false;
    el("lco-simple-files").value="";
  }
 }
