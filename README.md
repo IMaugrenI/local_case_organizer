@@ -153,6 +153,22 @@ Common launchers available across the sorted folders:
 
 The **Organize inbox files** button handles files you previously placed in `data/inbox/`. The guided action skips already registered file contents, keeps inbox files and original copies intact, and processes large backlogs in bounded batches. No OCR, AI inference, external transmission or export is triggered automatically.
 
+## Case overview and lawyer-ready handoff
+
+The simple page includes a **source-grounded case briefing** with document
+counts, pending manual reviews, candidate date mentions and suggested next
+actions. It neither determines procedural facts nor calculates legal deadlines;
+date hints are unverified.
+
+A deliberately initiated local export additionally contains
+`ANWALT_START_HERE.md`, explaining reading order, evidence IDs and questions
+for the operator or qualified counsel to verify.
+
+**Export boundary:** Only explicitly selected originals and linked register,
+timeline, person, task, claim and provenance records are included. Unlinked
+records are excluded. Free-text entries may still contain sensitive details and
+must be reviewed before any handoff.
+
 ## What import adds
 
 The import step is now the provenance anchor for V1.

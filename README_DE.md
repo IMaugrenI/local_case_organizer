@@ -153,6 +153,23 @@ Gemeinsame Starter in diesen Ordnern:
 
 Der Knopf **Bereits abgelegte Inbox-Dateien einordnen** verarbeitet Dateien, die zuvor in `data/inbox/` abgelegt wurden. Bereits importierte identische Dateiinhalte werden übersprungen; Eingangsdateien und Originalkopien bleiben erhalten. Größere Bestände werden in begrenzten Paketen übernommen. OCR, KI-Bewertung, externe Übertragung und Export starten niemals automatisch.
 
+## Aktenübersicht und anwaltstaugliche Übergabe
+
+Die einfache Seite enthält einen **quellenbezogenen Fallüberblick** mit Anzahl der
+Unterlagen, offenen manuellen Prüfungen, Datums-Hinweisen und möglichen nächsten
+Arbeitsschritten. Es werden keine Verfahrensstände oder rechtliche Fristen
+berechnet oder behauptet. Text-Hinweise sind ausdrücklich unbestätigte Vorschläge.
+
+Beim bewusst ausgelösten lokalen Export wird zusätzlich
+`ANWALT_START_HERE.md` erzeugt. Die Datei erklärt die Lesereihenfolge, verweist
+auf die Anlagen-IDs und benennt Punkte, die Betreiber und Anwalt noch prüfen müssen.
+
+**Exportgrenze:** Nur ausdrücklich ausgewählte Originaldateien und mit diesen
+Auswahlen verknüpfte Register-, Ereignis-, Personen-, Aufgaben-, Aussagen- und
+Provenienzzeilen werden ausgegeben. Unverknüpfte Zeilen werden nicht automatisch
+mitgegeben. Freitextangaben können dennoch sensible Informationen enthalten
+und müssen vor jeder tatsächlichen Weitergabe geprüft werden.
+
 ## Was Import zusätzlich bringt
 
 Der Import-Schritt ist der Provenienz-Anker für V1.
