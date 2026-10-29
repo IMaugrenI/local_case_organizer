@@ -56,6 +56,8 @@ window.addEventListener('load', () => {
       simpleTitle: document.querySelector('#lco-easy-home [data-simple-copy="headline"]')?.textContent || '',
       simpleMode: document.body.classList.contains('lco-simple-mode'),
       simpleDrop: !!document.getElementById('lco-simple-drop'),
+      docsLabel: document.querySelector('#lco-ws-documents > summary')?.textContent || '',
+      taskListExists: !!document.getElementById('lco-ws-task-list'),
     });
     const result = document.createElement('pre');
     result.id = 'lco-browser-smoke';
@@ -69,6 +71,10 @@ window.addEventListener('load', () => {
     window.LCOApplyHumanCopy?.();
     document.getElementById('lco-simple-return')?.click();
     const before = get();
+    const details = document.getElementById('lco-ws-timeline');
+    if (details) details.open = false;
+    document.getElementById('lco-simple-timeline')?.click();
+    const onOnePage = !!details?.open && document.body.classList.contains('lco-simple-mode');
     first.click();
     const english = get();
     first.click();
@@ -95,7 +101,11 @@ window.addEventListener('load', () => {
       before.simpleTitle.includes('Deine Fallakte') &&
       english.simpleTitle.includes('Your case') &&
       after.simpleTitle.includes('Deine Fallakte') &&
-      expertOpened && simpleReturned;
+      expertOpened && simpleReturned &&
+      onOnePage && before.taskListExists &&
+      before.docsLabel.includes('Dokumente bearbeiten') &&
+      english.docsLabel.includes('Manage documents') &&
+      after.docsLabel.includes('Dokumente bearbeiten');
     result.textContent = ok ? 'UI_BROWSER_SMOKE_OK' : 'UI_BROWSER_SMOKE_FAIL ' + JSON.stringify({before,english,after});
   }, 400);
 });
