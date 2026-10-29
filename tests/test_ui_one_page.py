@@ -18,6 +18,7 @@ from local_case_organizer.ui.simple_actions import (
     add_manual_event,
     prepare_local_search,
     update_document,
+    bulk_export_selection,
 )
 from local_case_organizer.ui.local_case_organizer_ui_workspace import WORKSPACE_SCRIPT
 from local_case_organizer.ui.local_case_organizer_ui_specialist import SPECIALIST_SCRIPT
@@ -73,6 +74,24 @@ def test_document_patch_rejects_untrusted_or_unknown_fields(tmp_path, monkeypatc
     monkeypatch.setattr(paths, "get_repo_root", lambda: tmp_path)
     with pytest.raises(ValueError):
         update_document(payload)
+
+
+def test_bulk_selection_is_audited_and_does_not_export(tmp_path, monkeypatch):
+    monkeypatch.setattr(paths, "get_repo_root", lambda: tmp_path)
+    workspace = paths.create_local_workspace()
+    (workspace.inbox_dir / "brief.txt").write_text("synthetic", encoding="utf-8")
+    quick_organize_inbox()
+    selected = bulk_export_selection("all")
+    assert selected == {"changed": 1, "total": 1}
+    assert read_register_rows()[0]["selected_for_export"] == "yes"
+    assert bulk_export_selection("all")["changed"] == 0
+    cleared = bulk_export_selection("none")
+    assert cleared["changed"] == 1
+    assert read_register_rows()[0]["selected_for_export"] == "no"
+    assert not list(workspace.exports_dir.iterdir())
+    with pytest.raises(ValueError, match="mode"):
+        bulk_export_selection("untrusted")
+    assert (workspace.register_dir / "change_audit.jsonl").exists()
 
 
 def test_manual_timeline_rejects_unsupported_dates_and_unknown_sources(tmp_path, monkeypatch):
