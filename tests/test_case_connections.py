@@ -96,7 +96,10 @@ def test_invalidated_or_unindexed_originals_do_not_create_connections(tmp_path, 
     original = workspace.originals_dir / first["relative_path"]
     original.write_text("Aktenzeichen: 2 Ca 1030/21\nVERÄNDERT\n", encoding="utf-8")
     result = linked_document_hints()
-    assert result["groups"] == []
+    assert len(result["groups"]) == 1
+    assert result["groups"][0]["document_count"] == 2
+    assert all(item["file_id"] != first["file_id"]
+               for item in result["groups"][0]["documents"])
     assert result["unavailable_or_unindexed"] == 1
     assert result["incomplete"] is True
     assert original.read_text(encoding="utf-8").endswith("VERÄNDERT\n")
