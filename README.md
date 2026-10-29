@@ -148,10 +148,14 @@ Common launchers available across the sorted folders:
 2. run the matching `start_here` launcher for your operating system
 3. the browser UI opens locally
 4. in the **Simple view**, select or create a case
-5. drag up to 30 files (max. 30 MiB per selection) into the visible drop area or choose files; this explicit action uploads, imports and updates the document register
+5. select or drop up to 160 files (150 MiB total); the organizer divides the selection into bounded uploads, imports it, then prepares local text/PDF search with visible, resumable progress
 6. on the **same simple page**, mark and annotate documents, use local search, timelines, tasks, people and source hints, and explicitly confirm any handoff export. Specialized controls for sourced claims, comparison hints, manual AI handoff and opt-in offline OCR are collapsed under **Other specialized tools**.
 
-The **Organize inbox files** button handles files you previously placed in `data/inbox/`. The guided action skips already registered file contents, keeps inbox files and original copies intact, and processes large backlogs in bounded batches. No OCR, AI inference, external transmission or export is triggered automatically.
+The **Organize inbox files** button processes existing inbox documents. Identical content is skipped and original copies remain untouched.
+
+**Case autopilot:** Processing starts only after an intentional file drop/selection and runs in bounded, resumable batches. The case-private progress journal lives in the selected case's `data/working/autopilot_state.json`. Use **Continue processing** after interruption. Registered text files and PDFs are prepared locally for searching when suitable offline tools exist. Unsupported or unreadable files appear as review warnings. The **Explicitly allow local OCR** checkbox is off by default: OCR runs only when selected and installed locally. The application does not install OCR tools, connect to an LLM/cloud, make legal conclusions, approve uncertain facts, or transmit files.
+
+The briefing offers **unverified document-type hints** grounded in filenames or locally verified indexed text. Source-bound date hints from eligible text/PDF sources stay unverified and are included in the lawyer reading guide only for intentionally selected documents. **Select all documents** requires an explicit privacy confirmation; creating an export still requires a separate confirmation.
 
 ## Case overview and lawyer-ready handoff
 

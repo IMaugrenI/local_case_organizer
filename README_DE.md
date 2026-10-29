@@ -148,10 +148,14 @@ Gemeinsame Starter in diesen Ordnern:
 2. den passenden `start_here`-Starter für dein Betriebssystem ausführen
 3. die Browser-UI öffnet sich lokal
 4. in der **einfachen Ansicht** einen Fall auswählen oder anlegen
-5. bis zu 30 Dateien (höchstens 30 MiB pro Auswahl) in das markierte Feld ziehen oder auswählen; diese bewusste Aktion lädt die Dateien hoch, importiert sie und aktualisiert das Dokumentenregister
+5. bis zu 160 Dateien (insgesamt höchstens 150 MiB) auswählen oder ins Feld ziehen; der Organizer teilt die Auswahl in begrenzte Teilpakete, importiert sie und setzt die lokale Text-/PDF-Vorbereitung mit sichtbarem Fortschritt fort
 6. auf **derselben einfachen Seite** Dokumente markieren und kommentieren, lokale Suche, Zeitlinie, Aufgaben, Personen und Quellenhinweise verwenden sowie nach ausdrücklicher Bestätigung ein Übergabepaket erstellen. Zusätzliche Fachfunktionen wie quellengebundene Aussagen, Vergleichshinweise, manuelles KI-Übergabepaket und ausdrücklich aktiviertes Offline-OCR liegen unter **„Weitere Spezialfunktionen“** (standardmäßig zugeklappt).
 
-Der Knopf **Bereits abgelegte Inbox-Dateien einordnen** verarbeitet Dateien, die zuvor in `data/inbox/` abgelegt wurden. Bereits importierte identische Dateiinhalte werden übersprungen; Eingangsdateien und Originalkopien bleiben erhalten. Größere Bestände werden in begrenzten Paketen übernommen. OCR, KI-Bewertung, externe Übertragung und Export starten niemals automatisch.
+Der Knopf **Bereits abgelegte Inbox-Dateien einordnen** verarbeitet schon vorhandene Inbox-Dateien. Identische Dateiinhalte werden übersprungen; Eingangsdateien und Originalkopien bleiben erhalten.
+
+**Aktenautopilot:** Die Verarbeitung erfolgt nach einer bewussten Dateiablage schrittweise und fallbezogen. Der private Fortschritt liegt unter `data/working/autopilot_state.json` im ausgewählten Fall; **„Weiterverarbeiten“** setzt einen unterbrochenen Durchlauf fort. Textdateien und PDFs werden lokal für die Suche aufbereitet, soweit vorhandene Werkzeuge und Ressourcenlimits das erlauben. Ungeeignete und nicht lesbare Dateien erscheinen als Prüfbedarf. Die Checkbox **„Lokale OCR ... zulassen“** ist standardmäßig ausgeschaltet: Sie erlaubt ausschließlich nach bewusster Auswahl die lokal installierten OCR-Werkzeuge; es werden keine Programme automatisch nachinstalliert. Es gibt keine Cloud-/LLM-Anbindung, automatische rechtliche Bewertung, Quellenfreigabe oder automatische Weitergabe.
+
+Die Fallübersicht schlägt aus Dateinamen oder verifizierten lokalen Textstellen **mögliche Dokumentarten** vor. Datumsstellen aus geeigneten Textdateien und indizierten PDFs bleiben unbestätigte, quellenbezogene Hinweise. Die Anwalts-Lesehilfe berücksichtigt diese Vorschläge ausschließlich für bewusst zum Export ausgewählte Unterlagen. Über **„Alle Dokumente markieren“** kann die Auswahl nach ausdrücklicher Warnung in einem Schritt gesetzt werden; die eigentliche Übergabe benötigt weiterhin eine weitere Bestätigung.
 
 ## Aktenübersicht und anwaltstaugliche Übergabe
 
