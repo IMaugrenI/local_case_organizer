@@ -11,6 +11,7 @@ import re
 from datetime import datetime
 from pathlib import Path
 
+from local_case_organizer.document_text import get_indexed
 from local_case_organizer.export.helpers import _resolve_original_path, load_provenance_index
 from local_case_organizer.paths import get_workspace_paths
 from local_case_organizer.register.store import read_register_rows
@@ -20,7 +21,7 @@ MAX_SCAN_FILES = 60
 MAX_READ_BYTES = 256 * 1024
 MAX_PROPOSALS = 64
 MAX_PER_FILE = 6
-SUPPORTED = {".txt", ".md", ".csv", ".eml"}
+SUPPORTED = {".txt", ".md", ".csv", ".eml", ".pdf"}
 DATE_PATTERN = re.compile(r"(?<![0-9])(?:[0-9]{4}-[0-9]{2}-[0-9]{2}|[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{4})(?![0-9])")
 HEX_SHA = re.compile(r"^[a-fA-F0-9]{64}$")
 
@@ -79,9 +80,20 @@ def propose_events() -> dict[str, object]:
             # An opt-in OCR / PDF reader may be integrated separately later.
             continue
         try:
-            source = _resolve_original_path(paths.originals_dir, relative_path)
-            lines = _verified_lines(source, expected)
-        except (OSError, ValueError, RuntimeError) as exc:
+            if suffix == ".pdf":
+                # PDF suggestions use already indexed text, but reverify the
+                # original hash on every read. No PDF or OCR execution here.
+                derived = get_indexed(file_id, verify_original=True)
+                if derived.get("source_sha256") != expected:
+                    raise ValueError("integrity_mismatch")
+                chunks = [
+                    (int(page["page"]), str(page["text"]).splitlines()[:3500])
+                    for page in derived["pages"][:8]
+                ]
+            else:
+                source = _resolve_original_path(paths.originals_dir, relative_path)
+                chunks = [(1, _verified_lines(source, expected))]
+        except (OSError, ValueError, RuntimeError, TypeError) as exc:
             reason = str(exc)
             if not reason.startswith(("too_large", "integrity_mismatch", "non_utf8", "unsupported_content")):
                 reason = "unavailable_or_unsafe_path"
@@ -89,28 +101,32 @@ def propose_events() -> dict[str, object]:
             continue
         fingerprints.setdefault(expected, []).append(file_id)
         count = 0
-        for line_no, text in enumerate(lines, start=1):
-            # Ignore very long single lines rather than inventing context.
-            if len(text) > 3000:
-                continue
-            for match in DATE_PATTERN.finditer(text):
-                date = _date_iso(match.group(0))
-                if date is None:
+        for page_no, lines in chunks:
+            for line_no, text in enumerate(lines, start=1):
+                # Keep proposals bounded and annotate the exact page and line.
+                if len(text) > 3000:
                     continue
-                excerpt = " ".join(text.split())[:200]
-                fingerprint = "\x00".join((file_id, str(line_no), date, excerpt))
-                candidate_id = hashlib.sha256(fingerprint.encode("utf-8")).hexdigest()[:20]
-                candidates.append({
-                    "candidate_id": candidate_id,
-                    "file_id": file_id,
-                    "original_name": str(entry.get("original_name", ""))[:120],
-                    "line": line_no,
-                    "date": date,
-                    "excerpt": excerpt,
-                    "method": "explicit_date_in_text",
-                    "review_status": "suggested_not_verified",
-                })
-                count += 1
+                for match in DATE_PATTERN.finditer(text):
+                    date = _date_iso(match.group(0))
+                    if date is None:
+                        continue
+                    excerpt = " ".join(text.split())[:200]
+                    fingerprint = "\x00".join((file_id, str(page_no), str(line_no), date, excerpt))
+                    candidate_id = hashlib.sha256(fingerprint.encode("utf-8")).hexdigest()[:20]
+                    candidates.append({
+                        "candidate_id": candidate_id,
+                        "file_id": file_id,
+                        "original_name": str(entry.get("original_name", ""))[:120],
+                        "page": page_no,
+                        "line": line_no,
+                        "date": date,
+                        "excerpt": excerpt,
+                        "method": "source_text_date_mention",
+                        "review_status": "suggested_not_verified",
+                    })
+                    count += 1
+                    if count >= MAX_PER_FILE or len(candidates) >= MAX_PROPOSALS:
+                        break
                 if count >= MAX_PER_FILE or len(candidates) >= MAX_PROPOSALS:
                     break
             if count >= MAX_PER_FILE or len(candidates) >= MAX_PROPOSALS:
@@ -152,7 +168,7 @@ def accept_candidate(candidate_id: str) -> dict[str, str]:
         "event_title": ("Review suggested event: " + excerpt)[:160],
         "linked_file_ids": str(proposal["file_id"]),
         "people_or_entities": "",
-        "summary": f"Unverified extracted date, line {proposal['line']}: {excerpt}",
+        "summary": f"Unverified date mention, page {proposal['page']}, line {proposal['line']}: {excerpt}",
         "status": "draft",
     }]
     write_timeline_rows(updated)
