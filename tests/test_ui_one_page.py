@@ -20,6 +20,7 @@ from local_case_organizer.ui.simple_actions import (
     update_document,
 )
 from local_case_organizer.ui.local_case_organizer_ui_workspace import WORKSPACE_SCRIPT
+from local_case_organizer.ui.local_case_organizer_ui_specialist import SPECIALIST_SCRIPT
 
 
 def test_one_page_pipeline_uses_existing_audited_stores(tmp_path, monkeypatch):
@@ -95,6 +96,20 @@ def test_one_page_shortcuts_do_not_leave_simple_mode():
     assert "window.LCORefreshWorkspace=loadDocs" in WORKSPACE_SCRIPT
 
 
+def test_specialist_tools_stay_collapsed_and_require_manual_actions():
+    for name in ("claims", "comparisons", "ai", "ocr", "audit"):
+        assert 'lco-special-' + name + '-pane' in SPECIALIST_SCRIPT
+    assert 'window.confirm(t("aiConfirm"))' in SPECIALIST_SCRIPT
+    assert 'window.confirm(t("ocrConfirm"))' in SPECIALIST_SCRIPT
+    assert 'window.confirm(t("aiActionConfirm"))' in SPECIALIST_SCRIPT
+    assert '"/api/prepare-ai-review"' in SPECIALIST_SCRIPT
+    assert '"/api/review-ai-suggestion"' in SPECIALIST_SCRIPT
+    assert '"/api/add-claim"' in SPECIALIST_SCRIPT
+    assert '"/api/add-comparison"' in SPECIALIST_SCRIPT
+    assert '"/api/index-document"' in SPECIALIST_SCRIPT
+    assert "document.addEventListener(\"DOMContentLoaded\",init)" in SPECIALIST_SCRIPT
+
+
 def test_runtime_entrypoint_contains_single_page_without_new_server():
     script = """
 import run
@@ -106,6 +121,8 @@ assert 'lco-ws-task-list' in html
 assert 'lco-ws-entity-list' in html
 assert 'lco-ws-timeline' in html
 assert 'lco-ws-handoff' in html
+assert 'lco-special-ai-pane' in html
+assert 'lco-special-claims-pane' in html
 print('ONE_PAGE_UI_OK')
 """
     result = subprocess.run([sys.executable, "-c", script],
