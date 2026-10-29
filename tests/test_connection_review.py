@@ -111,8 +111,8 @@ def test_selected_only_handoff_never_reuses_full_case_review_or_private_source(t
     folder = build_export_package()
     with ZipFile(folder.with_suffix(".zip")) as archive:
         content = archive.read("SACHVERHALT_ARBEITSSTAND.md").decode()
-        assert "recheck_required" in content
-        assert "accepted_as_organizational_link" not in content
+        assert "Quellenumfang geändert – erneut prüfen" in content
+        assert "Organisatorisch bestätigt" not in content
         assert "private.txt" not in content
         assert "PRIVATE-ONLY-FILE" not in content
         assert docs["private.txt"]["file_id"] not in content
