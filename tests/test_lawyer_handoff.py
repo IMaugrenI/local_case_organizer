@@ -82,6 +82,45 @@ def test_case_briefing_only_reports_review_hints_without_writing(tmp_path, monke
     assert (workspace.register_dir / "document_register.csv").read_bytes() == before
 
 
+def test_source_hints_in_handoff_include_only_selected_documents(tmp_path, monkeypatch):
+    """Auto-hints must not disclose the other documents in a mixed case."""
+    monkeypatch.setattr(paths, "get_repo_root", lambda: tmp_path / "repo")
+    workspace = paths.create_local_workspace()
+    selected = _source(workspace, "gericht_beschluss.txt",
+                       "Schreiben vom 04.05.2020 (nicht bestaetigt)", "DOC-A")
+    excluded = _source(workspace, "pfändung_private.txt",
+                       "PRIVAT am 06.06.2024", "DOC-B")
+    with (workspace.register_dir / "provenance.csv").open(
+            "w", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=list(selected))
+        writer.writeheader()
+        writer.writerows([selected, excluded])
+    write_register_rows([
+        {"file_id": "DOC-A", "original_name": "gericht_beschluss.txt",
+         "sha256": selected["sha256"], "suffix": ".txt",
+         "size_bytes": selected["size_bytes"], "selected_for_export": "yes",
+         "review_status": "unreviewed"},
+        {"file_id": "DOC-B", "original_name": "pfändung_private.txt",
+         "sha256": excluded["sha256"], "suffix": ".txt",
+         "size_bytes": excluded["size_bytes"], "selected_for_export": "no",
+         "review_status": "unreviewed"},
+    ])
+    report = case_briefing()
+    assert report["document_type_hints"]
+    folder = build_export_package()
+    with ZipFile(folder.with_suffix(".zip")) as package:
+        guide = package.read("ANWALT_START_HERE.md").decode("utf-8")
+        assert "Automatisch vorgeschlagene Dokumentarten" in guide
+        assert "Gerichtliche Unterlagen" in guide
+        assert "2020-05-04" in guide
+        assert "DOC-A" in guide
+        assert "DOC-B" not in guide
+        assert "2024-06-06" not in guide
+        assert "pfändung_private" not in guide
+        assert "PRIVAT" not in guide
+    assert (workspace.originals_dir / "batch" / "pfändung_private.txt").exists()
+
+
 def test_briefing_copy_avoids_claiming_legal_assessment_or_automatic_approval():
     assert "case-briefing" in BRIEFING_SCRIPT
     assert "lco-brief-handoff" in BRIEFING_SCRIPT
