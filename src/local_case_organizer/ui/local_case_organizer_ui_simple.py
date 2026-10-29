@@ -199,6 +199,7 @@ async function organize(fileNames){
   notice("ok",result.imported_files?"done":"noNew",{added:result.imported_files||0,skipped:result.already_present||0});
   if(result.remaining_files)notice("ok","more",{remaining:result.remaining_files});
   await refreshDocuments();
+  if(typeof window.LCORefreshWorkspace==="function")await window.LCORefreshWorkspace();
   if(typeof window.refreshStatus==="function")await window.refreshStatus();
  }catch(error){console.warn("Local intake failed",error);notice("error","savedOnly")}
  finally{busy=false;el("lco-simple-pick").disabled=false;el("lco-simple-inbox").disabled=false}
@@ -324,9 +325,9 @@ function build(){
      finally{button.disabled=false}
    });
  }
- el("lco-simple-documents").addEventListener("click",()=>openView("documents"));
- el("lco-simple-timeline").addEventListener("click",()=>openView("timeline"));
- el("lco-simple-export").addEventListener("click",()=>openView("export"));
+ el("lco-simple-documents").addEventListener("click",()=>{if(window.LCOOpenSimplePanel)window.LCOOpenSimplePanel("lco-ws-documents");else openView("documents")});
+ el("lco-simple-timeline").addEventListener("click",()=>{if(window.LCOOpenSimplePanel)window.LCOOpenSimplePanel("lco-ws-timeline");else openView("timeline")});
+ el("lco-simple-export").addEventListener("click",()=>{if(window.LCOOpenSimplePanel)window.LCOOpenSimplePanel("lco-ws-handoff");else openView("export")});
  el("lco-simple-advanced").addEventListener("click",()=>setMode(false));
  const prior=window.LCOApplyExtraCopy;
  window.LCOApplyExtraCopy=function(){

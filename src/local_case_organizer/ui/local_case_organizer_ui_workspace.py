@@ -236,7 +236,7 @@ async function loadTimeline(){
 }
 async function loadTasks(){
  const result=await request("/api/tasks");taskRows=Array.isArray(result.tasks)?result.tasks:[];
- const root=el("lco-ws-tasks");root.replaceChildren();
+ const root=el("lco-ws-task-list");root.replaceChildren();
  if(!taskRows.length){root.append(newNode("li",t("noTasks")));return;}
  for(const item of taskRows.slice(0,90)){
   const li=addListItem(root,item.title,(item.due_date||"—")+" · "+(item.priority||"")+" · "+item.date_indicator);
@@ -258,7 +258,7 @@ async function loadTasks(){
 }
 async function loadEntities(){
  const result=await request("/api/entity-data");entityRows=Array.isArray(result.rows)?result.rows:[];
- const root=el("lco-ws-entities");root.replaceChildren();
+ const root=el("lco-ws-entity-list");root.replaceChildren();
  if(!entityRows.length){root.append(newNode("li",t("noEntities")));return;}
  for(const row of entityRows.slice(-70).reverse()){
   addListItem(root,row.entity_name||"—",
@@ -361,14 +361,9 @@ function bind(){
   catch(error){console.warn(error);message("lco-ws-security-msg","error","error")}
  });
  el("lco-ws-advanced").addEventListener("click",()=>el("lco-simple-advanced")?.click());
- el("lco-simple-documents")?.addEventListener("click",()=>openPanel("lco-ws-documents"),true);
- el("lco-simple-timeline")?.addEventListener("click",()=>openPanel("lco-ws-timeline"),true);
- el("lco-simple-export")?.addEventListener("click",()=>openPanel("lco-ws-handoff"),true);
- // The existing simple-mode jump handlers run in the bubble phase. Suppress
- // those for one-page shortcuts; only Advanced view exits the simple mode.
- for(const id of ["lco-simple-documents","lco-simple-timeline","lco-simple-export"]){
-  el(id)?.addEventListener("click",event=>event.stopPropagation(),true);
- }
+ // Shortcut buttons are connected by the existing simple layer; they call
+ // this function instead of activating another navigation tab.
+ window.LCOOpenSimplePanel=openPanel;
  for(const [panel,loader] of [
   ["lco-ws-documents",loadDocs],["lco-ws-timeline",loadTimeline],
   ["lco-ws-tasks",loadTasks],["lco-ws-entities",loadEntities]
@@ -411,7 +406,7 @@ function init(){
  '<label><span data-ws-copy="source"></span><select id="lco-ws-task-file"></select></label></div>',
  '<button type="submit" id="lco-ws-task-submit" data-ws-copy="createTask"></button></form>',
  '<p id="lco-ws-task-msg" class="lco-ws-feedback" aria-live="polite"></p>',
- '<ul class="lco-ws-list" id="lco-ws-tasks"></ul></div></details>',
+ '<ul class="lco-ws-list" id="lco-ws-task-list"></ul></div></details>',
  '<details class="lco-ws-panel" id="lco-ws-entities"><summary data-ws-copy="entities"></summary><div class="lco-ws-body">',
  '<p data-ws-copy="entityHelp"></p><form id="lco-ws-entity-form"><div class="lco-ws-grid">',
  '<label><span data-ws-copy="entityName"></span><input id="lco-ws-entity-name" type="text" minlength="2" maxlength="160" required></label>',
@@ -420,7 +415,7 @@ function init(){
  '<label><span data-ws-copy="entityNotes"></span><textarea id="lco-ws-entity-notes" maxlength="1200"></textarea></label>',
  '<button type="submit" id="lco-ws-entity-submit" data-ws-copy="addEntity"></button></form>',
  '<p id="lco-ws-entity-msg" class="lco-ws-feedback" aria-live="polite"></p>',
- '<ul class="lco-ws-list" id="lco-ws-entities"></ul></div></details>',
+ '<ul class="lco-ws-list" id="lco-ws-entity-list"></ul></div></details>',
  '<details class="lco-ws-panel" id="lco-ws-handoff"><summary data-ws-copy="handoff"></summary><div class="lco-ws-body">',
  '<p data-ws-copy="handoffHelp"></p><p id="lco-ws-export-count"></p>',
  '<div class="lco-ws-btns"><button type="button" id="lco-ws-export" data-ws-copy="buildExport"></button>',
@@ -435,6 +430,7 @@ function init(){
  ].join("");
  home.insertAdjacentHTML("beforeend",layout);
  localize(home);bind();
+ window.LCORefreshWorkspace=loadDocs;
  loadDocs().catch(error=>console.warn("Document overview unavailable",error));
  // Reuse the existing language toggle; never replace or add another switch.
  const prior=window.LCOApplyExtraCopy;
