@@ -235,9 +235,9 @@ profiles/default/
 Early V1 scaffold with a working Python-first command path, a local browser UI, sorted documentation folders, and a sorted cross-platform launcher layout.
 
 
-## Expansion branch A1–A10 (development preview)
+## A1–A10 case expansion (merged to main)
 
-Draft PR #3 contains opt-in isolated cases, source-hash verification,
+PR #3 merged on 2026-10-25. The merged changes include opt-in isolated cases, source-hash verification,
 evidence links, operator-reviewed timeline candidates, optional local PDF/OCR
 indexing, source-bound claims, manual mismatch comparisons, metadata-only
 edit journaling, browser case selection, neutral dossiers, manual reminders
@@ -261,5 +261,6 @@ by this repository. All private case data remain in ignored workspaces.
 
 [Development handoff and limitations](docs/roadmap/expansion_handoff.md).
 
-These changes are on a **development branch**, not on main. CI is not
-device, operator or release acceptance.
+The A1–A10 code is on **main**, but GitHub CI is not device, operator,
+or release acceptance. A11 organizational connection review is being developed
+separately and does not imply a release or end-user acceptance.
