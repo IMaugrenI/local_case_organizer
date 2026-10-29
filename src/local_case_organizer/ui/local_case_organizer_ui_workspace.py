@@ -380,7 +380,7 @@ function bind(){
 function init(){
  const home=el("lco-easy-home");if(!home||el("lco-ws-documents"))return;
  const layout=[
- '<details class="lco-ws-panel" id="lco-ws-documents" open><summary data-ws-copy="documents"></summary><div class="lco-ws-body">',
+ '<details class="lco-ws-panel" id="lco-ws-documents"><summary data-ws-copy="documents"></summary><div class="lco-ws-body">',
  '<p data-ws-copy="docHelp"></p><div class="lco-ws-btns"><button type="button" id="lco-ws-doc-reload" data-ws-copy="load"></button></div>',
  '<ul class="lco-ws-list" id="lco-ws-doc-list"></ul></div></details>',
  '<details class="lco-ws-panel" id="lco-ws-search"><summary data-ws-copy="search"></summary><div class="lco-ws-body">',
