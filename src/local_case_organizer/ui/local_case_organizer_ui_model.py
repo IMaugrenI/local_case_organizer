@@ -116,12 +116,13 @@ async function reviewCase(retryFailed=false){
  }
  el("lco-model-stop").disabled=false;
  let last={};
+ const runToken=Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,12);
  try{
   // Browser-driven bounded batches: progress is private on disk after each
   // source. Stop is checked between requests, never while a source is written.
   for(let i=0;i<300;i++){
     last=await api("/api/local-model-batch",{
-      model,retry_failed:retryFailed && i===0
+      model,retry_failed:retryFailed,run_token:runToken
     });
     status("caseWorking",{
       done:last.done||0,total:last.total||0,remaining:last.remaining||0

@@ -1661,6 +1661,7 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
                 body = _read_json_body(self)
                 payload = analyze_next_local_source(
                     body.get("model"), retry_failed=body.get("retry_failed") is True,
+                    run_token=body.get("run_token", ""),
                 )
             elif parsed.path == "/api/quick-update-document":
                 payload = update_document(_read_json_body(self))
