@@ -34,8 +34,11 @@ const translations={
  types:"Mögliche Dokumentarten (unbestätigt)",noTypes:"Noch keine Hinweise auf Dokumentarten gefunden.",
  typeLimit:"Nur Suchhilfen aus Dateinamen oder lokal überprüften Textstellen; nicht als Dokumentart bestätigt.",
  openDocs:"Dokumente prüfen",openTimeline:"Zeitangaben ansehen",openHandoff:"Übergabe für Anwalt",
+ ai:"Ungeprüfte KI-Hinweise",noAi:"Keine nachweisbar quellengebundenen KI-Vorschläge vorhanden.",
+ aiReview:"KI-Hinweise prüfen",aiLimit:"Diese Texte sind ungeprüfte KI-Vorschläge, keine bestätigten Tatsachen oder rechtlichen Bewertungen.",
  review_documents:"Unterlagen ohne abgeschlossenen Prüfstatus: ",
  review_dates:"Datumsangaben in überprüften Textquellen: ",
+ review_ai:"Ungeprüfte lokale KI-Vorschläge: ",
  review_comparisons:"Manuell verbundene Werte zur Prüfung: ",
  manual_date:"Vom Betreiber eingetragene Termine heute/fällig: ",
  organize_sources:"Dokumente noch ohne manuelle Verknüpfung: ",
@@ -51,8 +54,11 @@ const translations={
  types:"Possible document types (unverified)",noTypes:"No document type hints found yet.",
  typeLimit:"Search aids from filenames or verified local text only; not confirmed document classifications.",
  openDocs:"Review documents",openTimeline:"Review dates",openHandoff:"Prepare lawyer handoff",
+ ai:"Unreviewed AI hints",noAi:"No verifiable source-linked AI suggestions currently available.",
+ aiReview:"Review AI hints",aiLimit:"These are unreviewed model suggestions, not established facts or legal conclusions.",
  review_documents:"Documents awaiting manual review: ",
  review_dates:"Date mentions in verified text originals: ",
+ review_ai:"Unreviewed local AI suggestions: ",
  review_comparisons:"Manually linked value differences: ",
  manual_date:"Operator-entered overdue/today tasks: ",
  organize_sources:"Documents without a manually entered link: ",
@@ -95,6 +101,14 @@ function populate(){
   types.append(li);
  }
  if(!types.children.length){const li=document.createElement("li");li.textContent=t("noTypes");types.append(li)}
+ const ai=el("lco-brief-ai-list");ai.replaceChildren();
+ for(const item of (cached.ai_review_samples||[]).slice(0,6)){
+  const li=document.createElement("li");li.className="lco-brief-date";
+  li.textContent=String(item.file_id)+" · P"+String(item.page)+" · "+
+   String(item.statement)+" — Quelle: "+String(item.source_quote);
+  ai.append(li);
+ }
+ if(!ai.children.length){const li=document.createElement("li");li.textContent=t("noAi");ai.append(li)}
 }
 async function refresh(){
  try{
@@ -126,12 +140,17 @@ function init(){
  '<p data-brief-copy="limit"></p></details>',
  '<details><summary data-brief-copy="types"></summary><ul id="lco-brief-type-list"></ul>',
  '<p data-brief-copy="typeLimit"></p></details>',
+ '<details><summary data-brief-copy="ai"></summary><ul id="lco-brief-ai-list"></ul>',
+ '<p data-brief-copy="aiLimit"></p><button type="button" id="lco-brief-ai-review" data-brief-copy="aiReview"></button></details>',
  '<p id="lco-brief-message" role="status" aria-live="polite"></p>'
  ].join("");
  home.querySelector(".lco-easy-intro")?.insertAdjacentElement("afterend",root);
  el("lco-brief-docs").addEventListener("click",()=>openPanel("lco-ws-documents"));
  el("lco-brief-timeline").addEventListener("click",()=>openPanel("lco-ws-timeline"));
  el("lco-brief-handoff").addEventListener("click",()=>openPanel("lco-ws-handoff"));
+ el("lco-brief-ai-review").addEventListener("click",()=>{
+  openPanel("lco-ws-technical");openPanel("lco-special-ai-pane");
+ });
  const priorCopy=window.LCOApplyExtraCopy;
  window.LCOApplyExtraCopy=function(){if(typeof priorCopy==="function")priorCopy();populate()};
  const previousRefresh=window.LCORefreshWorkspace;

@@ -7,6 +7,8 @@ No background work, text leakage, source modifications or external transfers.
 from __future__ import annotations
 
 from local_case_organizer.claims import read_claims
+from local_case_organizer.ai_exchange import read_ai_suggestions
+from local_case_organizer.document_text import get_indexed
 from local_case_organizer.ui.document_triage import document_type_hints
 from local_case_organizer.comparison import comparison_report
 from local_case_organizer.entities.store import read_entity_rows
@@ -25,6 +27,34 @@ def case_briefing() -> dict[str, object]:
     board = task_board()
     dates = propose_events() if documents else {"candidates": [], "warnings": []}
     comparisons = comparison_report() if claims else {"review_candidates": []}
+
+    # AI suggestions are never facts; only show hints which still have a
+    # hash-verified original and verbatim page quote. Keep startup bounded.
+    ai_hints: list[dict[str, object]] = []
+    verified_pages: dict[str, dict | None] = {}
+    for item in read_ai_suggestions()[:32]:
+        if item.get("status") != "pending_review":
+            continue
+        fid = str(item.get("file_id", ""))
+        if fid not in verified_pages:
+            try:
+                verified_pages[fid] = get_indexed(fid, verify_original=True)
+            except (ValueError, OSError):
+                verified_pages[fid] = None
+        indexed = verified_pages[fid]
+        if not indexed:
+            continue
+        page = next((page for page in indexed["pages"]
+                     if str(page.get("page")) == str(item.get("page"))), None)
+        if not page or str(item.get("source_quote", "")) not in str(page["text"]):
+            continue
+        ai_hints.append({
+            "suggestion_id": str(item.get("suggestion_id", "")),
+            "file_id": fid, "page": str(item.get("page", "")),
+            "source_quote": str(item.get("source_quote", ""))[:350],
+            "statement": str(item.get("statement", ""))[:450],
+            "status": "pending_review",
+        })
     types = document_type_hints() if documents else {"hints": [], "unknown_in_scan": 0}
 
     recorded_dates = {str(row.get("event_id", "")) for row in timeline}
@@ -66,6 +96,7 @@ def case_briefing() -> dict[str, object]:
             "urgent_manual_dates": len(urgent),
             "potential_value_differences": len(issues),
             "unlinked_documents": len(unlinked),
+            "unreviewed_ai_hints": len(ai_hints),
             "selected_export": sum(
                 str(row.get("selected_for_export", "")).lower() == "yes"
                 for row in documents
@@ -75,9 +106,11 @@ def case_briefing() -> dict[str, object]:
             ([{"kind": "manual_date", "count": len(urgent)}] if urgent else [])
             + ([{"kind": "review_documents", "count": len(undecided)}] if undecided else [])
             + ([{"kind": "review_dates", "count": len(candidates)}] if candidates else [])
+            + ([{"kind": "review_ai", "count": len(ai_hints)}] if ai_hints else [])
             + ([{"kind": "review_comparisons", "count": len(issues)}] if issues else [])
             + ([{"kind": "organize_sources", "count": len(unlinked)}] if unlinked else [])
         )[:5],
+        "ai_review_samples": ai_hints[:8],
         "date_samples": [
             {
                 "candidate_id": str(row["candidate_id"]),
