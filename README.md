@@ -167,6 +167,14 @@ Only after an explicit click and confirmation are up to **two shortened, hash-ve
 
 **Trust boundary:** The organizer controls its loopback connection, not the configuration or trustworthiness of the separately operated local Ollama service. Without Ollama, document intake, case organization and manual AI exchange remain available. No model inference is started automatically after import or page load.
 
+## Automatic case narrative (unverified working draft)
+
+The single-page interface now includes a collapsible **chronological working draft** with source-verified date mentions, operator-entered events, linked participants, open review questions and possible value differences. Explicitly role-labelled source lines such as “Sender:” or “Beklagter:” may be proposed as **unverified hints**; the organizer never creates a confirmed person record from them.
+
+The selected-only lawyer export now includes `SACHVERHALT_ARBEITSSTAND.md`. Its narrative is limited to explicitly selected originals, excluding manual entries with mixed selected/unselected source links. Differing values appear only as **potential** review items where the operator previously grouped source-backed claims under the same topic and the exact original quotes still verify.
+
+**Limits:** A date mention is not an established event, and a document role label is not proof of legal status. The tool cannot determine truth, culpability or deadlines. The draft is bounded, not necessarily complete, and read-only. The existing registers change only through explicitly requested actions.
+
 ## Case overview and lawyer-ready handoff
 
 The simple page includes a **source-grounded case briefing** with document

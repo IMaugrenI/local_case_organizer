@@ -167,6 +167,14 @@ Ein ausdrücklicher Klick mit Bestätigung erlaubt die Übertragung von höchste
 
 **Wichtige Grenze:** Der Organizer kann nur die Verbindung zum Loopback-Dienst kontrollieren. Die tatsächliche Konfiguration und Vertrauenswürdigkeit der lokal betriebenen Ollama-Instanz liegt beim Betreiber. Ohne Ollama funktioniert die Aktenorganisation weiterhin vollständig; die manuelle KI-Austauschfunktion bleibt verfügbar. Keine KI-Analyse läuft unbeaufsichtigt nach Import oder Seitenaufruf.
 
+## Automatische Sachverhaltsübersicht (ungeprüfter Arbeitsstand)
+
+Die einfache Oberfläche enthält jetzt einen aufklappbaren **chronologischen Arbeitsstand** mit Datumsstellen aus verifizierten Originaltexten, manuell erfassten Ereignissen, quellenverknüpften Beteiligten, offenen Prüffragen und möglichen Wertabweichungen. Rollenbezeichnungen wie „Absender:“ oder „Beklagter:“ werden aus ausdrücklich beschrifteten, lokal indizierten Quellzeilen als **ungeprüfte Hinweise** vorgeschlagen; daraus entsteht keine automatische Personenakte.
+
+Die neue Datei `SACHVERHALT_ARBEITSSTAND.md` ist im bewusst erzeugten Anwalts-Export enthalten. Sie berücksichtigt ausschließlich ausdrücklich ausgewählte Originaldokumente und blendet mit nicht ausgewählten Unterlagen gemischt verknüpfte manuelle Einträge in dieser Übersicht aus. Unterschiedliche Werte sind nur dann als **mögliche** Abweichung sichtbar, wenn der Betreiber Aussagen vorher manuell demselben Vergleichsthema zugeordnet hat und die wörtlichen Zitate weiterhin zu ihren hash-geprüften Quellen passen.
+
+**Grenzen:** Eine Datumsnennung belegt kein tatsächliches Ereignis; eine Rollenbezeichnung in einem Schreiben beweist keine rechtliche Stellung. Das Programm ermittelt weder Wahrheit noch Verschulden oder Fristen. Der Arbeitsstand ist begrenzt und nicht automatisch vollständig. Neue Daten entstehen in den vorhandenen Registern nur durch ausdrücklich freigegebene Eingaben; diese Übersicht selbst ist schreibgeschützt.
+
 ## Aktenübersicht und anwaltstaugliche Übergabe
 
 Die einfache Seite enthält einen **quellenbezogenen Fallüberblick** mit Anzahl der
