@@ -25,6 +25,7 @@ const I={
   intro:"Quellenbelegte Datumsnennungen, manuelle Einträge, Beteiligte und mögliche Wertabweichungen an einer Stelle. Nichts davon gilt ohne fachliche Prüfung als bewiesen.",
   count:"{n} chronologische Einträge · {p} Beteiligte · {d} mögliche Abweichungen",
   chronology:"Chronologischer Arbeitsstand",people:"Manuell erfasste Beteiligte",
+  peopleHints:"Weitere Beteiligtenhinweise aus Quellzeilen (unbestätigt)",
   differences:"Mögliche Wertabweichungen (keine bewiesenen Widersprüche)",
   questions:"Offene Fragen für die Prüfung",
   empty:"Keine quellenbezogenen Einträge vorhanden.",
@@ -40,6 +41,7 @@ const I={
   intro:"Source-linked date mentions, manual entries, participants and potential value differences in one place. None is an established fact without professional review.",
   count:"{n} chronological entries · {p} participants · {d} possible differences",
   chronology:"Chronological working draft",people:"Manually entered participants",
+  peopleHints:"Additional role-labelled source hints (unverified)",
   differences:"Potential differences (not proven contradictions)",
   questions:"Open questions for review",
   empty:"No source-linked entries available.",
@@ -86,6 +88,12 @@ function populate(){
   li(people,person.name||"–",(person.role||"")+" · "+t("source")+": "+
    (person.file_ids||[]).join(", "));
  }
+ const hints=el("lco-narr-people-hints");hints.replaceChildren();
+ for(const item of (data.participant_hints||[]).slice(0,40)){
+  li(hints, String(item.role_as_written)+": "+String(item.name),
+    t("source")+": "+String(item.file_id)+" · "+t("page")+" "+String(item.page)+
+    " · "+String(item.source_quote));
+ }
  const diff=el("lco-narr-differences");diff.replaceChildren();
  for(const item of (data.potential_differences||[]).slice(0,20)){
   li(diff,String(item.topic)+" ("+item.kind+")",
@@ -96,7 +104,7 @@ function populate(){
  for(const item of (data.open_questions||[]).slice(0,9)){
   li(questions,item.text,item.basis);
  }
- for(const root of [chrono,people,diff,questions]){
+ for(const root of [chrono,people,hints,diff,questions]){
   if(!root.children.length)li(root,t("empty"),"");
  }
 }
@@ -122,6 +130,8 @@ function init(){
   '<ul class="lco-narrative-list" id="lco-narr-chronology"></ul></section>',
   '<section class="lco-narrative-section"><h3 data-narr-copy="people"></h3>',
   '<ul class="lco-narrative-list" id="lco-narr-people"></ul></section>',
+  '<section class="lco-narrative-section"><h3 data-narr-copy="peopleHints"></h3>',
+  '<ul class="lco-narrative-list" id="lco-narr-people-hints"></ul></section>',
   '<section class="lco-narrative-section"><h3 data-narr-copy="differences"></h3>',
   '<ul class="lco-narrative-list" id="lco-narr-differences"></ul></section>',
   '<section class="lco-narrative-section"><h3 data-narr-copy="questions"></h3>',
