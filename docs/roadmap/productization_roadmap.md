@@ -231,3 +231,24 @@ Target:
 - Reservierte Kennung \`legacy-default\` kann nicht als zusätzliche Fallakte
   erzeugt werden, um die Legacy-Auswahl nicht zu überlagern.
 - Betriebs-/Gesamtabnahme wie vereinbart erst nach dem Ausbaumodus.
+
+## A11 – Kontrollierte organisatorische Dokumentverknüpfungen (Entwicklungsbranch)
+
+- Reuse of exact, type-separated, hash-verified reference groups in the existing
+  `case_connections` and `case_narrative` modules.
+- Explicit local review: `pending_review`,
+  `accepted_as_organizational_link`, `dismissed`, or
+  `recheck_required` after source-quote or membership change.
+- Source-set signature is checked again server-side before a review decision;
+  operator confirmation never certifies document truth, legal status, an event,
+  or an AI interpretation.
+- Review metadata is stored only within the selected case using the established
+  audited CSV writer. No copies of raw text or original documents are made.
+- Existing single-page narrative shows the proof references, state and deliberate
+  accept/dismiss buttons. The same browser remains local-loopback only.
+- Selected-only handoffs show a review status only for the exact selected source
+  set. Partial selections cannot inherit a full-case acceptance; excluded file
+  names, citations and IDs remain private.
+- No cloud service, new database, background worker, second browser, or alternate
+  start path. Review metadata is not a cryptographically tamper-proof audit.
+- Current scope is development; GitHub CI is not end-device/operator acceptance.
