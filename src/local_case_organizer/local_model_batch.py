@@ -27,7 +27,8 @@ _MAX_ITEMS = 300
 
 
 def _progress_path(model: str):
-    if not isinstance(model, str) or not _MODEL.fullmatch(model):
+    if (not isinstance(model, str) or not _MODEL.fullmatch(model)
+            or "://" in model or "//" in model or "/.." in model):
         raise ValueError("Invalid local model selection")
     root = create_local_workspace().working_dir
     if root.is_symlink():

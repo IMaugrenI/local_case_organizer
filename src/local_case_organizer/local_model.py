@@ -63,14 +63,17 @@ def installed_local_models() -> dict[str, object]:
     names: list[str] = []
     for item in models[:100]:
         name = item.get("name") if isinstance(item, dict) else None
-        if isinstance(name, str) and _MODEL.fullmatch(name) and name not in names:
+        if (isinstance(name, str) and _MODEL.fullmatch(name)
+                and "://" not in name and "//" not in name
+                and "/.." not in name and name not in names):
             names.append(name)
     return {"models": names[:40], "origin": "local_ollama_only"}
 
 
 def propose_with_local_model(model: str, file_ids: list[str]) -> dict[str, object]:
     """Run opt-in bounded analysis and save *only* source-verified pending hints."""
-    if not isinstance(model, str) or not _MODEL.fullmatch(model):
+    if (not isinstance(model, str) or not _MODEL.fullmatch(model)
+            or "://" in model or "//" in model or "/.." in model):
         raise ValueError("Invalid local model name")
     if (not isinstance(file_ids, list) or not 1 <= len(file_ids) <= _MAX_DOCUMENTS
             or any(not isinstance(fid, str) or not _FILE_ID.fullmatch(fid) for fid in file_ids)
