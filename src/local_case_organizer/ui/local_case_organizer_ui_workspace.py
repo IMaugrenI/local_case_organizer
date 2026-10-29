@@ -50,7 +50,12 @@ WORKSPACE_SCRIPT = r'''<script>
 "use strict";
 const de={
  documents:"Dokumente bearbeiten",docHelp:"Ordne Dokumente ein, ergänze Notizen und wähle bewusst aus, was später in eine Übergabe darf.",
- documentEmpty:"Noch keine Dokumente im Register.",review:"Prüfstatus",group:"Kategorie",note:"Notiz",save:"Notiz und Kategorie speichern",include:"Für Übergabe auswählen",
+ documentEmpty:"Noch keine Dokumente im Register.",
+ selectAll:"Alle Dokumente markieren",selectNone:"Auswahl aufheben",
+ confirmAll:"Alle {n} Dokumente für eine mögliche Übergabe markieren? Enthaltene sensible Daten vor dem Export einzeln prüfen. Es wird noch nichts versendet.",
+ confirmNone:"Alle ausgewählten Dokumente für die Übergabe abwählen?",
+ selectionDone:"Auswahl aktualisiert. Die Übergabe muss weiterhin ausdrücklich bestätigt werden.",
+ review:"Prüfstatus",group:"Kategorie",note:"Notiz",save:"Notiz und Kategorie speichern",include:"Für Übergabe auswählen",
  unreviewed:"Ungeprüft",reviewed:"Geprüft",flagged:"Markiert",selected_for_export:"Für Übergabe markiert",
  yes:"Ja",no:"Nein",updated:"Änderung gespeichert.",failed:"Aktion fehlgeschlagen. Vorhandene Daten bleiben bestehen.",
  search:"Dokumente durchsuchen",searchHelp:"Die Suche läuft lokal. PDF-Text benötigt gegebenenfalls ein installiertes Offline-Werkzeug; Bilder werden nicht automatisch per OCR gelesen.",
@@ -80,7 +85,12 @@ const de={
 };
 const en={
  documents:"Manage documents",docHelp:"Organize documents, add notes and explicitly select files for a handoff.",
- documentEmpty:"No registered documents yet.",review:"Review status",group:"Category",note:"Note",save:"Save category and note",include:"Include in handoff",
+ documentEmpty:"No registered documents yet.",
+ selectAll:"Select all documents",selectNone:"Clear selection",
+ confirmAll:"Mark all {n} documents for possible handoff? Review sensitive material individually before export. Nothing is transmitted now.",
+ confirmNone:"Clear all selected handoff documents?",
+ selectionDone:"Selection updated. Handoff still requires explicit confirmation.",
+ review:"Review status",group:"Category",note:"Note",save:"Save category and note",include:"Include in handoff",
  unreviewed:"Unreviewed",reviewed:"Reviewed",flagged:"Flagged",selected_for_export:"Marked for export",
  yes:"Yes",no:"No",updated:"Change saved.",failed:"Action failed. Existing files were not changed.",
  search:"Search documents",searchHelp:"Search runs locally. PDF extraction may require an installed offline tool; image OCR never runs automatically.",
@@ -290,6 +300,15 @@ function resetText(id){const node=el(id);if(node)node.value=""}
 function openPanel(id){const node=el(id);if(node){node.open=true;node.scrollIntoView({block:"start",behavior:"smooth"})}}
 function bind(){
  el("lco-ws-doc-reload").addEventListener("click",()=>loadDocs().catch(console.warn));
+ for(const [buttonId,mode] of [["lco-ws-select-all","all"],["lco-ws-select-none","none"]]){
+  bindButton(buttonId,async()=>{
+   const count=cachedDocs.length;
+   if(!window.confirm(mode==="all"?fmt("confirmAll",{n:count}):t("confirmNone")))return;
+   await request("/api/quick-bulk-export",{mode});
+   message("lco-ws-selection-msg","selectionDone","ok");
+   await loadDocs();
+  });
+ }
  el("lco-ws-search-form").addEventListener("submit",async event=>{
   event.preventDefault();const root=el("lco-ws-search-results");root.replaceChildren();
   try{
@@ -381,7 +400,10 @@ function init(){
  const home=el("lco-easy-home");if(!home||el("lco-ws-documents"))return;
  const layout=[
  '<details class="lco-ws-panel" id="lco-ws-documents"><summary data-ws-copy="documents"></summary><div class="lco-ws-body">',
- '<p data-ws-copy="docHelp"></p><div class="lco-ws-btns"><button type="button" id="lco-ws-doc-reload" data-ws-copy="load"></button></div>',
+ '<p data-ws-copy="docHelp"></p><div class="lco-ws-btns"><button type="button" id="lco-ws-doc-reload" data-ws-copy="load"></button>',
+ '<button type="button" id="lco-ws-select-all" class="secondary" data-ws-copy="selectAll"></button>',
+ '<button type="button" id="lco-ws-select-none" class="ghost" data-ws-copy="selectNone"></button></div>',
+ '<p id="lco-ws-selection-msg" class="lco-ws-feedback" role="status" aria-live="polite"></p>',
  '<ul class="lco-ws-list" id="lco-ws-doc-list"></ul></div></details>',
  '<details class="lco-ws-panel" id="lco-ws-search"><summary data-ws-copy="search"></summary><div class="lco-ws-body">',
  '<p data-ws-copy="searchHelp"></p><form id="lco-ws-search-form"><div class="lco-ws-grid">',
