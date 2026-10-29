@@ -247,8 +247,9 @@ Target:
 - Existing single-page narrative shows the proof references, state and deliberate
   accept/dismiss buttons. The same browser remains local-loopback only.
 - Selected-only handoffs show a review status only for the exact selected source
-  set. Partial selections cannot inherit a full-case acceptance; excluded file
-  names, citations and IDs remain private.
+  set. Partial selections cannot inherit a full-case acceptance and show a
+  neutral `pending_review` label instead of revealing that out-of-scope
+  members exist. Excluded file names, citations and IDs remain private.
 - No cloud service, new database, background worker, second browser, or alternate
   start path. Review metadata is not a cryptographically tamper-proof audit.
 - Current scope is development; GitHub CI is not end-device/operator acceptance.
