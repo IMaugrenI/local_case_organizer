@@ -252,3 +252,23 @@ Target:
 - No cloud service, new database, background worker, second browser, or alternate
   start path. Review metadata is not a cryptographically tamper-proof audit.
 - Current scope is development; GitHub CI is not end-device/operator acceptance.
+
+## A12 – Fallbezogenes Quellen-Prüf-Cockpit (Entwicklungsbranch)
+
+- Die bereits vorhandene Fallübersicht bietet ein zusammengeführtes, lesendes
+  Prüfcockpit für Dokumente mit offenem Prüfstatus, quellengebundene Claims und
+  organisatorische Dokumentverbindungen aus A11.
+- Claims werden für die Anzeige erneut gegen das gehashte Original und das
+  exakte Seitenzitat geprüft. Ist ein Nachweis ungültig, werden weder Aussage
+  noch Zitat in der Prüfliste angezeigt; der Eintrag wird nur als
+  `recheck_required` geführt. Frühere Review-Metadaten werden nicht heimlich
+  verändert.
+- Die einzige direkte Entscheidung ist eine ausdrücklich bestätigte manuelle
+  Claim-Prüfung über den bereits vorhandenen, serverseitig nochmals
+  quellenprüfenden `/api/review-claim`-Pfad. Andere Aktionen navigieren zu den
+  vorhandenen Dokument- und Verknüpfungsdialogen.
+- Die Prüfliste ist auf zwanzig Beispiele je Bereich begrenzt. Zähler und
+  Unvollständigkeits-Hinweis machen die Anzeigegrenzen sichtbar.
+- Keine zweite Datenhaltung, automatische Tatsachen- oder Rechtsfeststellung,
+  unbemerkte Exportfreigabe, neue Runtime, Cloud-Dienste oder neuen Startweg.
+- CI-Nachweis ist eine Entwicklungsprüfung, nicht die Betreiberabnahme.
