@@ -208,7 +208,7 @@ def case_narrative(selected_ids: set[str] | None = None) -> dict[str, object]:
     # An explicitly written, exactly matching case number is a strong sorting
     # aid, not evidence of an established shared proceeding. All text read by
     # the detector is rechecked against the registered original source hash.
-    connections = reviewed_document_hints(scope)
+    connections = reviewed_document_hints(scope if selected_ids is not None else None)
     model_points = _reviewable_model_points(scope)
     story_sections: list[dict[str, object]] = []
     for group in connections["groups"][:12]:
