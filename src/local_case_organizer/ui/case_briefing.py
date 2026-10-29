@@ -7,6 +7,7 @@ No background work, text leakage, source modifications or external transfers.
 from __future__ import annotations
 
 from local_case_organizer.claims import read_claims
+from local_case_organizer.ui.document_triage import document_type_hints
 from local_case_organizer.comparison import comparison_report
 from local_case_organizer.entities.store import read_entity_rows
 from local_case_organizer.register.store import read_register_rows
@@ -24,6 +25,7 @@ def case_briefing() -> dict[str, object]:
     board = task_board()
     dates = propose_events() if documents else {"candidates": [], "warnings": []}
     comparisons = comparison_report() if claims else {"review_candidates": []}
+    types = document_type_hints() if documents else {"hints": [], "unknown_in_scan": 0}
 
     recorded_dates = {str(row.get("event_id", "")) for row in timeline}
     candidates = [
@@ -109,6 +111,8 @@ def case_briefing() -> dict[str, object]:
             }
             for item in issues[:5]
         ],
+        "document_type_hints": types["hints"][:30],
+        "document_types_unclassified": types["unknown_in_scan"],
         "limitations": {
             "date_mentions_are_unverified": True,
             "possible_comparisons_need_human_review": True,
