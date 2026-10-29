@@ -28,6 +28,11 @@ const I={
   connected:"Zusammengehörige Unterlagen – mögliche Aktenverbindungen",
   connectionScope:"Nur identisch beschriftete Aktenzeichen aus überprüften Originalen werden verbunden. Die Verbindung muss noch bestätigt werden.",
   connectedCount:"{n} mögliche Dokumentengruppe(n) · {missing} Quellen noch nicht durchsuchbar",
+  reviewStatus:"Organisatorischer Prüfstatus", acceptLink:"Verknüpfung bestätigen",dismissLink:"Verknüpfung verwerfen",
+  reviewConfirm:"Diese Quellenverknüpfung organisatorisch bewerten? Das bestätigt weder Wahrheit noch rechtliche Bedeutung.",
+  reviewError:"Die Quellenprüfung oder Speicherung ist fehlgeschlagen: ",
+  review_pending_review:"Noch nicht geprüft",review_accepted_as_organizational_link:"Organisatorisch bestätigt",
+  review_dismissed:"Verworfen",review_recheck_required:"Quellen oder Gruppenumfang geändert; erneut prüfen",
   relatedDates:"Datumsnennungen (ungeprüft)",
   aiPoint:"Lokaler KI-Prüfhinweis (unbestätigt)",
   peopleHints:"Weitere Beteiligtenhinweise aus Quellzeilen (unbestätigt)",
@@ -49,6 +54,11 @@ const I={
   connected:"Related documents – possible case reference links",
   connectionScope:"Only matching explicit case references from verified originals are linked. The relationship still requires human confirmation.",
   connectedCount:"{n} possible document group(s) · {missing} sources not yet searchable",
+  reviewStatus:"Organizational review status",acceptLink:"Accept organizational link",dismissLink:"Dismiss suggested link",
+  reviewConfirm:"Review this organizational source link? This does not confirm truth or legal status.",
+  reviewError:"Source verification or saving failed: ",
+  review_pending_review:"Not reviewed",review_accepted_as_organizational_link:"Accepted as organizational link",
+  review_dismissed:"Dismissed",review_recheck_required:"Sources or members changed; review again",
   relatedDates:"Date mentions (unverified)",
   aiPoint:"Local AI review hint (unverified)",
   peopleHints:"Additional role-labelled source hints (unverified)",
@@ -66,7 +76,7 @@ const I={
 const el=id=>document.getElementById(id);
 const t=key=>(String(localStorage.getItem("local_case_organizer_ui_lang")||"de").startsWith("de")?I.de:I.en)[key]||key;
 const fmt=(name,data)=>Object.entries(data||{}).reduce((s,[k,v])=>s.replace("{"+k+"}",String(v)),t(name));
-let cached=null,loading=false,failed=false;
+let cached=null,loading=false,failed=false,reviewing=false;
 function li(root,title,description){
  const item=document.createElement("li");
  const strong=document.createElement("strong");strong.textContent=String(title||"");
@@ -95,7 +105,7 @@ function populate(){
  }
  const related=el("lco-narr-related");related.replaceChildren();
  for(const group of (data.case_story_sections||[]).slice(0,12)){
-  const source=(data.document_connections||[]).find(x=>x.reference===group.reference);
+  const source=(data.document_connections||[]).find(x=>x.reference===group.reference && x.reference_kind===group.reference_kind);
   const excerpts=(source?.documents||[]).slice(0,8).map(x=>
     x.original_name+" ("+x.file_id+", "+t("page")+" "+x.page+"): "+x.source_quote
   );
@@ -105,7 +115,18 @@ function populate(){
   );
   li(related,group.title,group.text+" · "+excerpts.join(" · ")+
     (group.date_mentions?.length?" · "+t("relatedDates")+": "+group.date_mentions.join(", "):"")+
-    (aiNotes.length?" · "+aiNotes.join(" · "):""));
+    (aiNotes.length?" · "+aiNotes.join(" · "):"")+
+    " · "+t("reviewStatus")+": "+t("review_"+String(group.review_status||"pending_review")));
+  if(source?.group_id && source?.source_signature){
+   const row=related.lastElementChild;
+   for(const [decision,label] of [["accepted_as_organizational_link","acceptLink"],["dismissed","dismissLink"]]){
+    if(source.status===decision)continue;
+    const button=document.createElement("button");
+    button.type="button";button.textContent=t(label);button.style.margin="6px 8px 0 0";
+    button.addEventListener("click",()=>reviewLink(source.group_id,source.source_signature,decision));
+    row.append(button);
+   }
+  }
  }
  el("lco-narr-connected-count").textContent=fmt("connectedCount",{
   n:data.counts?.connected_document_groups||0,
@@ -135,6 +156,20 @@ function populate(){
  for(const root of [chrono,related,people,hints,diff,questions]){
   if(!root.children.length)li(root,t("empty"),"");
  }
+}
+async function reviewLink(groupId,signature,decision){
+ if(reviewing||loading||!window.confirm(t("reviewConfirm")))return;
+ reviewing=true;
+ try{
+  const response=await fetch("/api/review-connection",{
+   method:"POST",headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({group_id:groupId,source_signature:signature,decision})
+  });
+  const data=await response.json();
+  if(!response.ok)throw Error(data.error||"HTTP "+response.status);
+  await refresh();
+ }catch(error){el("lco-narr-status").textContent=t("reviewError")+String(error.message||error)}
+ finally{reviewing=false}
 }
 async function refresh(){
  if(loading)return;
