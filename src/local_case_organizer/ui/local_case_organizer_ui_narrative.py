@@ -29,6 +29,7 @@ const I={
   connectionScope:"Nur identisch beschriftete Aktenzeichen aus überprüften Originalen werden verbunden. Die Verbindung muss noch bestätigt werden.",
   connectedCount:"{n} mögliche Dokumentengruppe(n) · {missing} Quellen noch nicht durchsuchbar",
   relatedDates:"Datumsnennungen (ungeprüft)",
+  aiPoint:"Lokaler KI-Prüfhinweis (unbestätigt)",
   peopleHints:"Weitere Beteiligtenhinweise aus Quellzeilen (unbestätigt)",
   differences:"Mögliche Wertabweichungen (keine bewiesenen Widersprüche)",
   questions:"Offene Fragen für die Prüfung",
@@ -49,6 +50,7 @@ const I={
   connectionScope:"Only matching explicit case references from verified originals are linked. The relationship still requires human confirmation.",
   connectedCount:"{n} possible document group(s) · {missing} sources not yet searchable",
   relatedDates:"Date mentions (unverified)",
+  aiPoint:"Local AI review hint (unverified)",
   peopleHints:"Additional role-labelled source hints (unverified)",
   differences:"Potential differences (not proven contradictions)",
   questions:"Open questions for review",
@@ -97,8 +99,13 @@ function populate(){
   const excerpts=(source?.documents||[]).slice(0,8).map(x=>
     x.original_name+" ("+x.file_id+", "+t("page")+" "+x.page+"): "+x.source_quote
   );
+  const aiNotes=(group.ai_review_points||[]).slice(0,5).map(x=>
+    t("aiPoint")+": "+x.statement+" ("+x.file_id+", "+t("page")+" "+x.page+
+    ", "+x.source_quote+")"
+  );
   li(related,group.title,group.text+" · "+excerpts.join(" · ")+
-    (group.date_mentions?.length?" · "+t("relatedDates")+": "+group.date_mentions.join(", "):""));
+    (group.date_mentions?.length?" · "+t("relatedDates")+": "+group.date_mentions.join(", "):"")+
+    (aiNotes.length?" · "+aiNotes.join(" · "):""));
  }
  el("lco-narr-connected-count").textContent=fmt("connectedCount",{
   n:data.counts?.connected_document_groups||0,
