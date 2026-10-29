@@ -53,6 +53,28 @@ def update_document(payload: dict) -> dict[str, str]:
     return {"file_id": file_id, "field": field, "value": value}
 
 
+def bulk_export_selection(mode: str) -> dict[str, int]:
+    """Opt-in one-action selection; never export or transmit documents.
+
+    This intentionally only changes selection metadata, not review status.
+    """
+    if mode not in {"all", "none"}:
+        raise ValueError("Selection mode must be all or none")
+    value = "yes" if mode == "all" else "no"
+    with _EDIT_LOCK:
+        rows = read_register_rows()
+        if len(rows) > 2500:
+            raise ValueError("Too many documents for a bulk selection")
+        changed = 0
+        for row in rows:
+            if row.get("selected_for_export") != value:
+                row["selected_for_export"] = value
+                changed += 1
+        if changed:
+            write_register_rows(rows)
+    return {"changed": changed, "total": len(rows)}
+
+
 def add_manual_event(payload: dict) -> dict[str, str]:
     """Append an explicitly operator-entered event as an unverified draft."""
     if not isinstance(payload, dict):

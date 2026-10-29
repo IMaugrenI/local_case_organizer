@@ -19,7 +19,7 @@ from local_case_organizer.ui.multipart_upload import parse_multipart_files
 from local_case_organizer.ui.quick_intake import quick_organize_inbox
 from local_case_organizer.ui.autopilot import autopilot_status, process_autopilot
 from local_case_organizer.ui.case_briefing import case_briefing
-from local_case_organizer.ui.simple_actions import update_document, add_manual_event, add_manual_entity, prepare_local_search
+from local_case_organizer.ui.simple_actions import update_document, add_manual_event, add_manual_entity, prepare_local_search, bulk_export_selection
 from local_case_organizer.document_text import index_document, search_text
 from local_case_organizer.claims import add_claim, read_claims, set_review_status
 from local_case_organizer.comparison import add_comparison, comparison_report
@@ -1646,6 +1646,9 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
                     return
             elif parsed.path == "/api/quick-update-document":
                 payload = update_document(_read_json_body(self))
+            elif parsed.path == "/api/quick-bulk-export":
+                body = _read_json_body(self)
+                payload = bulk_export_selection(str(body.get("mode", "")))
             elif parsed.path == "/api/quick-add-event":
                 payload = add_manual_event(_read_json_body(self))
             elif parsed.path == "/api/quick-add-entity":
