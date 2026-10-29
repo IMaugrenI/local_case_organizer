@@ -13,7 +13,7 @@ from pathlib import Path
 
 from local_case_organizer.claims import read_claims
 from local_case_organizer.ai_exchange import read_ai_suggestions
-from local_case_organizer.ui.case_connections import linked_document_hints
+from local_case_organizer.ui.connection_review import reviewed_document_hints
 from local_case_organizer.comparison import comparison_report
 from local_case_organizer.document_text import get_indexed
 from local_case_organizer.entities.store import read_entity_rows
@@ -208,7 +208,7 @@ def case_narrative(selected_ids: set[str] | None = None) -> dict[str, object]:
     # An explicitly written, exactly matching case number is a strong sorting
     # aid, not evidence of an established shared proceeding. All text read by
     # the detector is rechecked against the registered original source hash.
-    connections = linked_document_hints(scope)
+    connections = reviewed_document_hints(scope)
     model_points = _reviewable_model_points(scope)
     story_sections: list[dict[str, object]] = []
     for group in connections["groups"][:12]:
@@ -236,6 +236,7 @@ def case_narrative(selected_ids: set[str] | None = None) -> dict[str, object]:
             ][:5],
             "source_kind": "source_verified_same_explicit_reference_unverified_connection",
             "reference": ref, "reference_kind": str(group["reference_kind"]),
+            "review_status": str(group["status"]),
         })
 
     participant_hints = _candidate_participants(scope, names)
@@ -398,6 +399,7 @@ def write_case_narrative(export_dir: Path, selected_ids: set[str]) -> Path:
     for section in result["case_story_sections"]:
         lines.append("- " + _md(section["title"], 180))
         lines.append("  - " + _md(section["text"], 310))
+        lines.append("  - Organisatorischer Prüfstatus: " + _md(section["review_status"], 60))
         lines.append("  - Anlagen: " + ", ".join(_md(fid, 110) for fid in section["file_ids"]))
         if section["date_mentions"]:
             lines.append("  - In Quellen erwähnte Daten (keine bestätigten Ereignisse): "
