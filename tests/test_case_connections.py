@@ -118,6 +118,30 @@ def test_exact_reference_required_no_inference_from_shared_date(tmp_path, monkey
     assert linked_document_hints()["groups"] == []
 
 
+def test_identical_numbers_of_different_types_do_not_form_false_groups(tmp_path, monkeypatch):
+    monkeypatch.setattr(paths, "get_repo_root", lambda: tmp_path / "repo")
+    workspace = paths.create_local_workspace()
+    sources = {
+        "contract_a.txt": "Vertragsnummer: 5555-88\\nErster Vertragseintrag.\\n",
+        "contract_b.txt": "Vertragsnummer: 5555-88\\nZweiter Vertragseintrag.\\n",
+        "court.txt": "Aktenzeichen: 5555-88\\nEin Gerichtsdokument.\\n",
+        "invoice.txt": "Rechnungsnummer: 5555-88\\nEine Rechnung.\\n",
+    }
+    for name, text in sources.items():
+        (workspace.inbox_dir / name).write_text(text.replace("\\\\n", "\\n"), encoding="utf-8")
+    assert quick_organize_inbox()["imported_files"] == 4
+    for row in read_register_rows():
+        index_document(row["file_id"])
+    groups = linked_document_hints()["groups"]
+    assert len(groups) == 1
+    assert groups[0]["reference_kind"] == "contract"
+    assert groups[0]["reference_label"] == "Vertragsnummer"
+    assert groups[0]["document_count"] == 2
+    assert {source["original_name"] for source in groups[0]["documents"]} == {
+        "contract_a.txt", "contract_b.txt"
+    }
+
+
 def test_bad_source_scope_is_refused(tmp_path, monkeypatch):
     monkeypatch.setattr(paths, "get_repo_root", lambda: tmp_path / "repo")
     with pytest.raises(ValueError, match="set"):
