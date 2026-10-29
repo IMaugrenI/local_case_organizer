@@ -21,13 +21,13 @@ def _case(tmp_path, monkeypatch):
     monkeypatch.setattr(paths, "get_repo_root", lambda: tmp_path / "repo")
     workspace = paths.create_local_workspace()
     (workspace.inbox_dir / "gericht_2020.txt").write_text(
-        "Aktenvermerk vom 03.04.2020. Strittiger Betrag: 100 EUR.", encoding="utf-8",
+        "Absender: Kanzlei Alpha\\nAktenvermerk vom 03.04.2020. Strittiger Betrag: 100 EUR.", encoding="utf-8",
     )
     (workspace.inbox_dir / "schreiben_2021.txt").write_text(
         "Schreiben vom 05.06.2021. Strittiger Betrag: 200 EUR.", encoding="utf-8",
     )
     (workspace.inbox_dir / "secret_private.txt").write_text(
-        "TOP SECRET PRIVATE NAME; Termin am 09.09.2025; 999 EUR.", encoding="utf-8",
+        "Beklagter: PRIVATE PERSON NAME\\nTOP SECRET PRIVATE NAME; Termin am 09.09.2025; 999 EUR.", encoding="utf-8",
     )
     assert quick_organize_inbox()["imported_files"] == 3
     rows = read_register_rows()
@@ -77,12 +77,16 @@ def test_synthesis_is_source_bound_and_does_not_mutate_original_records(tmp_path
     assert whole["potential_differences"][0]["status"] == "potential_difference_needs_human_review"
     assert all(row["source_kind"] != "confirmed_fact" for row in whole["chronology"])
     assert whole["counts"]["participants"] == 2
+    assert any(p["name"] == "Kanzlei Alpha" for p in whole["participant_hints"])
+    assert any(p["name"] == "PRIVATE PERSON NAME" for p in whole["participant_hints"])
     assert (workspace.register_dir / "document_register.csv").read_bytes() == before
 
     selected = case_narrative({a["file_id"], b["file_id"]})
     assert selected["scope"] == "selected_originals_only"
     assert selected["counts"]["documents"] == 2
     assert selected["counts"]["participants"] == 1
+    assert selected["counts"]["participant_hints_unverified"] >= 1
+    assert all(p["name"] != "PRIVATE PERSON NAME" for p in selected["participant_hints"])
     assert selected["counts"]["potential_value_differences"] == 1
     assert all(private["file_id"] not in row["file_ids"] for row in selected["chronology"])
     assert all("TOP SECRET" not in row["title"] for row in selected["chronology"])
@@ -94,6 +98,7 @@ def test_synthesis_is_source_bound_and_does_not_mutate_original_records(tmp_path
         guide = archive.read("SACHVERHALT_ARBEITSSTAND.md").decode("utf-8")
         assert "Chronologischer Arbeitsstand" in guide
         assert "Mögliche Wertabweichungen" in guide
+        assert "Absender: Kanzlei Alpha" in guide
         assert "Strittiger Betrag: 100 EUR" in guide
         assert "Strittiger Betrag: 200 EUR" in guide
         assert a["file_id"] in guide and b["file_id"] in guide
@@ -145,4 +150,5 @@ def test_one_page_narrative_uses_existing_api_and_escapes_untrusted_content():
     assert "textContent" in NARRATIVE_SCRIPT
     assert "window.LCORefreshWorkspace" in NARRATIVE_SCRIPT
     assert "document.addEventListener" in NARRATIVE_SCRIPT
+    assert "lco-narr-people-hints" in NARRATIVE_SCRIPT
     assert "\\#" in _md("# PRIVATE")
