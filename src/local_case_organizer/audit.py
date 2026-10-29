@@ -24,7 +24,7 @@ from local_case_organizer.paths import get_workspace_paths
 _LOCK = RLock()
 MAX_LOG_BYTES = 8 * 1024 * 1024
 MAX_TABLE_BYTES = 3 * 1024 * 1024
-_AREAS = {"register", "timeline", "entities", "claims", "comparisons", "tasks", "ai_suggestions"}
+_AREAS = {"register", "timeline", "entities", "claims", "comparisons", "tasks", "ai_suggestions", "connections"}
 
 
 def _log_path() -> Path:
