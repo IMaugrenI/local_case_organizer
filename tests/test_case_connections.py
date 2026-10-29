@@ -122,13 +122,13 @@ def test_identical_numbers_of_different_types_do_not_form_false_groups(tmp_path,
     monkeypatch.setattr(paths, "get_repo_root", lambda: tmp_path / "repo")
     workspace = paths.create_local_workspace()
     sources = {
-        "contract_a.txt": "Vertragsnummer: 5555-88\\nErster Vertragseintrag.\\n",
-        "contract_b.txt": "Vertragsnummer: 5555-88\\nZweiter Vertragseintrag.\\n",
-        "court.txt": "Aktenzeichen: 5555-88\\nEin Gerichtsdokument.\\n",
-        "invoice.txt": "Rechnungsnummer: 5555-88\\nEine Rechnung.\\n",
+        "contract_a.txt": "Vertragsnummer: 5555-88\nErster Vertragseintrag.\n",
+        "contract_b.txt": "Vertragsnummer: 5555-88\nZweiter Vertragseintrag.\n",
+        "court.txt": "Aktenzeichen: 5555-88\nEin Gerichtsdokument.\n",
+        "invoice.txt": "Rechnungsnummer: 5555-88\nEine Rechnung.\n",
     }
     for name, text in sources.items():
-        (workspace.inbox_dir / name).write_text(text.replace("\\\\n", "\\n"), encoding="utf-8")
+        (workspace.inbox_dir / name).write_text(text, encoding="utf-8")
     assert quick_organize_inbox()["imported_files"] == 4
     for row in read_register_rows():
         index_document(row["file_id"])
