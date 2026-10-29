@@ -12,6 +12,7 @@ from .local_case_organizer_ui_simple import SIMPLE_CSS, SIMPLE_SCRIPT
 from .local_case_organizer_ui_workspace import WORKSPACE_CSS, WORKSPACE_SCRIPT
 from .local_case_organizer_ui_specialist import SPECIALIST_CSS, SPECIALIST_SCRIPT
 from .local_case_organizer_ui_briefing import BRIEFING_CSS, BRIEFING_SCRIPT
+from .local_case_organizer_ui_autopilot import AUTOPILOT_CSS, AUTOPILOT_SCRIPT
 
 ORIGINAL_UI_PATH = Path(__file__).resolve().parent / 'app.py'
 ORIGINAL_MODULE_NAME = '_local_case_organizer_original_ui'
@@ -126,10 +127,10 @@ ORDERED_SCRIPT_SAFE = _stable_ordered_script(ORDERED_SCRIPT)
 
 patched = _original.HTML.replace(
     '</head>',
-    ORDERED_CSS + '\n' + FIXUP_CSS + '\n' + THEME_FIXUP_CSS + '\n' + EXPERIENCE_CSS + '\n' + SIMPLE_CSS + '\n' + WORKSPACE_CSS + '\n' + SPECIALIST_CSS + '\n' + BRIEFING_CSS + '\n</head>',
+    ORDERED_CSS + '\n' + FIXUP_CSS + '\n' + THEME_FIXUP_CSS + '\n' + EXPERIENCE_CSS + '\n' + SIMPLE_CSS + '\n' + WORKSPACE_CSS + '\n' + SPECIALIST_CSS + '\n' + BRIEFING_CSS + '\n' + AUTOPILOT_CSS + '\n</head>',
 ).replace(
     '</body>',
-    ORDERED_SCRIPT_SAFE + '\n' + FIXUP_SCRIPT + '\n' + THEME_FIXUP_SCRIPT + '\n' + EXPERIENCE_SCRIPT + '\n' + SIMPLE_SCRIPT + '\n' + WORKSPACE_SCRIPT + '\n' + SPECIALIST_SCRIPT + '\n' + BRIEFING_SCRIPT + '\n</body>',
+    ORDERED_SCRIPT_SAFE + '\n' + FIXUP_SCRIPT + '\n' + THEME_FIXUP_SCRIPT + '\n' + EXPERIENCE_SCRIPT + '\n' + SIMPLE_SCRIPT + '\n' + WORKSPACE_SCRIPT + '\n' + SPECIALIST_SCRIPT + '\n' + BRIEFING_SCRIPT + '\n' + AUTOPILOT_SCRIPT + '\n</body>',
 )
 _original.HTML = patched
 run_ui = _original.run_ui
