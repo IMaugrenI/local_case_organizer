@@ -17,6 +17,7 @@ from local_case_organizer.ui.case_selection import requested_case
 from local_case_organizer.ui.ui_security import allow_local_post, allowed_ui_host
 from local_case_organizer.ui.multipart_upload import parse_multipart_files
 from local_case_organizer.ui.quick_intake import quick_organize_inbox
+from local_case_organizer.ui.case_briefing import case_briefing
 from local_case_organizer.ui.simple_actions import update_document, add_manual_event, add_manual_entity, prepare_local_search
 from local_case_organizer.document_text import index_document, search_text
 from local_case_organizer.claims import add_claim, read_claims, set_review_status
@@ -1559,6 +1560,9 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
                 return
             if parsed.path == "/api/status":
                 self._send(200, "application/json; charset=utf-8", _json_bytes(_status_payload()))
+                return
+            if parsed.path == "/api/case-briefing":
+                self._send(200, "application/json; charset=utf-8", _json_bytes(case_briefing()))
                 return
             if parsed.path == "/api/register-data":
                 self._send(200, "application/json; charset=utf-8", _json_bytes(_register_data_payload()))
