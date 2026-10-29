@@ -149,7 +149,7 @@ Gemeinsame Starter in diesen Ordnern:
 3. die Browser-UI öffnet sich lokal
 4. in der **einfachen Ansicht** einen Fall auswählen oder anlegen
 5. bis zu 30 Dateien (höchstens 30 MiB pro Auswahl) in das markierte Feld ziehen oder auswählen; diese bewusste Aktion lädt die Dateien hoch, importiert sie und aktualisiert das Dokumentenregister
-6. die Dokumentenliste prüfen; über **Erweiterte Ansicht** sind Zeitlinie, Integritätsprüfung, optionale lokale Textindizierung und manueller Export erreichbar
+6. auf **derselben einfachen Seite** Dokumente markieren und kommentieren, lokale Suche, Zeitlinie, Aufgaben, Personen und Quellenhinweise verwenden sowie nach ausdrücklicher Bestätigung ein Übergabepaket erstellen. Zusätzliche Fachfunktionen wie quellengebundene Aussagen, Vergleichshinweise, manuelles KI-Übergabepaket und ausdrücklich aktiviertes Offline-OCR liegen unter **„Weitere Spezialfunktionen“** (standardmäßig zugeklappt).
 
 Der Knopf **Bereits abgelegte Inbox-Dateien einordnen** verarbeitet Dateien, die zuvor in `data/inbox/` abgelegt wurden. Bereits importierte identische Dateiinhalte werden übersprungen; Eingangsdateien und Originalkopien bleiben erhalten. Größere Bestände werden in begrenzten Paketen übernommen. OCR, KI-Bewertung, externe Übertragung und Export starten niemals automatisch.
 

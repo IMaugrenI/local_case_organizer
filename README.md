@@ -149,7 +149,7 @@ Common launchers available across the sorted folders:
 3. the browser UI opens locally
 4. in the **Simple view**, select or create a case
 5. drag up to 30 files (max. 30 MiB per selection) into the visible drop area or choose files; this explicit action uploads, imports and updates the document register
-6. review the document list; use **Advanced view** for timeline editing, verification, optional offline text indexing and manual export
+6. on the **same simple page**, mark and annotate documents, use local search, timelines, tasks, people and source hints, and explicitly confirm any handoff export. Specialized controls for sourced claims, comparison hints, manual AI handoff and opt-in offline OCR are collapsed under **Other specialized tools**.
 
 The **Organize inbox files** button handles files you previously placed in `data/inbox/`. The guided action skips already registered file contents, keeps inbox files and original copies intact, and processes large backlogs in bounded batches. No OCR, AI inference, external transmission or export is triggered automatically.
 
