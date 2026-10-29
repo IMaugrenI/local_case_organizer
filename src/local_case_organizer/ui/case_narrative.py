@@ -12,6 +12,7 @@ from datetime import date
 from pathlib import Path
 
 from local_case_organizer.claims import read_claims
+from local_case_organizer.ai_exchange import read_ai_suggestions
 from local_case_organizer.ui.case_connections import linked_document_hints
 from local_case_organizer.comparison import comparison_report
 from local_case_organizer.document_text import get_indexed
@@ -103,6 +104,44 @@ def _candidate_participants(scope: set[str], names: dict[str, str]) -> list[dict
     return candidates
 
 
+def _reviewable_model_points(scope: set[str]) -> list[dict[str, object]]:
+    """Show pending AI notes only while their original quoted page still verifies.
+
+    These are suggestions, never approved facts; exported narrative text excludes
+    them entirely unless a human separately records supported claims.
+    """
+    cache: dict[str, dict | None] = {}
+    found: list[dict[str, object]] = []
+    for row in read_ai_suggestions()[:90]:
+        file_id = str(row.get("file_id", ""))
+        if file_id not in scope or row.get("status") != "pending_review":
+            continue
+        if file_id not in cache:
+            try:
+                cache[file_id] = get_indexed(file_id, verify_original=True)
+            except (OSError, ValueError, TypeError):
+                cache[file_id] = None
+        indexed = cache[file_id]
+        if indexed is None:
+            continue
+        quote = str(row.get("source_quote", "")).strip()
+        page_id = str(row.get("page", ""))
+        if not quote or not any(
+            str(page.get("page")) == page_id and quote in str(page.get("text", ""))
+            for page in indexed["pages"]
+        ):
+            continue
+        found.append({
+            "file_id": file_id, "page": page_id,
+            "source_quote": _short(quote, 250),
+            "statement": _short(row.get("statement", ""), 300),
+            "status": "pending_review_not_an_established_fact",
+        })
+        if len(found) >= 25:
+            break
+    return found
+
+
 def case_narrative(selected_ids: set[str] | None = None) -> dict[str, object]:
     """Return a bounded, case-scoped working overview without writing data.
 
@@ -170,6 +209,7 @@ def case_narrative(selected_ids: set[str] | None = None) -> dict[str, object]:
     # aid, not evidence of an established shared proceeding. All text read by
     # the detector is rechecked against the registered original source hash.
     connections = linked_document_hints(scope)
+    model_points = _reviewable_model_points(scope)
     story_sections: list[dict[str, object]] = []
     for group in connections["groups"][:12]:
         ids = [str(row["file_id"]) for row in group["documents"]]
@@ -191,6 +231,9 @@ def case_narrative(selected_ids: set[str] | None = None) -> dict[str, object]:
             "file_ids": ids,
             "original_names": names_in_group,
             "date_mentions": date_mentions,
+            "ai_review_points": [
+                point for point in model_points if point["file_id"] in ids
+            ][:5],
             "source_kind": "source_verified_same_explicit_reference_unverified_connection",
             "reference": ref, "reference_kind": str(group["reference_kind"]),
         })
@@ -301,6 +344,7 @@ def case_narrative(selected_ids: set[str] | None = None) -> dict[str, object]:
             "incomplete": connections["incomplete"],
         },
         "case_story_sections": story_sections,
+        "model_review_points": model_points[:12],
         "participants": participants,
         "participant_hints": participant_hints,
         "potential_differences": differences,
@@ -312,6 +356,7 @@ def case_narrative(selected_ids: set[str] | None = None) -> dict[str, object]:
             "event_truth_not_determined": True,
             "legal_deadlines_not_calculated": True,
             "claims_never_auto_approved": True,
+            "ai_story_points_are_unreviewed_and_not_exported": True,
             "unlinked_manual_records_excluded": True,
             "identical_aktenzeichen_is_only_a_sorting_hint": True,
         },
