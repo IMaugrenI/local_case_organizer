@@ -67,7 +67,7 @@ const L={
   filesTitle:"2. Dateien hinzufügen",drop:"Dateien hier ablegen oder über den Knopf auswählen.",
   gate:"Das Ablegen oder Auswählen startet die lokale Übernahme und das Dokumentenregister. Keine KI-Auswertung und keine Weitergabe.",
   pick:"Dateien auswählen",existing:"Bereits abgelegte Inbox-Dateien einordnen",
-  limits:"Bis zu 30 Dateien und insgesamt 30 MB pro Auswahl. Originale bleiben unverändert.",
+  limits:"Auch große Auswahlen werden automatisch in sichere Teilpakete aufgeteilt (bis 160 Dateien / 150 MB). Originale bleiben unverändert.",
   listTitle:"3. Deine Dokumente",empty:"Noch keine Dokumente in diesem Fall.",
   openDocuments:"Register bearbeiten",openTimeline:"Zeitlinie bearbeiten",openExport:"Übergabe vorbereiten",
   advanced:"Erweiterte Ansicht",basic:"Einfache Ansicht",
@@ -78,7 +78,8 @@ const L={
   exportDone:"Übergabepaket lokal erstellt. Es wurde nichts versendet.",
   exportFailed:"Übergabepaket konnte nicht erstellt werden. Bitte Auswahl und Integritätsprüfung kontrollieren.",
   busy:"Dateien werden lokal übernommen und eingeordnet …",
-  noFiles:"Bitte zuerst Dateien auswählen.",size:"Bitte kleinere Pakete auswählen (maximal 30 Dateien und 30 MB).",
+  noFiles:"Bitte zuerst Dateien auswählen.",size:"Bitte die Auswahl auf 160 Dateien und insgesamt 150 MB begrenzen.",
+  uploading:"Teilpaket {current} von {total} wird übernommen …",
   blockedFolder:"Ordner lassen sich hier nicht direkt ablegen. Bitte einzelne Dateien auswählen.",
   done:"{added} Datei(en) neu eingeordnet. {skipped} bereits vorhandene Datei(en) übersprungen.",
   more:"Weitere {remaining} Datei(en) warten. Noch einmal auf „Inbox-Dateien einordnen“ klicken.",
@@ -96,7 +97,7 @@ const L={
   filesTitle:"2. Add files",drop:"Drop files here or use the selection button.",
   gate:"Dropping or selecting starts local intake and document registration. No AI analysis or external sharing.",
   pick:"Choose files",existing:"Organize files already in the inbox",
-  limits:"Up to 30 files and 30 MB per selection. Originals remain unchanged.",
+  limits:"Large selections are automatically divided into safe batches (up to 160 files / 150 MB). Originals remain unchanged.",
   listTitle:"3. Your documents",empty:"No documents in this case yet.",
   openDocuments:"Edit register",openTimeline:"Edit timeline",openExport:"Prepare handoff",
   advanced:"Advanced view",basic:"Simple view",
@@ -107,7 +108,8 @@ const L={
   exportDone:"Local handoff package created. Nothing was transmitted.",
   exportFailed:"Could not create the handoff package. Check the selection and integrity review.",
   busy:"Adding and organizing files locally …",
-  noFiles:"Choose files first.",size:"Please use smaller batches (up to 30 files and 30 MB).",
+  noFiles:"Choose files first.",size:"Please limit your selection to 160 files and 150 MB total.",
+  uploading:"Uploading batch {current} of {total} …",
   blockedFolder:"Folders cannot be dropped here. Please select individual files.",
   done:"{added} new file(s) organized; {skipped} existing file(s) skipped.",
   more:"{remaining} more file(s) are waiting. Select “Organize inbox files” again.",
@@ -200,17 +202,11 @@ async function organize(fileNames){
   if(result.remaining_files)notice("ok","more",{remaining:result.remaining_files});
   await refreshDocuments();
   if(typeof window.LCORefreshWorkspace==="function")await window.LCORefreshWorkspace();
-  // Plain-text search preparation is part of this explicit import action.
-  // Run no OCR, no PDF extraction, no cloud step; any indexing warning must
-  // not turn a successfully registered import into a failure.
-  if(result.imported_files>0){
-    try{
-      const prepared=await fetch("/api/quick-prepare-search",{
-        method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({include_pdf:false})
-      });
-      if(!prepared.ok)console.warn("Optional local search preparation failed",prepared.status);
-    }catch(error){console.warn("Optional local search preparation failed",error)}
+  // After explicit intake, the bounded local worker prepares searchable
+  // derivatives and updates its visible progress panel. No background run on
+  // page load, no model call or automatic export.
+  if(result.imported_files>0 && window.LCOAutopilot?.runAfterImport){
+    await window.LCOAutopilot.runAfterImport();
   }
   if(typeof window.refreshStatus==="function")await window.refreshStatus();
  }catch(error){console.warn("Local intake failed",error);notice("error","savedOnly")}
@@ -219,22 +215,39 @@ async function organize(fileNames){
 async function upload(files){
  if(busy)return;
  if(!files?.length){notice("error","noFiles");return}
- const batch=Array.from(files);
- if(batch.length>30||batch.reduce((size,file)=>size+file.size,0)>30*1024*1024){notice("error","size");return}
+ const selected=Array.from(files);
+ if(selected.length>160||selected.reduce((size,file)=>size+file.size,0)>150*1024*1024){
+   notice("error","size");return;
+ }
+ // Split on file count and bytes to stay below the existing 32 MiB
+ // HTTP multipart limit, including form boundary overhead.
+ const batches=[];let batch=[],bytes=0;
+ for(const file of selected){
+   if(file.size>26*1024*1024){notice("error","size");return}
+   if(batch.length>=20 || (batch.length && bytes+file.size>26*1024*1024)){
+      batches.push(batch);batch=[];bytes=0;
+   }
+   batch.push(file);bytes+=file.size;
+ }
+ if(batch.length)batches.push(batch);
  busy=true;el("lco-simple-pick").disabled=true;el("lco-simple-inbox").disabled=true;
- notice("working","busy");
  try{
-  const form=new FormData();
-  for(const file of batch)form.append("files",file,file.name);
-  const saved=await responseJson(await fetch("/api/upload",{method:"POST",body:form}));
-  busy=false; // The next phase has its own one-at-a-time guard.
-  await organize(saved.uploaded_files);
+   for(let index=0;index<batches.length;index++){
+     notice("working","uploading",{current:index+1,total:batches.length});
+     const form=new FormData();
+     for(const file of batches[index])form.append("files",file,file.name);
+     const saved=await responseJson(await fetch("/api/upload",{method:"POST",body:form}));
+     // The importer and autopilot both use their existing bounded APIs.
+     busy=false;
+     await organize(saved.uploaded_files);
+     busy=true;
+   }
  }catch(error){
-  console.warn("Local upload failed",error);
-  notice("error","failure");
+   console.warn("Upload or case import stopped",error);
+   notice("error","savedOnly");
  }finally{
-  busy=false;el("lco-simple-pick").disabled=false;el("lco-simple-inbox").disabled=false;
-  el("lco-simple-files").value="";
+   busy=false;el("lco-simple-pick").disabled=false;el("lco-simple-inbox").disabled=false;
+   el("lco-simple-files").value="";
  }
 }
 function build(){
