@@ -142,6 +142,45 @@ def test_identical_numbers_of_different_types_do_not_form_false_groups(tmp_path,
     }
 
 
+def test_ai_review_hints_link_to_group_only_with_verified_quotes_and_not_exported(tmp_path, monkeypatch):
+    workspace, docs = _sources(tmp_path, monkeypatch)
+    selected_id = docs["klage.txt"]["file_id"]
+    private_id = docs["private.txt"]["file_id"]
+    suggestions = [
+        {"file_id": selected_id, "page": 1,
+         "source_quote": "Aktenzeichen: 2 Ca 1030/21",
+         "statement": "KI_ONLY_SELECTED_DRAFT", "status": "pending_review"},
+        {"file_id": private_id, "page": 1,
+         "source_quote": "PRIVAT-NUR-DIESE-AKTE",
+         "statement": "KI_ONLY_PRIVATE_DRAFT", "status": "pending_review"},
+        {"file_id": docs["urteil.txt"]["file_id"], "page": 1,
+         "source_quote": "INVENTED_UNSUPPORTED_QUOTE",
+         "statement": "KI_UNSUPPORTED_DRAFT", "status": "pending_review"},
+    ]
+    monkeypatch.setattr("local_case_organizer.ui.case_narrative.read_ai_suggestions",
+                        lambda: suggestions)
+    selected = {docs["klage.txt"]["file_id"], docs["urteil.txt"]["file_id"]}
+    report = case_narrative(selected)
+    assert len(report["model_review_points"]) == 1
+    assert report["model_review_points"][0]["statement"] == "KI_ONLY_SELECTED_DRAFT"
+    assert report["model_review_points"][0]["status"] == "pending_review_not_an_established_fact"
+    assert len(report["case_story_sections"][0]["ai_review_points"]) == 1
+    assert "KI_ONLY_PRIVATE_DRAFT" not in str(report)
+    assert "KI_UNSUPPORTED_DRAFT" not in str(report)
+
+    folder = build_export_package()
+    with ZipFile(folder.with_suffix(".zip")) as bundle:
+        story = bundle.read("SACHVERHALT_ARBEITSSTAND.md").decode("utf-8")
+        assert "KI_ONLY_SELECTED_DRAFT" not in story
+        assert "KI_ONLY_PRIVATE_DRAFT" not in story
+        assert "KI_UNSUPPORTED_DRAFT" not in story
+
+    original = workspace.originals_dir / docs["klage.txt"]["relative_path"]
+    original.write_text("Quelle verändert", encoding="utf-8")
+    invalid = case_narrative(selected)
+    assert invalid["model_review_points"] == []
+
+
 def test_bad_source_scope_is_refused(tmp_path, monkeypatch):
     monkeypatch.setattr(paths, "get_repo_root", lambda: tmp_path / "repo")
     with pytest.raises(ValueError, match="set"):
