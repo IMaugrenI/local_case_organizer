@@ -38,7 +38,7 @@ def _case(tmp_path, monkeypatch):
     for row in rows:
         row["selected_for_export"] = ("no" if row["file_id"] == private["file_id"] else "yes")
     write_register_rows(rows)
-    for row in (a, b):
+    for row in (a, b, private):
         index_document(row["file_id"])
     return workspace, a, b, private
 
