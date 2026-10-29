@@ -399,7 +399,13 @@ def write_case_narrative(export_dir: Path, selected_ids: set[str]) -> Path:
     for section in result["case_story_sections"]:
         lines.append("- " + _md(section["title"], 180))
         lines.append("  - " + _md(section["text"], 310))
-        lines.append("  - Organisatorischer Prüfstatus: " + _md(section["review_status"], 60))
+        status_label = {
+            "pending_review": "Noch nicht geprüft",
+            "accepted_as_organizational_link": "Organisatorisch bestätigt",
+            "dismissed": "Verworfen",
+            "recheck_required": "Quellenumfang geändert – erneut prüfen",
+        }.get(section["review_status"], "Unbekannter Prüfstatus")
+        lines.append("  - Organisatorischer Prüfstatus: " + status_label)
         lines.append("  - Anlagen: " + ", ".join(_md(fid, 110) for fid in section["file_ids"]))
         if section["date_mentions"]:
             lines.append("  - In Quellen erwähnte Daten (keine bestätigten Ereignisse): "
