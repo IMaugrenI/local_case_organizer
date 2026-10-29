@@ -12,6 +12,7 @@ from datetime import date
 from pathlib import Path
 
 from local_case_organizer.claims import read_claims
+from local_case_organizer.ui.case_connections import linked_document_hints
 from local_case_organizer.comparison import comparison_report
 from local_case_organizer.document_text import get_indexed
 from local_case_organizer.entities.store import read_entity_rows
@@ -165,6 +166,35 @@ def case_narrative(selected_ids: set[str] | None = None) -> dict[str, object]:
                                    str(row["file_ids"]), str(row["event_id"])))
     timeline_total = len(timeline)
 
+    # An explicitly written, exactly matching case number is a strong sorting
+    # aid, not evidence of an established shared proceeding. All text read by
+    # the detector is rechecked against the registered original source hash.
+    connections = linked_document_hints(scope)
+    story_sections: list[dict[str, object]] = []
+    for group in connections["groups"][:12]:
+        ids = [str(row["file_id"]) for row in group["documents"]]
+        names_in_group = [names[fid] for fid in ids if fid in names]
+        date_mentions = sorted({
+            str(entry["date"]) for entry in timeline
+            if entry["source_kind"] == "verified_source_date_mention_not_an_event"
+            and any(fid in entry["file_ids"] for fid in ids)
+        })[:6]
+        ref = str(group["reference"])
+        story_sections.append({
+            "title": "Unterlagen mit gleichem bezeichneten Aktenzeichen: " + ref,
+            "text": (
+                "Diese " + str(len(ids)) + " überprüften Originaldokumente "
+                "nennen ausdrücklich dasselbe Aktenzeichen. "
+                "Die Verbindung ist ein organisatorischer Prüfhinweis, "
+                "kein Beweis für einen gemeinsamen Sachverhalt."
+            ),
+            "file_ids": ids,
+            "original_names": names_in_group,
+            "date_mentions": date_mentions,
+            "source_kind": "source_verified_same_explicit_reference_unverified_connection",
+            "reference": ref,
+        })
+
     participant_hints = _candidate_participants(scope, names)
     participants: list[dict[str, object]] = []
     for row in read_entity_rows():
@@ -236,6 +266,9 @@ def case_narrative(selected_ids: set[str] | None = None) -> dict[str, object]:
     if manual_total:
         question("manual_events", "Sind die manuell erfassten Ereignisse durch ihre Originalquellen belegt?",
                  f"{manual_total} erfasste(r) Eintrag/Einträge")
+    if story_sections:
+        question("document_connections", "Gehören die Unterlagen mit gleichem Aktenzeichen tatsächlich zu demselben Vorgang?",
+                 f"{len(story_sections)} vorgeschlagene Dokumentengruppe(n)")
     if differences:
         question("value_differences", "Wie erklären sich die unterschiedlich angegebenen Werte zu demselben manuell zugeordneten Thema?",
                  f"{len(differences)} mögliche(r) Abweichung(en) in quellengebundenen Aussagen")
@@ -256,9 +289,18 @@ def case_narrative(selected_ids: set[str] | None = None) -> dict[str, object]:
             "operator_events": manual_total, "participants": len(participants),
             "participant_hints_unverified": len(participant_hints),
             "potential_value_differences": len(differences),
+            "connected_document_groups": len(connections["groups"]),
             "open_questions": len(questions),
         },
         "chronology": timeline[:_MAX_DATES],
+        "document_connections": connections["groups"],
+        "document_connection_scan": {
+            "scanned": connections["scanned"],
+            "not_scanned": connections["not_scanned"],
+            "unavailable_or_unindexed": connections["unavailable_or_unindexed"],
+            "incomplete": connections["incomplete"],
+        },
+        "case_story_sections": story_sections,
         "participants": participants,
         "participant_hints": participant_hints,
         "potential_differences": differences,
@@ -271,6 +313,7 @@ def case_narrative(selected_ids: set[str] | None = None) -> dict[str, object]:
             "legal_deadlines_not_calculated": True,
             "claims_never_auto_approved": True,
             "unlinked_manual_records_excluded": True,
+            "identical_aktenzeichen_is_only_a_sorting_hint": True,
         },
     }
 
@@ -304,6 +347,23 @@ def write_case_narrative(export_dir: Path, selected_ids: set[str]) -> Path:
                      + " (" + kind + "; Quelle: " + refs + place + ")")
         if row["excerpt"]:
             lines.append("  - Wortlaut / Arbeitsnotiz: " + _md(row["excerpt"], 190))
+    lines.extend(["", "## Verknüpfte Unterlagen – quellengeprüfte Sortierhinweise", ""])
+    if not result["case_story_sections"]:
+        lines.append("- Keine mehrfachen ausdrücklichen Aktenzeichen in den verfügbaren Quellen erkannt.")
+    for section in result["case_story_sections"]:
+        lines.append("- " + _md(section["title"], 180))
+        lines.append("  - " + _md(section["text"], 310))
+        lines.append("  - Anlagen: " + ", ".join(_md(fid, 110) for fid in section["file_ids"]))
+        if section["date_mentions"]:
+            lines.append("  - In Quellen erwähnte Daten (keine bestätigten Ereignisse): "
+                         + ", ".join(_md(day, 12) for day in section["date_mentions"]))
+        for occurrence in next(
+            (g["documents"] for g in result["document_connections"]
+             if g["reference"] == section["reference"]), []
+        )[:12]:
+            lines.append("  - Quellenstelle: " + _md(occurrence["file_id"], 110)
+                         + ", S. " + str(occurrence["page"]) + ": "
+                         + _md(occurrence["source_quote"], 140))
     lines.extend(["", "## Manuell erfasste Beteiligte – Rollen ungeprüft", ""])
     if not result["participants"]:
         lines.append("- Keine quellenverknüpften Beteiligten vorhanden.")
