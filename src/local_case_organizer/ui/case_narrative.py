@@ -24,9 +24,9 @@ _MAX_DATES = 80
 _MAX_PEOPLE = 60
 _MAX_PEOPLE_HINTS = 40
 _ROLE_LINE = re.compile(
-    r"(?im)^[ \\t]*(Kläger|Klägerin|Beklagter|Beklagte|Zeuge|Zeugin|"
+    r"(?im)^[ \t]*(Kläger|Klägerin|Beklagter|Beklagte|Zeuge|Zeugin|"
     r"Absender|Empfänger|Ansprechpartner|Sachbearbeiter|Firma|Gericht)"
-    r"[ \\t]*:[ \\t]*([^\\r\\n]{2,100})[ \\t]*$"
+    r"[ \t]*:[ \t]*([^\r\n]{2,100})[ \t]*$"
 )
 _MAX_DISCREPANCIES = 20
 _MAX_QUESTIONS = 9
