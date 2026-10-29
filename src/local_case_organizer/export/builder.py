@@ -12,6 +12,7 @@ from local_case_organizer.export.helpers import (
 )
 from local_case_organizer.export.dossier import write_dossier
 from local_case_organizer.export.handoff import write_lawyer_start_here
+from local_case_organizer.ui.case_narrative import write_case_narrative
 from local_case_organizer.paths import create_local_workspace, get_workspace_paths
 from local_case_organizer.register.store import read_register_rows
 
@@ -45,6 +46,7 @@ def build_export_package() -> Path:
     copied_selected = copy_selected_files(export_dir)
     write_dossier(export_dir, copied_selected)
     write_lawyer_start_here(export_dir, selected_ids)
+    write_case_narrative(export_dir, selected_ids)
 
     readme = export_dir / "README.txt"
     readme.write_text(

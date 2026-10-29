@@ -95,8 +95,9 @@ def write_lawyer_start_here(export_dir: Path, selection: set[str]) -> Path:
         "## Lesereihenfolge", "",
         "1. EVIDENCE_INDEX.csv enthält Dateinamen, Dokument-IDs und SHA-256-Prüfsummen.",
         "2. selected_originals/ enthält ausschließlich die ausgewählten Anlagen.",
-        "3. DOSSIER.md enthält die dokumentierten Ereignisse und wörtlichen Quellenzitate.",
-        "4. Die CSV-Dateien sind nach den ausgewählten Quell-IDs gefilterte Arbeitsdaten.", "",
+        "3. SACHVERHALT_ARBEITSSTAND.md enthält die geordnete, ungeprüfte Sachverhaltsübersicht.",
+        "4. DOSSIER.md enthält die dokumentierten Ereignisse und wörtlichen Quellenzitate.",
+        "5. Die CSV-Dateien sind nach den ausgewählten Quell-IDs gefilterte Arbeitsdaten.", "",
         "## Anlagenverzeichnis", "",
     ]
     for row in rows[:300]:
