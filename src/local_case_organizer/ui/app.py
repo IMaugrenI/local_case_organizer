@@ -17,7 +17,7 @@ from local_case_organizer.ui.case_selection import requested_case
 from local_case_organizer.ui.ui_security import allow_local_post, allowed_ui_host
 from local_case_organizer.ui.multipart_upload import parse_multipart_files
 from local_case_organizer.ui.quick_intake import quick_organize_inbox
-from local_case_organizer.ui.simple_actions import update_document, add_manual_event, prepare_local_search
+from local_case_organizer.ui.simple_actions import update_document, add_manual_event, add_manual_entity, prepare_local_search
 from local_case_organizer.document_text import index_document, search_text
 from local_case_organizer.claims import add_claim, read_claims, set_review_status
 from local_case_organizer.comparison import add_comparison, comparison_report
@@ -1640,8 +1640,11 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
                 payload = update_document(_read_json_body(self))
             elif parsed.path == "/api/quick-add-event":
                 payload = add_manual_event(_read_json_body(self))
+            elif parsed.path == "/api/quick-add-entity":
+                payload = add_manual_entity(_read_json_body(self))
             elif parsed.path == "/api/quick-prepare-search":
-                payload = prepare_local_search()
+                body = _read_json_body(self)
+                payload = prepare_local_search(include_pdf=body.get("include_pdf") is True)
             elif parsed.path == "/api/setup":
                 payload = {"created": describe_workspace(create_local_workspace())}
             elif parsed.path == "/api/upload":

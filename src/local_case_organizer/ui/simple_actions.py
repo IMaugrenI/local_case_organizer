@@ -10,6 +10,7 @@ from datetime import date
 from threading import RLock
 from uuid import uuid4
 
+from local_case_organizer.entities.store import read_entity_rows, write_entity_rows
 from local_case_organizer.document_text import (
     MAX_INPUT_BYTES, TEXT_SUFFIXES, get_indexed, index_document,
 )
@@ -91,7 +92,37 @@ def add_manual_event(payload: dict) -> dict[str, str]:
     return {"event_id": row["event_id"], "status": "draft"}
 
 
-def prepare_local_search(*, max_files: int = 6) -> dict[str, object]:
+def add_manual_entity(payload: dict) -> dict[str, str]:
+    """Record a manually named person/institution, without inferred relations."""
+    if not isinstance(payload, dict):
+        raise ValueError("Invalid entity")
+    name = payload.get("name", "")
+    kind = payload.get("kind", "")
+    notes = payload.get("notes", "")
+    file_id = payload.get("file_id", "")
+    if not all(isinstance(item, str) for item in (name, kind, notes, file_id)):
+        raise ValueError("Entity fields must be text")
+    name, kind = name.strip(), kind.strip()
+    if not 2 <= len(name) <= 160 or len(kind) > 80 or len(notes) > 1200:
+        raise ValueError("Entity fields are too long or missing")
+    if file_id and file_id not in {row.get("file_id") for row in read_register_rows()}:
+        raise ValueError("Document reference is not in this case")
+    row = {
+        "entity_id": "EN-MAN-" + uuid4().hex[:16],
+        "entity_name": name,
+        "entity_type": kind,
+        "linked_file_ids": file_id,
+        "notes": notes,
+    }
+    with _EDIT_LOCK:
+        existing = read_entity_rows()
+        if len(existing) >= 5000:
+            raise ValueError("Entity limit reached")
+        write_entity_rows([*existing, row])
+    return {"entity_id": row["entity_id"], "status": "recorded"}
+
+
+def prepare_local_search(*, max_files: int = 6, include_pdf: bool = True) -> dict[str, object]:
     """On demand, index a bounded number of registered text/PDF originals.
 
     Never enable OCR, install dependencies, or accept extracted text as proof.
@@ -111,7 +142,7 @@ def prepare_local_search(*, max_files: int = 6) -> dict[str, object]:
             size = int(row.get("size_bytes", 0))
         except (TypeError, ValueError):
             continue
-        if not file_id or suffix not in _INDEXABLE or size > MAX_INPUT_BYTES:
+        if not file_id or suffix not in _INDEXABLE or (suffix == ".pdf" and not include_pdf) or size > MAX_INPUT_BYTES:
             continue
         try:
             get_indexed(file_id, verify_original=True)
