@@ -19,10 +19,26 @@ MAX_CHARS_PER_PAGE = 6500
 
 _REF = re.compile(
     r"(?im)^[ \t]*(?P<label>Aktenzeichen|Az\.?|Geschäftszeichen|"
-    r"Gesch\.?-?Z\.?|Case[ \t]*(?:number|no\.?)|File[ \t]*no\.?)"
+    r"Gesch\.?-?Z\.?|Case[ \t]*(?:number|no\.?)|File[ \t]*no\.?|"
+    r"Vorgangsnummer|Fallnummer|Mandatsnummer|Vertragsnummer|"
+    r"Rechnungsnummer|Schadennummer)"
     r"[ \t]*[:#]?[ \t]+(?P<value>[^\r\n]{4,85})[ \t]*$"
 )
 _SPACES = re.compile(r"\s+")
+
+
+def _reference_kind(label: str) -> tuple[str, str]:
+    """Disjoint categories prevent accidental cross-type ID collisions."""
+    label = unicodedata.normalize("NFKC", label).casefold().strip(". :")
+    if label.startswith(("aktenzeichen", "az", "geschäftszeichen", "gesch", "case", "file")):
+        return "case", "Aktenzeichen"
+    if label.startswith(("vorgang", "fall", "mandat")):
+        return "matter", "Vorgangsnummer"
+    if label.startswith("vertrag"):
+        return "contract", "Vertragsnummer"
+    if label.startswith("rechnung"):
+        return "invoice", "Rechnungsnummer"
+    return "claim", "Schadennummer"
 
 
 def _normalized_ref(value: str) -> str | None:
@@ -58,7 +74,7 @@ def linked_document_hints(selected_ids: set[str] | None = None) -> dict[str, obj
     }
     scanned = 0
     available = 0
-    occurrences: dict[str, list[dict[str, object]]] = {}
+    occurrences: dict[tuple[str, str], list[dict[str, object]]] = {}
     for file_id in list(scope)[:MAX_SCANNED]:
         scanned += 1
         try:
@@ -66,15 +82,19 @@ def linked_document_hints(selected_ids: set[str] | None = None) -> dict[str, obj
         except (ValueError, OSError, TypeError):
             continue
         available += 1
-        seen_in_doc: set[str] = set()
+        seen_in_doc: set[tuple[str, str]] = set()
         for page in indexed["pages"][:MAX_PAGES]:
             text = str(page.get("text", ""))[:MAX_CHARS_PER_PAGE]
             for match in _REF.finditer(text):
                 reference = _normalized_ref(match.group("value"))
-                if reference is None or reference in seen_in_doc:
+                if reference is None:
                     continue
-                seen_in_doc.add(reference)
-                occurrences.setdefault(reference, []).append({
+                kind, label = _reference_kind(match.group("label"))
+                key = (kind, reference)
+                if key in seen_in_doc:
+                    continue
+                seen_in_doc.add(key)
+                occurrences.setdefault(key, []).append({
                     "file_id": file_id,
                     "original_name": scope[file_id],
                     "page": int(page["page"]),
@@ -85,14 +105,20 @@ def linked_document_hints(selected_ids: set[str] | None = None) -> dict[str, obj
             if len(seen_in_doc) >= 8:
                 break
     groups: list[dict[str, object]] = []
-    for ref, mentions in sorted(occurrences.items()):
+    for (kind, ref), mentions in sorted(occurrences.items()):
         if len({str(m["file_id"]) for m in mentions}) < 2:
             continue
+        label = {
+            "case": "Aktenzeichen", "matter": "Vorgangsnummer",
+            "contract": "Vertragsnummer", "invoice": "Rechnungsnummer",
+            "claim": "Schadennummer",
+        }[kind]
         groups.append({
             "reference": ref[:65],
+            "reference_kind": kind, "reference_label": label,
             "documents": mentions[:25],
             "document_count": len(mentions),
-            "match_basis": "exact_explicit_case_reference_in_verified_local_text",
+            "match_basis": "exact_explicit_typed_reference_in_verified_local_text",
             "status": "possible_connection_requires_human_review",
         })
         if len(groups) >= MAX_GROUPS:
@@ -106,6 +132,7 @@ def linked_document_hints(selected_ids: set[str] | None = None) -> dict[str, obj
         "incomplete": len(scope) > MAX_SCANNED or available < scanned,
         "limitations": {
             "identical_reference_does_not_establish_shared_proceeding": True,
+            "reference_type_is_kept_separate": True,
             "no_unlabelled_or_fuzzy_matching": True,
             "no_automatic_entity_or_event_writes": True,
         },
