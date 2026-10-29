@@ -140,6 +140,43 @@ def test_case_isolation_for_local_model_suggestions(tmp_path, monkeypatch):
         assert read_claims() == []
 
 
+def test_case_briefing_exposes_only_current_source_verified_pending_hints(tmp_path, monkeypatch):
+    from local_case_organizer.ui.case_briefing import case_briefing
+
+    area, file_id = case(tmp_path, monkeypatch)
+    def fake(method, path, payload=None, *, timeout=12):
+        if path == "/api/tags":
+            return {"models": [{"name": "qwen2.5:3b"}]}
+        return {"response": json.dumps({"suggestions":[{
+            "file_id": file_id, "page": 1,
+            "source_quote": "Payment of 100 EUR received by office.",
+            "statement": "Human review of payment statement recommended.",
+        }]})}
+    monkeypatch.setattr("local_case_organizer.local_model._local_json", fake)
+    assert propose_with_local_model("qwen2.5:3b", [file_id])["accepted_as_pending"] == 1
+    before = case_briefing()
+    assert before["totals"]["unreviewed_ai_hints"] == 1
+    assert before["ai_review_samples"][0]["file_id"] == file_id
+    assert before["ai_review_samples"][0]["status"] == "pending_review"
+    # Mutating an original invalidates the suggestion in the overview too.
+    original = area.originals_dir / read_register_rows()[0]["relative_path"]
+    original.write_text("Original was modified.", encoding="utf-8")
+    after = case_briefing()
+    assert after["totals"]["unreviewed_ai_hints"] == 0
+    assert after["ai_review_samples"] == []
+
+
+def test_local_model_ui_is_explicit_opt_in_on_existing_page():
+    from local_case_organizer.ui.local_case_organizer_ui_model import MODEL_SCRIPT
+    assert '"/api/local-model-review"' in MODEL_SCRIPT
+    assert '"/api/local-models"' in MODEL_SCRIPT
+    assert 'window.confirm(t("confirm"))' in MODEL_SCRIPT
+    assert 'id="lco-model-box"' not in MODEL_SCRIPT or "lco-model-box" in MODEL_SCRIPT
+    assert "document.addEventListener(\"DOMContentLoaded\",init)" in MODEL_SCRIPT
+    assert 'lco-special-ai-file' in MODEL_SCRIPT
+    assert 'lco-special-ai-reload' in MODEL_SCRIPT
+
+
 def test_local_client_targets_only_fixed_loopback_and_catches_failures(monkeypatch):
     calls = []
     class FakeHTTP:
