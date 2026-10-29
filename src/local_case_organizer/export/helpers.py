@@ -110,9 +110,14 @@ def write_sanitized_provenance(export_dir: Path) -> Path | None:
         return None
 
     output_path = export_dir / "provenance.csv"
+    # The export selection is an information-disclosure boundary, not merely
+    # a choice of original attachments. Never export metadata for other files.
+    selected = {str(row.get("file_id", "")) for row in read_register_rows()
+                if str(row.get("selected_for_export", "")).lower() == "yes"}
     with source_path.open("r", encoding="utf-8", newline="") as source_handle:
         reader = csv.DictReader(source_handle)
-        rows = [{field: row.get(field, "") for field in SAFE_PROVENANCE_FIELDS} for row in reader]
+        rows = [{field: row.get(field, "") for field in SAFE_PROVENANCE_FIELDS}
+                for row in reader if row.get("file_id") in selected]
 
     with output_path.open("w", encoding="utf-8", newline="") as output_handle:
         writer = csv.DictWriter(output_handle, fieldnames=SAFE_PROVENANCE_FIELDS)

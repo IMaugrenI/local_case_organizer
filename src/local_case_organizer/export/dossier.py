@@ -90,6 +90,8 @@ def write_dossier(export_dir: Path, selected_paths: list[str]) -> list[str]:
             continue
         refs = [s.strip() for s in str(event.get("linked_file_ids", "")).split(",")]
         bundled = [s for s in refs if s in ids]
+        if not bundled:
+            continue  # Avoid disclosing events unrelated to selected originals.
         lines.append("- " + _text(event.get("event_date") or "undated") + " / " +
                      _text(event.get("event_title")) + " / status: " +
                      _text(event.get("status")) + " / included references: " +

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import shutil
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -12,7 +11,9 @@ from local_case_organizer.export.helpers import (
     write_zip_checksum,
 )
 from local_case_organizer.export.dossier import write_dossier
+from local_case_organizer.export.handoff import write_lawyer_start_here
 from local_case_organizer.paths import create_local_workspace, get_workspace_paths
+from local_case_organizer.register.store import read_register_rows
 
 
 EXPORT_FILES = [
@@ -29,12 +30,13 @@ def build_export_package() -> Path:
     export_dir = paths.exports_dir / f"case_export_{timestamp}"
     export_dir.mkdir(parents=True, exist_ok=False)
 
-    included_files: list[str] = []
-    for filename in EXPORT_FILES:
-        source = paths.register_dir / filename
-        if source.exists():
-            shutil.copy2(source, export_dir / source.name)
-            included_files.append(source.name)
+    # Only records linked to explicitly selected originals leave the case.
+    # This prevents an otherwise innocuous handoff from exposing the names,
+    # notes or event descriptions of unrelated private files.
+    from local_case_organizer.export.handoff import write_selected_tables
+    selected_ids = {str(row.get("file_id", "")) for row in read_register_rows()
+                    if str(row.get("selected_for_export", "")).lower() == "yes"}
+    included_files = write_selected_tables(export_dir, selected_ids)
 
     sanitized_provenance = write_sanitized_provenance(export_dir)
     if sanitized_provenance is not None:
@@ -42,6 +44,7 @@ def build_export_package() -> Path:
 
     copied_selected = copy_selected_files(export_dir)
     write_dossier(export_dir, copied_selected)
+    write_lawyer_start_here(export_dir, selected_ids)
 
     readme = export_dir / "README.txt"
     readme.write_text(
