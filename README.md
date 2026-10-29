@@ -175,6 +175,8 @@ The selected-only lawyer export now includes `SACHVERHALT_ARBEITSSTAND.md`. Its 
 
 **Automatic related-document grouping:** Up to 120 already indexed originals are checked for explicitly labelled court/case, matter, contract, invoice and claim numbers. Identical values from different reference categories are not merged. Exact matching references, after only whitespace/case normalization, are shown on the **same simple page** as possible document groups, with source ID, filename, page and literal source quotation. Dates within a group remain unverified timeline hints. This does not prove that the documents actually belong to the same proceeding; unindexed, unreadable and tampered originals are excluded. No fuzzy linkage or model judgment is involved.
 
+Existing, explicitly requested **local AI review suggestions** are also shown alongside related documents only while their verbatim quotations still match hash-verified original pages. They remain **unreviewed and are not automatically copied into the lawyer's narrative file**. This does not initiate inference or cloud communication in the background.
+
 The lawyer handoff's `SACHVERHALT_ARBEITSSTAND.md` now includes these clearly qualified grouping suggestions. When exporting only part of a case, links are rebuilt solely from explicitly selected originals, so unselected filenames, quotes or IDs are not disclosed.
 
 **Limits:** A date mention is not an established event, and a document role label is not proof of legal status. The tool cannot determine truth, culpability or deadlines. The draft is bounded, not necessarily complete, and read-only. The existing registers change only through explicitly requested actions.
