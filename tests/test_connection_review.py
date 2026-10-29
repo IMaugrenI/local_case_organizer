@@ -106,12 +106,13 @@ def test_selected_only_handoff_never_reuses_full_case_review_or_private_source(t
     write_register_rows(rows)
     selected = {r["file_id"] for r in rows if r["selected_for_export"] == "yes"}
     selected_view = case_narrative(selected)
-    assert selected_view["case_story_sections"][0]["review_status"] == "recheck_required"
+    assert selected_view["case_story_sections"][0]["review_status"] == "pending_review"
     assert docs["private.txt"]["file_id"] not in str(selected_view)
     folder = build_export_package()
     with ZipFile(folder.with_suffix(".zip")) as archive:
         content = archive.read("SACHVERHALT_ARBEITSSTAND.md").decode()
-        assert "Quellenumfang geändert – erneut prüfen" in content
+        assert "Noch nicht geprüft" in content
+        assert "Quellenumfang geändert – erneut prüfen" not in content
         assert "Organisatorisch bestätigt" not in content
         assert "private.txt" not in content
         assert "PRIVATE-ONLY-FILE" not in content
