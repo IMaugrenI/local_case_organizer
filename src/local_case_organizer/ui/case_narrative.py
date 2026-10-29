@@ -181,10 +181,10 @@ def case_narrative(selected_ids: set[str] | None = None) -> dict[str, object]:
         })[:6]
         ref = str(group["reference"])
         story_sections.append({
-            "title": "Unterlagen mit gleichem bezeichneten Aktenzeichen: " + ref,
+            "title": "Unterlagen mit gleicher ausdrücklich genannter " + str(group["reference_label"]) + ": " + ref,
             "text": (
                 "Diese " + str(len(ids)) + " überprüften Originaldokumente "
-                "nennen ausdrücklich dasselbe Aktenzeichen. "
+                "nennen ausdrücklich dieselbe gekennzeichnete Referenz. "
                 "Die Verbindung ist ein organisatorischer Prüfhinweis, "
                 "kein Beweis für einen gemeinsamen Sachverhalt."
             ),
@@ -192,7 +192,7 @@ def case_narrative(selected_ids: set[str] | None = None) -> dict[str, object]:
             "original_names": names_in_group,
             "date_mentions": date_mentions,
             "source_kind": "source_verified_same_explicit_reference_unverified_connection",
-            "reference": ref,
+            "reference": ref, "reference_kind": str(group["reference_kind"]),
         })
 
     participant_hints = _candidate_participants(scope, names)
@@ -267,7 +267,7 @@ def case_narrative(selected_ids: set[str] | None = None) -> dict[str, object]:
         question("manual_events", "Sind die manuell erfassten Ereignisse durch ihre Originalquellen belegt?",
                  f"{manual_total} erfasste(r) Eintrag/Einträge")
     if story_sections:
-        question("document_connections", "Gehören die Unterlagen mit gleichem Aktenzeichen tatsächlich zu demselben Vorgang?",
+        question("document_connections", "Gehören die Unterlagen mit derselben ausdrücklich genannten Kennung tatsächlich zusammen?",
                  f"{len(story_sections)} vorgeschlagene Dokumentengruppe(n)")
     if differences:
         question("value_differences", "Wie erklären sich die unterschiedlich angegebenen Werte zu demselben manuell zugeordneten Thema?",
@@ -359,7 +359,8 @@ def write_case_narrative(export_dir: Path, selected_ids: set[str]) -> Path:
                          + ", ".join(_md(day, 12) for day in section["date_mentions"]))
         for occurrence in next(
             (g["documents"] for g in result["document_connections"]
-             if g["reference"] == section["reference"]), []
+             if g["reference"] == section["reference"]
+            and g["reference_kind"] == section["reference_kind"]), []
         )[:12]:
             lines.append("  - Quellenstelle: " + _md(occurrence["file_id"], 110)
                          + ", S. " + str(occurrence["page"]) + ": "
