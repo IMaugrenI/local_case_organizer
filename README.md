@@ -173,6 +173,10 @@ The single-page interface now includes a collapsible **chronological working dra
 
 The selected-only lawyer export now includes `SACHVERHALT_ARBEITSSTAND.md`. Its narrative is limited to explicitly selected originals, excluding manual entries with mixed selected/unselected source links. Differing values appear only as **potential** review items where the operator previously grouped source-backed claims under the same topic and the exact original quotes still verify.
 
+**Automatic related-document grouping:** Up to 120 already indexed originals are checked for explicitly labelled court/case reference numbers. Exact matching references, after only whitespace/case normalization, are shown on the **same simple page** as possible document groups, with source ID, filename, page and literal source quotation. Dates within a group remain unverified timeline hints. This does not prove that the documents actually belong to the same proceeding; unindexed, unreadable and tampered originals are excluded. No fuzzy linkage or model judgment is involved.
+
+The lawyer handoff's `SACHVERHALT_ARBEITSSTAND.md` now includes these clearly qualified grouping suggestions. When exporting only part of a case, links are rebuilt solely from explicitly selected originals, so unselected filenames, quotes or IDs are not disclosed.
+
 **Limits:** A date mention is not an established event, and a document role label is not proof of legal status. The tool cannot determine truth, culpability or deadlines. The draft is bounded, not necessarily complete, and read-only. The existing registers change only through explicitly requested actions.
 
 ## Case overview and lawyer-ready handoff
