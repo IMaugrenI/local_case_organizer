@@ -200,6 +200,18 @@ async function organize(fileNames){
   if(result.remaining_files)notice("ok","more",{remaining:result.remaining_files});
   await refreshDocuments();
   if(typeof window.LCORefreshWorkspace==="function")await window.LCORefreshWorkspace();
+  // Plain-text search preparation is part of this explicit import action.
+  // Run no OCR, no PDF extraction, no cloud step; any indexing warning must
+  // not turn a successfully registered import into a failure.
+  if(result.imported_files>0){
+    try{
+      const prepared=await fetch("/api/quick-prepare-search",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({include_pdf:false})
+      });
+      if(!prepared.ok)console.warn("Optional local search preparation failed",prepared.status);
+    }catch(error){console.warn("Optional local search preparation failed",error)}
+  }
   if(typeof window.refreshStatus==="function")await window.refreshStatus();
  }catch(error){console.warn("Local intake failed",error);notice("error","savedOnly")}
  finally{busy=false;el("lco-simple-pick").disabled=false;el("lco-simple-inbox").disabled=false}
