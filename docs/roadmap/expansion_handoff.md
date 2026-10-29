@@ -1,7 +1,7 @@
 # Local Case Organizer – Entwicklungsausbau A1–A10
 
-Stand: 2026-10-25. Entwicklungs-PR #3; diese Funktionen sind nicht
-als freigegebener main-Release zu behandeln.
+Stand: 2026-10-29. PR #3 wurde am 2026-10-25 in main integriert.
+Die Integration ist keine Runtime-, Geräte- oder Betreiberabnahme.
 
 ## Funktionspakete
 
@@ -48,4 +48,5 @@ als freigegebener main-Release zu behandeln.
 - Gesamt-Abnahme und GO/NO-GO werden nach dem Ausbau durch DOM gemäß
   zentraler verbindlicher Abnahmeliste entschieden.
 
-Bis dahin: Draft-PR offen, keine automatische Freigabe oder Merge nach main.
+Bis zur Abnahme: Keine automatische Produktfreigabe. PR #3 ist bereits gemergt;
+der nachfolgende A11-Ausbau erfolgt getrennt in einem Entwicklungsbranch.
