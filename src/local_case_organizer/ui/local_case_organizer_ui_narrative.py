@@ -25,6 +25,10 @@ const I={
   intro:"Quellenbelegte Datumsnennungen, manuelle Einträge, Beteiligte und mögliche Wertabweichungen an einer Stelle. Nichts davon gilt ohne fachliche Prüfung als bewiesen.",
   count:"{n} chronologische Einträge · {p} Beteiligte · {d} mögliche Abweichungen",
   chronology:"Chronologischer Arbeitsstand",people:"Manuell erfasste Beteiligte",
+  connected:"Zusammengehörige Unterlagen – mögliche Aktenverbindungen",
+  connectionScope:"Nur identisch beschriftete Aktenzeichen aus überprüften Originalen werden verbunden. Die Verbindung muss noch bestätigt werden.",
+  connectedCount:"{n} mögliche Dokumentengruppe(n) · {missing} Quellen noch nicht durchsuchbar",
+  relatedDates:"Datumsnennungen (ungeprüft)",
   peopleHints:"Weitere Beteiligtenhinweise aus Quellzeilen (unbestätigt)",
   differences:"Mögliche Wertabweichungen (keine bewiesenen Widersprüche)",
   questions:"Offene Fragen für die Prüfung",
@@ -41,6 +45,10 @@ const I={
   intro:"Source-linked date mentions, manual entries, participants and potential value differences in one place. None is an established fact without professional review.",
   count:"{n} chronological entries · {p} participants · {d} possible differences",
   chronology:"Chronological working draft",people:"Manually entered participants",
+  connected:"Related documents – possible case reference links",
+  connectionScope:"Only matching explicit case references from verified originals are linked. The relationship still requires human confirmation.",
+  connectedCount:"{n} possible document group(s) · {missing} sources not yet searchable",
+  relatedDates:"Date mentions (unverified)",
   peopleHints:"Additional role-labelled source hints (unverified)",
   differences:"Potential differences (not proven contradictions)",
   questions:"Open questions for review",
@@ -83,6 +91,19 @@ function populate(){
     kind+" · "+t("source")+": "+(event.file_ids||[]).join(", ")+location+
     (event.excerpt?" · "+event.excerpt:""));
  }
+ const related=el("lco-narr-related");related.replaceChildren();
+ for(const group of (data.case_story_sections||[]).slice(0,12)){
+  const source=(data.document_connections||[]).find(x=>x.reference===group.reference);
+  const excerpts=(source?.documents||[]).slice(0,8).map(x=>
+    x.original_name+" ("+x.file_id+", "+t("page")+" "+x.page+"): "+x.source_quote
+  );
+  li(related,group.title,group.text+" · "+excerpts.join(" · ")+
+    (group.date_mentions?.length?" · "+t("relatedDates")+": "+group.date_mentions.join(", "):""));
+ }
+ el("lco-narr-connected-count").textContent=fmt("connectedCount",{
+  n:data.counts?.connected_document_groups||0,
+  missing:data.document_connection_scan?.unavailable_or_unindexed||0
+ });
  const people=el("lco-narr-people");people.replaceChildren();
  for(const person of (data.participants||[]).slice(0,60)){
   li(people,person.name||"–",(person.role||"")+" · "+t("source")+": "+
@@ -104,7 +125,7 @@ function populate(){
  for(const item of (data.open_questions||[]).slice(0,9)){
   li(questions,item.text,item.basis);
  }
- for(const root of [chrono,people,hints,diff,questions]){
+ for(const root of [chrono,related,people,hints,diff,questions]){
   if(!root.children.length)li(root,t("empty"),"");
  }
 }
@@ -128,6 +149,9 @@ function init(){
   '<p id="lco-narr-count"></p>',
   '<section class="lco-narrative-section"><h3 data-narr-copy="chronology"></h3>',
   '<ul class="lco-narrative-list" id="lco-narr-chronology"></ul></section>',
+  '<section class="lco-narrative-section"><h3 data-narr-copy="connected"></h3>',
+  '<p data-narr-copy="connectionScope"></p><p id="lco-narr-connected-count"></p>',
+  '<ul class="lco-narrative-list" id="lco-narr-related"></ul></section>',
   '<section class="lco-narrative-section"><h3 data-narr-copy="people"></h3>',
   '<ul class="lco-narrative-list" id="lco-narr-people"></ul></section>',
   '<section class="lco-narrative-section"><h3 data-narr-copy="peopleHints"></h3>',
