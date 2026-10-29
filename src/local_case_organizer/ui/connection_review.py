@@ -83,9 +83,13 @@ def reviewed_document_hints(selected_ids: set[str] | None = None) -> dict[str, o
         record = reviewed.get(group_id)
         group["group_id"] = group_id
         group["source_signature"] = signature
+        # Restricted handoffs must not reveal that a broader, nonselected
+        # group was previously reviewed. Only exact matching selected evidence
+        # can inherit a decision; otherwise show a neutral pending status.
         group["status"] = (
             "pending_review" if record is None
             else record["review_status"] if record["source_signature"] == signature
+            else "pending_review" if selected_ids is not None
             else "recheck_required"
         )
         group["reviewed_at"] = (
