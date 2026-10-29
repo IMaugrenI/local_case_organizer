@@ -21,6 +21,7 @@ from local_case_organizer.register.store import read_register_rows
 
 _MODEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,99}$")
 _SHA = re.compile(r"^[0-9a-f]{64}$")
+_TOKEN = re.compile(r"^[A-Za-z0-9_-]{1,60}$")
 _LOCK = Lock()
 _MAX_ITEMS = 300
 
@@ -97,7 +98,8 @@ def _eligible_rows():
     return candidates
 
 
-def analyze_next_local_source(model: str, *, retry_failed: bool = False) -> dict[str, object]:
+def analyze_next_local_source(model: str, *, retry_failed: bool = False,
+                              run_token: str = "") -> dict[str, object]:
     """Review one remaining indexed source, never an arbitrary local path.
 
     An unsuccessful source is recorded as failed and not retried automatically.
@@ -105,6 +107,10 @@ def analyze_next_local_source(model: str, *, retry_failed: bool = False) -> dict
     """
     if type(retry_failed) is not bool:
         raise ValueError("Invalid retry setting")
+    if not isinstance(run_token, str) or (run_token and not _TOKEN.fullmatch(run_token)):
+        raise ValueError("Invalid analysis run token")
+    if retry_failed and not run_token:
+        raise ValueError("Retry requires a run token")
     if not _LOCK.acquire(blocking=False):
         raise ValueError("Another case-wide local AI review is active")
     try:
@@ -119,7 +125,9 @@ def analyze_next_local_source(model: str, *, retry_failed: bool = False) -> dict
             if old and old["sha256"] == digest:
                 if old["status"] == "done":
                     continue
-                if old["status"] == "failed" and not retry_failed:
+                if old["status"] == "failed" and (
+                    not retry_failed or old.get("attempt_token") == run_token
+                ):
                     continue
             try:
                 result = propose_with_local_model(model, [fid])
@@ -129,7 +137,8 @@ def analyze_next_local_source(model: str, *, retry_failed: bool = False) -> dict
                 # Do not write model error details, source passages or prompts.
                 status = "failed"
                 last_error = True
-            records[fid] = {"sha256": digest, "status": status}
+            records[fid] = {"sha256": digest, "status": status,
+                            "attempt_token": run_token}
             processed = 1
             _save(path, records)
             break
@@ -145,7 +154,12 @@ def analyze_next_local_source(model: str, *, retry_failed: bool = False) -> dict
             else:
                 counts[row["status"]] += 1
         if retry_failed:
-            counts["remaining"] += counts["failed"]
+            counts["remaining"] += sum(
+                1 for fid, digest in rows
+                if (records.get(fid, {}).get("sha256") == digest
+                    and records[fid].get("status") == "failed"
+                    and records[fid].get("attempt_token") != run_token)
+            )
         return {
             "total": len(rows), **counts, "processed_in_step": processed,
             "new_pending_suggestions": added,
