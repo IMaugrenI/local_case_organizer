@@ -22,6 +22,12 @@ from local_case_organizer.timeline.suggestions import propose_events
 _DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _MAX_DATES = 80
 _MAX_PEOPLE = 60
+_MAX_PEOPLE_HINTS = 40
+_ROLE_LINE = re.compile(
+    r"(?im)^[ \\t]*(Kläger|Klägerin|Beklagter|Beklagte|Zeuge|Zeugin|"
+    r"Absender|Empfänger|Ansprechpartner|Sachbearbeiter|Firma|Gericht)"
+    r"[ \\t]*:[ \\t]*([^\\r\\n]{2,100})[ \\t]*$"
+)
 _MAX_DISCREPANCIES = 20
 _MAX_QUESTIONS = 9
 
@@ -59,6 +65,41 @@ def _quote_supported(claim: dict[str, str], cache: dict[str, dict | None]) -> bo
         str(page.get("page")) == page_id and quote in str(page.get("text", ""))
         for page in index["pages"]
     )
+
+
+def _candidate_participants(scope: set[str], names: dict[str, str]) -> list[dict[str, object]]:
+    """Only extract explicitly ROLE-LABELLED lines from verified local sources.
+
+    A label in an untrusted document is not proof of identity or legal role.
+    No name guessing, no fuzzy merging and no entity store writes.
+    """
+    candidates: list[dict[str, object]] = []
+    seen: set[tuple[str, int, str, str]] = set()
+    for file_id in sorted(scope)[:60]:
+        try:
+            doc = get_indexed(file_id, verify_original=True)
+        except (ValueError, OSError, TypeError):
+            continue
+        for page in doc["pages"][:2]:
+            for match in _ROLE_LINE.finditer(str(page["text"])[:6000]):
+                role = _short(match.group(1), 35)
+                name = _short(match.group(2), 100)
+                if len(name) < 2 or any(ord(ch) < 32 for ch in name):
+                    continue
+                key = (file_id, int(page["page"]), role.casefold(), name.casefold())
+                if key in seen:
+                    continue
+                seen.add(key)
+                candidates.append({
+                    "name": name, "role_as_written": role,
+                    "file_id": file_id, "original_name": names.get(file_id, ""),
+                    "page": int(page["page"]),
+                    "source_quote": _short(match.group(0).strip(), 140),
+                    "status": "source_label_unverified",
+                })
+                if len(candidates) >= _MAX_PEOPLE_HINTS:
+                    return candidates
+    return candidates
 
 
 def case_narrative(selected_ids: set[str] | None = None) -> dict[str, object]:
@@ -124,6 +165,7 @@ def case_narrative(selected_ids: set[str] | None = None) -> dict[str, object]:
                                    str(row["file_ids"]), str(row["event_id"])))
     timeline_total = len(timeline)
 
+    participant_hints = _candidate_participants(scope, names)
     participants: list[dict[str, object]] = []
     for row in read_entity_rows():
         linked = _links(row.get("linked_file_ids", ""))
@@ -197,7 +239,7 @@ def case_narrative(selected_ids: set[str] | None = None) -> dict[str, object]:
     if differences:
         question("value_differences", "Wie erklären sich die unterschiedlich angegebenen Werte zu demselben manuell zugeordneten Thema?",
                  f"{len(differences)} mögliche(r) Abweichung(en) in quellengebundenen Aussagen")
-    if not participants and relevant:
+    if not participants and not participant_hints and relevant:
         question("participants", "Welche Personen und Organisationen sind beteiligt und welche Dokumente belegen ihre Rolle?",
                  "Keine manuell quellenverknüpften Beteiligten vorhanden")
     if relevant and len(relevant) > len({fid for row in timeline for fid in row["file_ids"]}):
@@ -212,11 +254,13 @@ def case_narrative(selected_ids: set[str] | None = None) -> dict[str, object]:
             "documents": len(relevant), "chronology_items": timeline_total,
             "date_mentions_unverified": suggested_dates,
             "operator_events": manual_total, "participants": len(participants),
+            "participant_hints_unverified": len(participant_hints),
             "potential_value_differences": len(differences),
             "open_questions": len(questions),
         },
         "chronology": timeline[:_MAX_DATES],
         "participants": participants,
+        "participant_hints": participant_hints,
         "potential_differences": differences,
         "open_questions": questions,
         "source_names": names,
@@ -266,6 +310,14 @@ def write_case_narrative(export_dir: Path, selected_ids: set[str]) -> Path:
     for row in result["participants"]:
         lines.append("- " + _md(row["name"], 160) + " · " + _md(row["role"], 90)
                      + " (Quellen: " + ", ".join(_md(x, 110) for x in row["file_ids"]) + ")")
+    lines.extend(["", "## Mögliche Beteiligte aus beschrifteten Quellzeilen (ungeprüft)", ""])
+    if not result["participant_hints"]:
+        lines.append("- Keine ausdrücklich beschrifteten Beteiligtenhinweise gefunden.")
+    for row in result["participant_hints"]:
+        lines.append("- " + _md(row["role_as_written"], 35) + ": "
+                     + _md(row["name"], 100) + " (Quelle: "
+                     + _md(row["file_id"], 110) + ", Seite " + str(row["page"])
+                     + "; Zitat: " + _md(row["source_quote"], 140) + ")")
     lines.extend(["", "## Mögliche Wertabweichungen – keine bewiesenen Widersprüche", ""])
     if not result["potential_differences"]:
         lines.append("- Keine quellenverifizierten, manuell gruppierten Wertabweichungen festgestellt.")
