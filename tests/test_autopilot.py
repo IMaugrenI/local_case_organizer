@@ -103,6 +103,32 @@ def test_pdf_date_suggestions_use_verified_indexed_pages_only(tmp_path, monkeypa
     assert any(w["file_id"] == row["file_id"] for w in after["warnings"])
 
 
+def test_autopilot_resumes_multiple_batches_and_separates_cases(tmp_path, monkeypatch):
+    from local_case_organizer.cases import create_case, using_case
+
+    monkeypatch.setattr(paths, "get_repo_root", lambda: tmp_path)
+    create_case(tmp_path, "synthetic-a", "Synthetic A")
+    create_case(tmp_path, "synthetic-b", "Synthetic B")
+    with using_case("synthetic-a"):
+        area = paths.create_local_workspace()
+        for index in range(10):
+            (area.inbox_dir / ("text-%02d.txt" % index)).write_text(
+                "Sample %d" % index, encoding="utf-8")
+        assert quick_organize_inbox()["imported_files"] == 10
+        assert process_autopilot()["indexed"] == 4
+        assert process_autopilot()["indexed"] == 8
+        third = process_autopilot()
+        assert third["indexed"] == 10
+        assert third["remaining"] == 0
+        assert process_autopilot()["processed_in_batch"] == 0
+        assert (area.working_dir / "autopilot_state.json").exists()
+    with using_case("synthetic-b"):
+        assert autopilot_status()["total"] == 0
+        assert autopilot_status()["indexed"] == 0
+        area_b = paths.create_local_workspace()
+        assert not (area_b.working_dir / "autopilot_state.json").exists()
+
+
 def test_processing_journal_refuses_symlink_and_preserves_target(tmp_path, monkeypatch):
     area = _local(tmp_path, monkeypatch)
     outside = tmp_path / "outside.json"
