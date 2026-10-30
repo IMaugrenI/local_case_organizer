@@ -20,6 +20,7 @@ from local_case_organizer.ui.quick_intake import quick_organize_inbox
 from local_case_organizer.ui.autopilot import autopilot_status, process_autopilot
 from local_case_organizer.ui.case_briefing import case_briefing
 from local_case_organizer.ui.case_coverage import case_coverage
+from local_case_organizer.ui.review_workflow import review_workflow, create_task_for_review
 from local_case_organizer.ui.case_narrative import case_narrative
 from local_case_organizer.ui.connection_review import review_connection
 from local_case_organizer.local_model import installed_local_models, propose_with_local_model
@@ -1573,6 +1574,9 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
             if parsed.path == "/api/case-briefing":
                 self._send(200, "application/json; charset=utf-8", _json_bytes(case_briefing()))
                 return
+            if parsed.path == "/api/review-workflow":
+                self._send(200, "application/json; charset=utf-8", _json_bytes(review_workflow()))
+                return
             if parsed.path == "/api/case-coverage":
                 self._send(200, "application/json; charset=utf-8", _json_bytes(case_coverage()))
                 return
@@ -1672,6 +1676,10 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
                     body.get("model"), retry_failed=body.get("retry_failed") is True,
                     run_token=body.get("run_token", ""),
                 )
+            elif parsed.path == "/api/create-review-task":
+                body = _read_json_body(self)
+                payload = create_task_for_review(body.get("kind"), body.get("ref"),
+                                                 body.get("token"))
             elif parsed.path == "/api/review-connection":
                 body = _read_json_body(self)
                 payload = review_connection(body.get("group_id"), body.get("source_signature"),
