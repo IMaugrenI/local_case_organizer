@@ -299,3 +299,30 @@ Target:
   **nicht ermittelbar**; keine Tatsachenbewertung, Rechtsberatung,
   selbstständige Freigabe oder Modifikation des Dossier-Exports.
 - Entwicklungsnachweise sind von Zielsystem-/Betreiberabnahme zu trennen.
+
+## A14 – Prüfaufgaben mit Quellen- und Fragenbezug (Entwicklungsbranch)
+
+- Im vorhandenen lokalen Browser können aus **aktuell angebotenen** offenen
+  Dokument-, Claim- und Verknüpfungsprüfungen sowie fallbezogenen offenen
+  Organisationsfragen **nach ausdrücklicher Bestätigung** Aufgaben erstellt
+  werden. Die Anzeige ist begrenzt; Nichtanzeige beweist keine Erledigung.
+- Der bestehende Aufgaben-Store `data/register/tasks.csv` und sein
+  metadatenbasiertes Änderungsjournal bleiben die alleinige Datenhaltung.
+  Drei optionale Spalten (`review_kind`, `review_ref`, `review_token`)
+  verknüpfen Aufgaben mit ihrem ursprünglichen Prüfkontext. Bestehende
+  Aufgaben-CSV-Dateien bleiben lesbar und werden beim nächsten regulären
+  Schreiben ohne Verlust vorhandener Einträge erweitert.
+- Der Server validiert Typ, Referenz und aktuellen SHA-256-Kontext erneut.
+  Doppelte offene Aufgaben für denselben Prüfpunkt werden vermieden.
+  Bereits geschlossene Aufgaben dürfen durch ausdrückliche Bedienhandlung
+  neu erstellt werden.
+- Dokumentaufgaben berücksichtigen die gegen das Original geprüfte
+  Abdeckungsstufe und die registrierte SHA-256. Geänderte oder nicht mehr
+  sichtbare Prüfkontexte erscheinen als Hinweis zur erneuten manuellen
+  Betrachtung; Status oder Aufgabentext werden nicht stillschweigend geändert.
+- Die Umsetzung erstellt **keine** Termine, Erinnerungen, Rechtsfristen,
+  fachlichen Aussagen, Quellenfreigaben oder Exporte. Eine auf `done`
+  gestellte Aufgabe führt ausdrücklich zu keiner Review-Zustandsänderung.
+- Das Fall-Scope bleibt verbindlich. Andere Fälle, unabhängige Aufgaben,
+  Originale, KI-Vorschläge und die externe Anwalt-Übergabe werden nicht verändert.
+- GitHub-Tests sind Entwicklungsnachweise, keine Betreiber-/Runtime-Abnahme.
