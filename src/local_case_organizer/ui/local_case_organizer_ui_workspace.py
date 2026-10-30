@@ -79,6 +79,12 @@ const de={
  qualityBlocked:"Ein ausgewähltes Original ist nicht sicher lesbar oder verändert. Export nicht starten.",
  qualityApprove:"Es gibt {n} organisatorische Prüfhinsweise. Trotzdem ein Paket mit den geprüften Auswahlgrenzen erstellen? Es wird nichts versendet.",
  qualityLoadError:"Übergabeprüfung konnte nicht geladen werden.",
+ qualityCode_verified:"Original unverändert",qualityCode_missing_original:"Ausgewähltes Original fehlt",
+ qualityCode_missing_provenance:"Quellennachweis fehlt",qualityCode_hash_mismatch:"Ausgewähltes Original verändert",
+ qualityCode_unsafe_original:"Originalpfad nicht sicher prüfbar",
+ qualityCode_unsupported_selected_claims:"Aussagen ohne aktuellen Quellenbeleg werden ausgeschlossen",
+ qualityCode_selected_document_reviews_pending:"Ausgewählte Dokumente noch nicht manuell geprüft",
+ qualityCode_preview_not_all_sources_scanned:"Vorschau hat nicht alle ausgewählten Quellen geprüft",
  exportConfirm:"Lokales Übergabepaket aus {n} ausgewählten Dokumenten erstellen? Es wird nichts versendet.",
  exportNone:"Bitte zuerst im Abschnitt „Dokumente bearbeiten“ mindestens ein Dokument markieren.",
  exportDone:"Übergabepaket erstellt. Keine externe Übertragung.",
@@ -120,6 +126,12 @@ const en={
  qualityBlocked:"A selected original is changed or unavailable. Export cannot proceed.",
  qualityApprove:"There are {n} organizational review notices. Still create the locally selected package? Nothing is sent.",
  qualityLoadError:"Unable to read handoff quality preview.",
+ qualityCode_verified:"Original unchanged",qualityCode_missing_original:"Selected original is missing",
+ qualityCode_missing_provenance:"Source provenance missing",qualityCode_hash_mismatch:"Selected original changed",
+ qualityCode_unsafe_original:"Original path cannot be verified safely",
+ qualityCode_unsupported_selected_claims:"Unverifiable claims will be excluded",
+ qualityCode_selected_document_reviews_pending:"Selected documents still await manual review",
+ qualityCode_preview_not_all_sources_scanned:"Not every selected source was checked in the preview",
  exportConfirm:"Create a local handoff package from {n} selected documents? Nothing is transmitted.",
  exportNone:"Please select at least one document in Manage documents first.",
  exportDone:"Handoff package created; nothing transmitted.",
@@ -303,7 +315,7 @@ async function loadHandoffQuality(){
  });
  list.replaceChildren();
  for(const warning of (report.warnings||[]).slice(0,30)){
-  const li=newNode("li",String(warning.code||"")+(" · "+String(warning.file_id||""))+
+  const li=newNode("li",t("qualityCode_"+String(warning.code||""))+(" · "+String(warning.file_id||""))+
    (warning.count?" · "+String(warning.count):""));
   list.append(li);
  }
