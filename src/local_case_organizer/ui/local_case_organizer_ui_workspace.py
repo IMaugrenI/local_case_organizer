@@ -73,6 +73,12 @@ const de={
  entityName:"Name",entityType:"Art / Rolle (optional)",entityNotes:"Notizen",addEntity:"Eintrag hinzufügen",entityAdded:"Eintrag gespeichert.",noEntities:"Noch keine Personen oder Organisationen.",
  handoff:"Übergabe erstellen",handoffHelp:"Nur bewusst ausgewählte Unterlagen kommen in das Übergabepaket. Die Erstellung und jede spätere Weitergabe bleiben deine Entscheidung.",
  exportPreview:"Ausgewählte Dokumente: {n}",buildExport:"Übergabepaket lokal erstellen",openExports:"Exportordner öffnen",
+ qualityCheck:"Übergabe vorab prüfen",qualityIntro:"Lokale Vorschau: nur ausgewählte Originale und deren Arbeitsdaten. Keine Aussage zur vollständigen Akte oder rechtlichen Beweiskraft.",
+ qualityStats:"{verified} von {inspected} Originalen hashgeprüft · {unscanned} nicht gescannt · {pending} offene Dokumentprüfungen · {claims} nicht quellengeprüfte Aussagen ausgeschlossen",
+ qualityWarning:"Prüfhinweise ({n}):",qualityNone:"Keine Warnhinweise im geprüften Ausschnitt. Das beweist keine Vollständigkeit.",
+ qualityBlocked:"Ein ausgewähltes Original ist nicht sicher lesbar oder verändert. Export nicht starten.",
+ qualityApprove:"Es gibt {n} organisatorische Prüfhinsweise. Trotzdem ein Paket mit den geprüften Auswahlgrenzen erstellen? Es wird nichts versendet.",
+ qualityLoadError:"Übergabeprüfung konnte nicht geladen werden.",
  exportConfirm:"Lokales Übergabepaket aus {n} ausgewählten Dokumenten erstellen? Es wird nichts versendet.",
  exportNone:"Bitte zuerst im Abschnitt „Dokumente bearbeiten“ mindestens ein Dokument markieren.",
  exportDone:"Übergabepaket erstellt. Keine externe Übertragung.",
@@ -108,6 +114,12 @@ const en={
  entityName:"Name",entityType:"Type / role (optional)",entityNotes:"Notes",addEntity:"Add entry",entityAdded:"Entry saved.",noEntities:"No people or institutions yet.",
  handoff:"Prepare handoff",handoffHelp:"Only manually selected originals are added to a handoff package. Creating or sharing it requires your decision.",
  exportPreview:"Selected documents: {n}",buildExport:"Create local handoff package",openExports:"Open export folder",
+ qualityCheck:"Check handoff before creating",qualityIntro:"Local preview: selected originals and related working data only. Not a full-case or legal proof assessment.",
+ qualityStats:"{verified} of {inspected} originals hash-checked · {unscanned} not scanned · {pending} documents awaiting review · {claims} unsupported claims excluded",
+ qualityWarning:"Review notices ({n}):",qualityNone:"No notices in the checked sample. This does not prove completeness.",
+ qualityBlocked:"A selected original is changed or unavailable. Export cannot proceed.",
+ qualityApprove:"There are {n} organizational review notices. Still create the locally selected package? Nothing is sent.",
+ qualityLoadError:"Unable to read handoff quality preview.",
  exportConfirm:"Create a local handoff package from {n} selected documents? Nothing is transmitted.",
  exportNone:"Please select at least one document in Manage documents first.",
  exportDone:"Handoff package created; nothing transmitted.",
@@ -279,6 +291,25 @@ function refreshExportPreview(){
  const root=el("lco-ws-export-count");
  if(root)root.textContent=fmt("exportPreview",{n:cachedDocs.filter(row=>row.selected_for_export==="yes").length});
 }
+async function loadHandoffQuality(){
+ const report=await request("/api/dossier-preview");
+ const summary=el("lco-ws-quality-summary");
+ const list=el("lco-ws-quality-warnings");
+ if(!summary||!list)return report;
+ summary.textContent=fmt("qualityStats",{
+  verified:report.verified_originals||0,inspected:report.inspected_originals||0,
+  unscanned:report.not_scanned||0,pending:report.manual_review_pending_in_scan||0,
+  claims:report.claims_excluded_unverifiable||0
+ });
+ list.replaceChildren();
+ for(const warning of (report.warnings||[]).slice(0,30)){
+  const li=newNode("li",String(warning.code||"")+(" · "+String(warning.file_id||""))+
+   (warning.count?" · "+String(warning.count):""));
+  list.append(li);
+ }
+ if(!list.children.length)list.append(newNode("li",t("qualityNone")));
+ return report;
+}
 function renderSuggestions(){
  const root=el("lco-ws-suggestions");root.replaceChildren();
  if(!suggestions.length){root.append(newNode("li",t("none")));return;}
@@ -362,13 +393,22 @@ function bind(){
   }catch(error){console.warn(error);message("lco-ws-entity-msg","error","error")}
   finally{button.disabled=false}
  });
+ bindButton("lco-ws-quality-check",async()=>{
+  try{await loadHandoffQuality()}
+  catch(error){console.warn(error);el("lco-ws-quality-summary").textContent=t("qualityLoadError")}
+ });
  bindButton("lco-ws-export",async()=>{
   try{
-   // Read current selection from disk without replacing unsaved note inputs.
-   const summary=await request("/api/status");
-   const selected=Number(summary.summary?.selected_export_count||0);
+   // Re-read selected sources and integrity immediately before user confirmation.
+   const quality=await loadHandoffQuality();
+   const selected=Number(quality.selected_documents||0);
    if(!selected){message("lco-ws-export-msg","exportNone","error");return}
+   if(quality.export_blocked_in_scanned_sources){
+    message("lco-ws-export-msg","qualityBlocked","error");return;
+   }
    if(!window.confirm(fmt("exportConfirm",{n:selected})))return;
+   if((quality.warnings||[]).length &&
+      !window.confirm(fmt("qualityApprove",{n:(quality.warnings||[]).length})))return;
    await request("/api/export-package",{});
    message("lco-ws-export-msg","exportDone","ok");
   }catch(error){console.warn(error);message("lco-ws-export-msg","error","error")}
@@ -444,6 +484,10 @@ function init(){
  '<ul class="lco-ws-list" id="lco-ws-entity-list"></ul></div></details>',
  '<details class="lco-ws-panel" id="lco-ws-handoff"><summary data-ws-copy="handoff"></summary><div class="lco-ws-body">',
  '<p data-ws-copy="handoffHelp"></p><p id="lco-ws-export-count"></p>',
+ '<p data-ws-copy="qualityIntro"></p>',
+ '<button type="button" class="secondary" id="lco-ws-quality-check" data-ws-copy="qualityCheck"></button>',
+ '<p id="lco-ws-quality-summary" role="status" aria-live="polite"></p>',
+ '<ul id="lco-ws-quality-warnings" class="lco-ws-list"></ul>',
  '<div class="lco-ws-btns"><button type="button" id="lco-ws-export" data-ws-copy="buildExport"></button>',
  '<button type="button" id="lco-ws-open-exports" class="secondary" data-ws-copy="openExports"></button></div>',
  '<p class="lco-ws-feedback" id="lco-ws-export-msg" aria-live="polite"></p></div></details>',
