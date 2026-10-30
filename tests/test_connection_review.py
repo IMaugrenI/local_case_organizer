@@ -77,6 +77,23 @@ def test_changed_original_invalidates_review_and_rejects_stale_write(tmp_path, m
     assert case_narrative()["case_story_sections"][0]["review_status"] == "recheck_required"
 
 
+def test_registered_source_hash_drift_invalidates_accepted_connection(tmp_path, monkeypatch):
+    _workspace, docs = _sources(tmp_path, monkeypatch)
+    group = reviewed_document_hints()["groups"][0]
+    _review()
+    rows = read_register_rows()
+    for row in rows:
+        if row["file_id"] == docs["klage.txt"]["file_id"]:
+            row["sha256"] = "e" * 64
+    write_register_rows(rows)
+    changed = reviewed_document_hints()["groups"][0]
+    assert changed["group_id"] == group["group_id"]
+    assert changed["source_signature"] != group["source_signature"]
+    assert changed["status"] == "recheck_required"
+    with pytest.raises(ValueError, match="changed"):
+        review_connection(group["group_id"], group["source_signature"], "dismissed")
+
+
 def test_new_group_member_requires_new_review(tmp_path, monkeypatch):
     workspace, docs = _sources(tmp_path, monkeypatch)
     old = reviewed_document_hints()["groups"][0]
