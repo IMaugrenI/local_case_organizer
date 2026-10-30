@@ -40,7 +40,7 @@ bash scripts/linux/start_here.sh
 ### Windows PowerShell
 
 ```powershell
-pwsh ./scripts/windows/start_here.ps1
+.\scripts\windows\start_here.ps1
 ```
 
 ### macOS
@@ -236,24 +236,30 @@ profiles/default/
 Frühes V1-Scaffold mit funktionierendem Python-first Befehlsweg, lokaler Browser-UI, sortierten Doku-Ordnern und sortierter Cross-Platform-Launcher-Struktur.
 
 
-## Ausbaustand A1–A10 auf dem Entwicklungsbranch
+## Entwicklungsstand und Freigabegrenze
 
-Der Entwurfs-PR #3 ergänzt die Fallakten um isolierte Arbeitsbereiche,
-Hash-Integrität, Belegverknüpfungen, optionale PDF-/OCR-Indizierung,
-lokale Suche, quellengebundene Aussagen, Vergleichshinweise, Audit-Journal,
-Fallauswahl im Browser, Dossier-Export und manuelle Wiedervorlagen.
+**A1–A10 wurden am 25.10.2026 über PR #3 in `main` integriert.**
+A11–A16 werden weiterhin in **Draft-PR #4** entwickelt: kontrollierte
+Dokumentverknüpfungen, Quellen-Prüf-Cockpit, Aktenabdeckung, explizite
+Prüfaufgaben, ausgewählte Dossierübergabe und bessere Dokumentnavigation.
 
-**Optionale KI-Integration:** Eine lokale Übergabeschnittstelle erstellt
-auf Wunsch begrenzte Kontextpakete aus indizierten, noch überprüften
-Quellen. Externe lokale KI-Vorschläge müssen bewusst importiert und
-einzeln als Entwurf bestätigt werden. **Kein eingebauter Modellaufruf**
-und keine automatisch akzeptierten Erkenntnisse.
+Die vorhandene lokale Browserseite zeigt die registrierten Dokumente
+auch bei größeren Akten über Filter und Seitenwechsel. Vor einer
+Übergabe werden ausgewählte Quellen erneut überprüft. Das beweist
+weder tatsächliche Aktenvollständigkeit noch rechtliche Richtigkeit.
 
-Die vorhandenen Python- und Betriebssystem-Starter bleiben verbindlich.
-Originaldokumente bleiben unverändert; private Arbeitsdateien werden
-nicht auf GitHub hochgeladen. OCR setzt vorhandene optionale lokale
-Werkzeuge voraus und wird nicht automatisch installiert.
+**Optionale lokale KI:** Nur nach ausdrücklicher Betreiberhandlung
+können begrenzte, quellennachweisbare Textauszüge an einen bereits
+laufenden Ollama-Dienst auf `127.0.0.1` gehen. Ohne Freigabe gibt es
+keinen KI-Aufruf. Alle Vorschläge bleiben menschlich zu prüfen; kein
+automatisches Übernehmen in bestätigte Tatsachen.
 
-Siehe [Ausbau-Übergabe](docs/roadmap/expansion_handoff.md).
+Windows, macOS und Linux nutzen weiterhin ihre bestehenden Starter.
+Installation von OCR-Werkzeugen und lokalen Modellen ist optional,
+wird nicht automatisch ausgelöst. Alle privaten Fälle bleiben
+außerhalb von Git.
 
-**Entwicklungsvorschau, nicht in main und keine Gesamtfreigabe.**
+[Entwicklungsübersicht](docs/roadmap/productization_roadmap.md) ·
+[Verbindliche Release-Checkliste](docs/release/release_checklist.md)
+
+**Noch keine Release- oder Gerätefreigabe. DOM entscheidet GO/NO-GO.**

@@ -18,6 +18,7 @@ from local_case_organizer.register.store import read_register_rows
 TASK_FIELDS = [
     "task_id", "title", "due_date", "status", "priority", "linked_file_ids",
     "note", "created_at_utc", "updated_at_utc",
+    "review_kind", "review_ref", "review_token",
 ]
 STATUSES = {"open", "in_progress", "done", "cancelled"}
 PRIORITIES = {"low", "normal", "high"}
@@ -94,9 +95,57 @@ def add_task(title: str, due_date: str = "", priority: str = "normal",
             "title": title.strip(), "due_date": due_date, "status": "open",
             "priority": priority, "linked_file_ids": references, "note": note,
             "created_at_utc": now, "updated_at_utc": now,
+            "review_kind": "", "review_ref": "", "review_token": "",
         }
         _save([*existing, task])
         return task
+
+
+def add_review_task(title: str, review_kind: str, review_ref: str,
+                    review_token: str, linked_file_ids: str = "",
+                    note: str = "") -> dict[str, object]:
+    """Create one explicitly requested, auditable task for an existing review.
+
+    This method only persists a validated task snapshot. The caller MUST
+    revalidate that the requested review item still exists immediately before
+    calling. A task completion never approves a source claim or a case fact.
+    The task CSV gains optional columns while retaining older CSV rows.
+    """
+    if review_kind not in {"document", "claim", "connection", "question"}:
+        raise ValueError("Unknown review task type")
+    if (not isinstance(review_ref, str)
+            or not re.fullmatch(r"[a-zA-Z0-9_-]{1,110}", review_ref)):
+        raise ValueError("Invalid review item ID")
+    if (not isinstance(review_token, str)
+            or not re.fullmatch(r"[a-f0-9]{64}", review_token)):
+        raise ValueError("Invalid review context token")
+    if not isinstance(title, str) or not 3 <= len(title.strip()) <= 180:
+        raise ValueError("Review task title must have 3–180 characters")
+    if not isinstance(note, str) or len(note) > 1200:
+        raise ValueError("Review task note is too long")
+    references = _links(linked_file_ids)
+    with _LOCK:
+        rows = read_tasks()
+        for row in rows:
+            if (row.get("review_kind") == review_kind
+                    and row.get("review_ref") == review_ref
+                    and row.get("status") not in {"done", "cancelled"}):
+                # Existing work is retained even when its source context has
+                # changed. No duplicate task, no implicit endorsement.
+                return {"task": dict(row), "created": False}
+        if len(rows) >= MAX_TASKS:
+            raise ValueError("Task limit reached")
+        now = datetime.now(UTC).isoformat()
+        task = {
+            "task_id": "TSK-" + uuid4().hex[:16], "title": title.strip(),
+            "due_date": "", "status": "open", "priority": "normal",
+            "linked_file_ids": references, "note": note,
+            "created_at_utc": now, "updated_at_utc": now,
+            "review_kind": review_kind, "review_ref": review_ref,
+            "review_token": review_token,
+        }
+        _save([*rows, task])
+        return {"task": task, "created": True}
 
 
 def update_task(task_id: str, status: str) -> dict:

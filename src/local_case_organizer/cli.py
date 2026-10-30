@@ -110,9 +110,9 @@ def _count_directories(path: Path) -> int:
 
 
 def _check_writable(path: Path) -> bool:
-    path.mkdir(parents=True, exist_ok=True)
     probe = path / ".write_probe"
     try:
+        path.mkdir(parents=True, exist_ok=True)
         probe.write_text("ok", encoding="utf-8")
         probe.unlink()
         return True
@@ -195,6 +195,7 @@ def cmd_doctor() -> int:
         "platform": platform.platform(),
         "cwd": os.getcwd(),
         "checks": {
+            "python_supported": sys.version_info >= (3, 11),
             "repo_root_exists": paths.repo_root.exists(),
             "run_py_exists": (paths.repo_root / "run.py").exists(),
             "src_package_exists": (paths.repo_root / "src" / "local_case_organizer").exists(),
@@ -206,8 +207,9 @@ def cmd_doctor() -> int:
             "logs_dir_writable": _check_writable(paths.logs_dir),
         },
     }
+    doctor["ready"] = all(doctor["checks"].values())
     print(json.dumps(doctor, indent=2))
-    return 0
+    return 0 if doctor["ready"] else 1
 
 
 

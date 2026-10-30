@@ -7,6 +7,9 @@ from datetime import datetime
 from pathlib import Path
 
 from local_case_organizer.claims import read_claims
+from local_case_organizer.export.quality import (
+    _within_selection, handoff_quality, verified_selected_claim_ids,
+)
 from local_case_organizer.export.helpers import load_provenance_index
 from local_case_organizer.paths import get_workspace_paths
 from local_case_organizer.register.store import read_register_rows
@@ -32,14 +35,10 @@ def _date_sort(row: dict) -> tuple:
 
 
 def dossier_preview() -> dict:
-    selected = {str(row.get("file_id", "")) for row in read_register_rows()
-                if str(row.get("selected_for_export", "")).lower() == "yes"}
-    return {
-        "selected_documents": len(selected),
-        "entered_timeline_rows": sum(bool(row.get("event_title")) for row in read_timeline_rows()),
-        "claims_in_selection": sum(row.get("file_id") in selected for row in read_claims()),
-        "note": "Counts are a preview. Source-integrity checks happen during export.",
-    }
+    preview = handoff_quality()
+    preview["entered_timeline_rows"] = preview["included_timeline_entries"]
+    preview["note"] = "Selected-only preview; originals are checked again during export. No factual or legal completeness claim."
+    return preview
 
 
 def write_dossier(export_dir: Path, selected_paths: list[str]) -> list[str]:
@@ -85,21 +84,23 @@ def write_dossier(export_dir: Path, selected_paths: list[str]) -> list[str]:
                      " / SHA-256: " + _text(record["sha256"]))
     lines.extend(["", "## Entered timeline", "",
                   "Dates and descriptions are unverified working entries.", ""])
+    selected_ids = set(ids)
     for event in sorted(read_timeline_rows(), key=_date_sort)[:1200]:
         if not str(event.get("event_title", "")).strip():
             continue
-        refs = [s.strip() for s in str(event.get("linked_file_ids", "")).split(",")]
-        bundled = [s for s in refs if s in ids]
-        if not bundled:
-            continue  # Avoid disclosing events unrelated to selected originals.
+        if not _within_selection(event, selected_ids):
+            continue
+        bundled = sorted({s.strip() for s in str(event.get("linked_file_ids", "")).split(",") if s.strip()})
         lines.append("- " + _text(event.get("event_date") or "undated") + " / " +
                      _text(event.get("event_title")) + " / status: " +
                      _text(event.get("status")) + " / included references: " +
                      _text(", ".join(bundled) or "none"))
     lines.extend(["", "## Quoted source claims", "",
                   "Reviewed status records operator review, not independent verification.", ""])
+    valid_claims = verified_selected_claim_ids(selected_ids)
     for claim in read_claims()[:1500]:
-        if claim.get("file_id") not in ids:
+        if (claim.get("file_id") not in selected_ids
+                or str(claim.get("claim_id", "")) not in valid_claims):
             continue
         lines.append("- " + _text(claim.get("claim_id")) + " / document " +
                      _text(claim.get("file_id")) + " / page " +
@@ -111,6 +112,7 @@ def write_dossier(export_dir: Path, selected_paths: list[str]) -> list[str]:
                   "- Selected originals were checked against provenance before export.",
                   "- Source statements are not proof of legal or factual conclusions.",
                   "- Unselected originals are not included as attachments.",
+                  "- Mixed-source entries and source-unverifiable claims are omitted.",
                   "- Review the export_manifest.json and ZIP checksum.",
                   ""])
     (export_dir / "DOSSIER.md").write_text("\n".join(lines), encoding="utf-8")

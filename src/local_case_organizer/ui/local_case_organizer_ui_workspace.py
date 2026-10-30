@@ -51,6 +51,7 @@ WORKSPACE_SCRIPT = r'''<script>
 const de={
  documents:"Dokumente bearbeiten",docHelp:"Ordne Dokumente ein, ergänze Notizen und wähle bewusst aus, was später in eine Übergabe darf.",
  documentEmpty:"Noch keine Dokumente im Register.",
+ docFilter:"Dokumentname, ID, Gruppe oder Notiz filtern",docPaging:"{shown} von {matched} Treffern auf Seite {page}/{pages} · {total} Dokumente insgesamt",docPrevious:"Zurück",docNext:"Weiter",docNoMatch:"Keine passenden Dokumente im Register. Filter ändern oder löschen.",
  selectAll:"Alle Dokumente markieren",selectNone:"Auswahl aufheben",
  confirmAll:"Alle {n} Dokumente für eine mögliche Übergabe markieren? Enthaltene sensible Daten vor dem Export einzeln prüfen. Es wird noch nichts versendet.",
  confirmNone:"Alle ausgewählten Dokumente für die Übergabe abwählen?",
@@ -73,6 +74,18 @@ const de={
  entityName:"Name",entityType:"Art / Rolle (optional)",entityNotes:"Notizen",addEntity:"Eintrag hinzufügen",entityAdded:"Eintrag gespeichert.",noEntities:"Noch keine Personen oder Organisationen.",
  handoff:"Übergabe erstellen",handoffHelp:"Nur bewusst ausgewählte Unterlagen kommen in das Übergabepaket. Die Erstellung und jede spätere Weitergabe bleiben deine Entscheidung.",
  exportPreview:"Ausgewählte Dokumente: {n}",buildExport:"Übergabepaket lokal erstellen",openExports:"Exportordner öffnen",
+ qualityCheck:"Übergabe vorab prüfen",qualityIntro:"Lokale Vorschau: nur ausgewählte Originale und deren Arbeitsdaten. Keine Aussage zur vollständigen Akte oder rechtlichen Beweiskraft.",
+ qualityStats:"{verified} von {inspected} Originalen hashgeprüft · {unscanned} nicht gescannt · {pending} offene Dokumentprüfungen · {claims} nicht quellengeprüfte Aussagen ausgeschlossen",
+ qualityWarning:"Prüfhinweise ({n}):",qualityNone:"Keine Warnhinweise im geprüften Ausschnitt. Das beweist keine Vollständigkeit.",
+ qualityBlocked:"Ein ausgewähltes Original ist nicht sicher lesbar oder verändert. Export nicht starten.",
+ qualityApprove:"Es gibt {n} organisatorische Prüfhinsweise. Trotzdem ein Paket mit den geprüften Auswahlgrenzen erstellen? Es wird nichts versendet.",
+ qualityLoadError:"Übergabeprüfung konnte nicht geladen werden.",
+ qualityCode_verified:"Original unverändert",qualityCode_missing_original:"Ausgewähltes Original fehlt",
+ qualityCode_missing_provenance:"Quellennachweis fehlt",qualityCode_hash_mismatch:"Ausgewähltes Original verändert",
+ qualityCode_unsafe_original:"Originalpfad nicht sicher prüfbar",
+ qualityCode_unsupported_selected_claims:"Aussagen ohne aktuellen Quellenbeleg werden ausgeschlossen",
+ qualityCode_selected_document_reviews_pending:"Ausgewählte Dokumente noch nicht manuell geprüft",
+ qualityCode_preview_not_all_sources_scanned:"Vorschau hat nicht alle ausgewählten Quellen geprüft",
  exportConfirm:"Lokales Übergabepaket aus {n} ausgewählten Dokumenten erstellen? Es wird nichts versendet.",
  exportNone:"Bitte zuerst im Abschnitt „Dokumente bearbeiten“ mindestens ein Dokument markieren.",
  exportDone:"Übergabepaket erstellt. Keine externe Übertragung.",
@@ -86,6 +99,7 @@ const de={
 const en={
  documents:"Manage documents",docHelp:"Organize documents, add notes and explicitly select files for a handoff.",
  documentEmpty:"No registered documents yet.",
+ docFilter:"Filter filename, ID, group or note",docPaging:"{shown} of {matched} matches on page {page}/{pages} · {total} documents total",docPrevious:"Previous",docNext:"Next",docNoMatch:"No matching registered documents. Change or clear the filter.",
  selectAll:"Select all documents",selectNone:"Clear selection",
  confirmAll:"Mark all {n} documents for possible handoff? Review sensitive material individually before export. Nothing is transmitted now.",
  confirmNone:"Clear all selected handoff documents?",
@@ -108,6 +122,18 @@ const en={
  entityName:"Name",entityType:"Type / role (optional)",entityNotes:"Notes",addEntity:"Add entry",entityAdded:"Entry saved.",noEntities:"No people or institutions yet.",
  handoff:"Prepare handoff",handoffHelp:"Only manually selected originals are added to a handoff package. Creating or sharing it requires your decision.",
  exportPreview:"Selected documents: {n}",buildExport:"Create local handoff package",openExports:"Open export folder",
+ qualityCheck:"Check handoff before creating",qualityIntro:"Local preview: selected originals and related working data only. Not a full-case or legal proof assessment.",
+ qualityStats:"{verified} of {inspected} originals hash-checked · {unscanned} not scanned · {pending} documents awaiting review · {claims} unsupported claims excluded",
+ qualityWarning:"Review notices ({n}):",qualityNone:"No notices in the checked sample. This does not prove completeness.",
+ qualityBlocked:"A selected original is changed or unavailable. Export cannot proceed.",
+ qualityApprove:"There are {n} organizational review notices. Still create the locally selected package? Nothing is sent.",
+ qualityLoadError:"Unable to read handoff quality preview.",
+ qualityCode_verified:"Original unchanged",qualityCode_missing_original:"Selected original is missing",
+ qualityCode_missing_provenance:"Source provenance missing",qualityCode_hash_mismatch:"Selected original changed",
+ qualityCode_unsafe_original:"Original path cannot be verified safely",
+ qualityCode_unsupported_selected_claims:"Unverifiable claims will be excluded",
+ qualityCode_selected_document_reviews_pending:"Selected documents still await manual review",
+ qualityCode_preview_not_all_sources_scanned:"Not every selected source was checked in the preview",
  exportConfirm:"Create a local handoff package from {n} selected documents? Nothing is transmitted.",
  exportNone:"Please select at least one document in Manage documents first.",
  exportDone:"Handoff package created; nothing transmitted.",
@@ -122,6 +148,9 @@ const el=id=>document.getElementById(id);
 const t=key=>(String(localStorage.getItem("local_case_organizer_ui_lang")||"de").startsWith("de")?de:en)[key]||key;
 const fmt=(key,vars={})=>Object.entries(vars).reduce((text,[name,value])=>text.replace("{"+name+"}",String(value)),t(key));
 let cachedDocs=[],timelineRows=[],taskRows=[],entityRows=[],suggestions=[];
+const DOCS_PER_PAGE=40;
+let docPage=0,docQuery="";
+const docDrafts=new Map();
 function newNode(tag,content,cls){
  const item=document.createElement(tag);if(cls)item.className=cls;
  if(content!==undefined&&content!==null)item.textContent=String(content);
@@ -172,8 +201,21 @@ function populateDocSelect(nodeId,keepValue=""){
 function renderDocs(){
  const list=el("lco-ws-doc-list");if(!list)return;
  list.replaceChildren();
+ const filtered=cachedDocs.filter(row=>[row.original_name,row.file_id,row.document_group,row.note]
+   .some(value=>String(value||"").toLocaleLowerCase().includes(docQuery)));
+ const pages=Math.max(1,Math.ceil(filtered.length/DOCS_PER_PAGE));
+ docPage=Math.min(docPage,pages-1);
+ const shown=filtered.slice(docPage*DOCS_PER_PAGE,(docPage+1)*DOCS_PER_PAGE);
+ const info=el("lco-ws-doc-page-info");
+ if(info)info.textContent=fmt("docPaging",{
+  shown:shown.length,matched:filtered.length,page:docPage+1,pages,total:cachedDocs.length
+ });
+ const prev=el("lco-ws-doc-prev"),next=el("lco-ws-doc-next");
+ if(prev)prev.disabled=docPage===0;
+ if(next)next.disabled=docPage>=pages-1;
  if(!cachedDocs.length){list.append(newNode("li",t("documentEmpty")));return;}
- for(const row of cachedDocs.slice(0,200)){
+ if(!filtered.length){list.append(newNode("li",t("docNoMatch")));return;}
+ for(const row of shown){
   const li=newNode("li"),name=newNode("strong",row.original_name||row.file_id,"lco-ws-document-title");
   const small=newNode("small",row.file_id+" · "+(row.suffix||""));
   li.append(name,small);
@@ -192,10 +234,15 @@ function renderDocs(){
   reviewLabel.append(reviewText,status);controls.append(cbLabel,reviewLabel);
   const fields=newNode("div",null,"lco-ws-doc-fields");
   const groupLabel=newNode("label"),groupText=newNode("span");groupText.dataset.wsCopy="group";
-  const group=newNode("input");group.type="text";group.maxLength=120;group.value=row.document_group||"";
+  const group=newNode("input");group.type="text";group.maxLength=120;
+  const draft=docDrafts.get(row.file_id)||{};
+  group.value=draft.group!==undefined?draft.group:row.document_group||"";
   groupLabel.append(groupText,group);
   const noteLabel=newNode("label"),noteText=newNode("span");noteText.dataset.wsCopy="note";
-  const note=newNode("textarea");note.maxLength=1200;note.value=row.note||"";
+  const note=newNode("textarea");note.maxLength=1200;
+  note.value=draft.note!==undefined?draft.note:row.note||"";
+  group.addEventListener("input",()=>docDrafts.set(row.file_id,{group:group.value,note:note.value}));
+  note.addEventListener("input",()=>docDrafts.set(row.file_id,{group:group.value,note:note.value}));
   noteLabel.append(noteText,note);fields.append(groupLabel,noteLabel);
   const save=newNode("button",t("save"),"secondary");save.type="button";save.dataset.wsCopy="save";
   const feedback=newNode("p",null,"lco-ws-feedback");
@@ -213,11 +260,11 @@ function renderDocs(){
   save.addEventListener("click",async()=>{
    if(group.value!==row.document_group)await change("document_group",group.value);
    if(note.value!==row.note)await change("note",note.value);
+   if(group.value===row.document_group && note.value===row.note)docDrafts.delete(row.file_id);
   });
   li.append(controls,fields,save,feedback);list.append(li);
  }
  localize(list);
- if(cachedDocs.length>200)list.append(newNode("li","+"+(cachedDocs.length-200)+" …"));
  for(const id of ["lco-ws-event-file","lco-ws-task-file","lco-ws-entity-file"])populateDocSelect(id);
 }
 async function loadDocs(){
@@ -279,6 +326,25 @@ function refreshExportPreview(){
  const root=el("lco-ws-export-count");
  if(root)root.textContent=fmt("exportPreview",{n:cachedDocs.filter(row=>row.selected_for_export==="yes").length});
 }
+async function loadHandoffQuality(){
+ const report=await request("/api/dossier-preview");
+ const summary=el("lco-ws-quality-summary");
+ const list=el("lco-ws-quality-warnings");
+ if(!summary||!list)return report;
+ summary.textContent=fmt("qualityStats",{
+  verified:report.verified_originals||0,inspected:report.inspected_originals||0,
+  unscanned:report.not_scanned||0,pending:report.manual_review_pending_in_scan||0,
+  claims:report.claims_excluded_unverifiable||0
+ });
+ list.replaceChildren();
+ for(const warning of (report.warnings||[]).slice(0,30)){
+  const li=newNode("li",t("qualityCode_"+String(warning.code||""))+(" · "+String(warning.file_id||""))+
+   (warning.count?" · "+String(warning.count):""));
+  list.append(li);
+ }
+ if(!list.children.length)list.append(newNode("li",t("qualityNone")));
+ return report;
+}
 function renderSuggestions(){
  const root=el("lco-ws-suggestions");root.replaceChildren();
  if(!suggestions.length){root.append(newNode("li",t("none")));return;}
@@ -300,6 +366,11 @@ function resetText(id){const node=el(id);if(node)node.value=""}
 function openPanel(id){const node=el(id);if(node){node.open=true;node.scrollIntoView({block:"start",behavior:"smooth"})}}
 function bind(){
  el("lco-ws-doc-reload").addEventListener("click",()=>loadDocs().catch(console.warn));
+ el("lco-ws-doc-filter").addEventListener("input",event=>{
+  docQuery=String(event.target.value||"").trim().toLocaleLowerCase();docPage=0;renderDocs();
+ });
+ el("lco-ws-doc-prev").addEventListener("click",()=>{if(docPage>0){docPage--;renderDocs()}});
+ el("lco-ws-doc-next").addEventListener("click",()=>{docPage++;renderDocs()});
  for(const [buttonId,mode] of [["lco-ws-select-all","all"],["lco-ws-select-none","none"]]){
   bindButton(buttonId,async()=>{
    const count=cachedDocs.length;
@@ -362,13 +433,22 @@ function bind(){
   }catch(error){console.warn(error);message("lco-ws-entity-msg","error","error")}
   finally{button.disabled=false}
  });
+ bindButton("lco-ws-quality-check",async()=>{
+  try{await loadHandoffQuality()}
+  catch(error){console.warn(error);el("lco-ws-quality-summary").textContent=t("qualityLoadError")}
+ });
  bindButton("lco-ws-export",async()=>{
   try{
-   // Read current selection from disk without replacing unsaved note inputs.
-   const summary=await request("/api/status");
-   const selected=Number(summary.summary?.selected_export_count||0);
+   // Re-read selected sources and integrity immediately before user confirmation.
+   const quality=await loadHandoffQuality();
+   const selected=Number(quality.selected_documents||0);
    if(!selected){message("lco-ws-export-msg","exportNone","error");return}
+   if(quality.export_blocked_in_scanned_sources){
+    message("lco-ws-export-msg","qualityBlocked","error");return;
+   }
    if(!window.confirm(fmt("exportConfirm",{n:selected})))return;
+   if((quality.warnings||[]).length &&
+      !window.confirm(fmt("qualityApprove",{n:(quality.warnings||[]).length})))return;
    await request("/api/export-package",{});
    message("lco-ws-export-msg","exportDone","ok");
   }catch(error){console.warn(error);message("lco-ws-export-msg","error","error")}
@@ -404,7 +484,11 @@ function init(){
  '<button type="button" id="lco-ws-select-all" class="secondary" data-ws-copy="selectAll"></button>',
  '<button type="button" id="lco-ws-select-none" class="ghost" data-ws-copy="selectNone"></button></div>',
  '<p id="lco-ws-selection-msg" class="lco-ws-feedback" role="status" aria-live="polite"></p>',
- '<ul class="lco-ws-list" id="lco-ws-doc-list"></ul></div></details>',
+ '<label><span data-ws-copy="docFilter"></span><input type="search" id="lco-ws-doc-filter" maxlength="160" autocomplete="off" style="width:100%;max-width:540px"></label>',
+ '<p id="lco-ws-doc-page-info" aria-live="polite"></p>',
+ '<ul class="lco-ws-list" id="lco-ws-doc-list"></ul>',
+ '<div class="lco-ws-btns"><button type="button" id="lco-ws-doc-prev" class="secondary" data-ws-copy="docPrevious"></button>',
+ '<button type="button" id="lco-ws-doc-next" class="secondary" data-ws-copy="docNext"></button></div></div></details>',
  '<details class="lco-ws-panel" id="lco-ws-search"><summary data-ws-copy="search"></summary><div class="lco-ws-body">',
  '<p data-ws-copy="searchHelp"></p><form id="lco-ws-search-form"><div class="lco-ws-grid">',
  '<label><span data-ws-copy="query"></span><input id="lco-ws-query" type="text" minlength="2" maxlength="100" required></label>',
@@ -444,6 +528,10 @@ function init(){
  '<ul class="lco-ws-list" id="lco-ws-entity-list"></ul></div></details>',
  '<details class="lco-ws-panel" id="lco-ws-handoff"><summary data-ws-copy="handoff"></summary><div class="lco-ws-body">',
  '<p data-ws-copy="handoffHelp"></p><p id="lco-ws-export-count"></p>',
+ '<p data-ws-copy="qualityIntro"></p>',
+ '<button type="button" class="secondary" id="lco-ws-quality-check" data-ws-copy="qualityCheck"></button>',
+ '<p id="lco-ws-quality-summary" role="status" aria-live="polite"></p>',
+ '<ul id="lco-ws-quality-warnings" class="lco-ws-list"></ul>',
  '<div class="lco-ws-btns"><button type="button" id="lco-ws-export" data-ws-copy="buildExport"></button>',
  '<button type="button" id="lco-ws-open-exports" class="secondary" data-ws-copy="openExports"></button></div>',
  '<p class="lco-ws-feedback" id="lco-ws-export-msg" aria-live="polite"></p></div></details>',
@@ -460,7 +548,7 @@ function init(){
  loadDocs().catch(error=>console.warn("Document overview unavailable",error));
  // Reuse the existing language toggle; never replace or add another switch.
  const prior=window.LCOApplyExtraCopy;
- window.LCOApplyExtraCopy=function(){if(typeof prior==="function")prior();localize(home);resetMessageTranslations();refreshExportPreview()};
+ window.LCOApplyExtraCopy=function(){if(typeof prior==="function")prior();localize(home);resetMessageTranslations();refreshExportPreview();renderDocs()};
 }
 document.addEventListener("DOMContentLoaded",init);
 })();

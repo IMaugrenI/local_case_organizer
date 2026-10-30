@@ -10,6 +10,7 @@ import re
 from pathlib import Path
 
 from local_case_organizer.claims import read_claims
+from local_case_organizer.export.quality import _within_selection, verified_selected_claim_ids
 from local_case_organizer.entities.store import read_entity_rows
 from local_case_organizer.paths import get_workspace_paths
 from local_case_organizer.timeline.suggestions import propose_events
@@ -37,6 +38,7 @@ def _csv_safe(value: object) -> str:
 
 def write_selected_tables(export_dir: Path, selection: set[str]) -> list[str]:
     """Export only selected-source rows and remove references to other IDs."""
+    valid_claims = verified_selected_claim_ids(selection)
     definitions = (
         ("document_register.csv", read_register_rows(), "file_id"),
         ("timeline.csv", read_timeline_rows(), "linked_file_ids"),
@@ -49,12 +51,13 @@ def write_selected_tables(export_dir: Path, selection: set[str]) -> list[str]:
         included = []
         for source in source_rows:
             if key == "linked_file_ids":
-                matching = _linked(source.get(key), selection)
-                if not matching:
+                if not _within_selection(source, selection):
                     continue
-                row = {**source, key: ",".join(matching)}
+                row = dict(source)
             else:
                 if str(source.get(key, "")) not in selection:
+                    continue
+                if filename == "claims.csv" and str(source.get("claim_id", "")) not in valid_claims:
                     continue
                 row = dict(source)
             included.append(row)
@@ -76,10 +79,12 @@ def write_lawyer_start_here(export_dir: Path, selection: set[str]) -> Path:
     """Write a one-page reading guide grounded only in selected file IDs."""
     rows = [row for row in read_register_rows() if row.get("file_id") in selection]
     events = [event for event in read_timeline_rows()
-              if _linked(event.get("linked_file_ids"), selection)]
-    claims = [row for row in read_claims() if row.get("file_id") in selection]
+              if _within_selection(event, selection)]
+    valid_claims = verified_selected_claim_ids(selection)
+    claims = [row for row in read_claims() if row.get("file_id") in selection
+              and str(row.get("claim_id", "")) in valid_claims]
     people = [row for row in read_entity_rows()
-              if _linked(row.get("linked_file_ids"), selection)]
+              if _within_selection(row, selection)]
     unreviewed = sum(str(row.get("review_status", "")) not in
                      {"reviewed", "selected_for_export"} for row in rows)
     lines = [
@@ -143,7 +148,9 @@ def write_lawyer_start_here(export_dir: Path, selection: set[str]) -> Path:
         "- Welche weiteren Belege oder Verfahrensunterlagen fehlen?",
         "- Sind die vom Betreiber eingetragenen Termine korrekt? Keine Fristenberechnung.", "",
         "## Grenzen und Datenschutz", "",
-        "- Nur ausdrücklich ausgewählte Originale und verknüpfte Datensätze sind enthalten.",
+        "- Nur ausdrücklich ausgewählte Originale und ausschließlich mit ihnen verknüpfte Datensätze sind enthalten.",
+        "- Gemischte Einträge mit ausgeschlossenen Quellen werden vollständig zurückgehalten.",
+        "- Nicht mehr original- und zitatgeprüfte Aussagen sind ausgeschlossen.",
         "- Nicht ausgewählte Aktenbestandteile sind bewusst ausgeschlossen.",
         "- Datums- und Wertabweichungen sind höchstens Prüfanlässe, kein Widerspruchsbeweis.",
         "- Das Paket wurde lokal erstellt und nicht automatisch versendet.",

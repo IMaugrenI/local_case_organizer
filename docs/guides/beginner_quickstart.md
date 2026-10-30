@@ -19,7 +19,7 @@ bash scripts/linux/start_here.sh
 ### Windows PowerShell
 
 ```powershell
-pwsh ./scripts/windows/start_here.ps1
+.\scripts\windows\start_here.ps1
 ```
 
 ### macOS
@@ -75,3 +75,22 @@ python run.py doctor
 ```
 
 Then read the printed checks and fix the first failing item.
+
+## Current one-page behavior
+
+After choosing a case, deliberately add or drop files in the browser. The
+organizer starts local, bounded processing only after that intentional action.
+Use **Continue processing** if a batch remains; do not repeat all imports
+manually after every drop. Local search for images needs separate opt-in OCR,
+and model-based suggestions require a separate explicit approval.
+
+The document register now offers a filter and pages of 40 entries, including
+records after the former first-200 display boundary. Unsaved note/group drafts
+survive an in-page filter or page change, but save them explicitly.
+
+Before a handoff, explicitly choose the documents and open **Check handoff**
+to see any missing/changed original, unchecked claim or pending manual review.
+The export remains local until you choose to share the ZIP.
+
+See [Release checklist](../release/release_checklist.md) for remaining actual
+device checks. GitHub CI alone is not a platform release approval.

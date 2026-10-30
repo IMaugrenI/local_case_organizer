@@ -231,3 +231,156 @@ Target:
 - Reservierte Kennung \`legacy-default\` kann nicht als zusätzliche Fallakte
   erzeugt werden, um die Legacy-Auswahl nicht zu überlagern.
 - Betriebs-/Gesamtabnahme wie vereinbart erst nach dem Ausbaumodus.
+
+## A11 – Kontrollierte organisatorische Dokumentverknüpfungen (Entwicklungsbranch)
+
+- Reuse of exact, type-separated, hash-verified reference groups in the existing
+  `case_connections` and `case_narrative` modules.
+- Explicit local review: `pending_review`,
+  `accepted_as_organizational_link`, `dismissed`, or
+  `recheck_required` after source-quote or membership change.
+- Source-set signature is checked again server-side before a review decision;
+  operator confirmation never certifies document truth, legal status, an event,
+  or an AI interpretation.
+- Review metadata is stored only within the selected case using the established
+  audited CSV writer. No copies of raw text or original documents are made.
+- Existing single-page narrative shows the proof references, state and deliberate
+  accept/dismiss buttons. The same browser remains local-loopback only.
+- Selected-only handoffs show a review status only for the exact selected source
+  set. Partial selections cannot inherit a full-case acceptance and show a
+  neutral `pending_review` label instead of revealing that out-of-scope
+  members exist. Excluded file names, citations and IDs remain private.
+- No cloud service, new database, background worker, second browser, or alternate
+  start path. Review metadata is not a cryptographically tamper-proof audit.
+- Current scope is development; GitHub CI is not end-device/operator acceptance.
+
+## A12 – Fallbezogenes Quellen-Prüf-Cockpit (Entwicklungsbranch)
+
+- Die bereits vorhandene Fallübersicht bietet ein zusammengeführtes, lesendes
+  Prüfcockpit für Dokumente mit offenem Prüfstatus, quellengebundene Claims und
+  organisatorische Dokumentverbindungen aus A11.
+- Claims werden für die Anzeige erneut gegen das gehashte Original und das
+  exakte Seitenzitat geprüft. Ist ein Nachweis ungültig, werden weder Aussage
+  noch Zitat in der Prüfliste angezeigt; der Eintrag wird nur als
+  `recheck_required` geführt. Frühere Review-Metadaten werden nicht heimlich
+  verändert.
+- Die einzige direkte Entscheidung ist eine ausdrücklich bestätigte manuelle
+  Claim-Prüfung über den bereits vorhandenen, serverseitig nochmals
+  quellenprüfenden `/api/review-claim`-Pfad. Andere Aktionen navigieren zu den
+  vorhandenen Dokument- und Verknüpfungsdialogen.
+- Die Prüfliste ist auf zwanzig Beispiele je Bereich begrenzt. Zähler und
+  Unvollständigkeits-Hinweis machen die Anzeigegrenzen sichtbar.
+- Keine zweite Datenhaltung, automatische Tatsachen- oder Rechtsfeststellung,
+  unbemerkte Exportfreigabe, neue Runtime, Cloud-Dienste oder neuen Startweg.
+- CI-Nachweis ist eine Entwicklungsprüfung, nicht die Betreiberabnahme.
+
+## A13 – Lokale Quellenabdeckung und organisatorische Lücken (Entwicklungsbranch)
+
+- Der vorhandene lokale Browser zeigt nach ausdrücklichem Öffnen des Panels
+  einen **nur lesenden**, fallbezogenen Abdeckungsbericht. Keine Hintergrund-
+  Verarbeitung, OCR, LLM-Abfrage oder neue Runtime.
+- Ausschließlich registrierte Originale werden mit vorhandenen Provenienzdaten
+  abgeglichen. Für begrenzt große Dateien wird SHA-256 erneut geprüft.
+  Ein Textindex zählt nur dann als verfügbar, wenn er zum gehashten Original
+  passt und durchsuchbaren Text enthält.
+- Getrennte Befunde: Quelle fehlt/verändert, Provenienz unzureichend,
+  Quelle zu groß oder Textformat nicht unterstützt, Index fehlt oder
+  enthält keinen durchsuchbaren Text. **Index fehlt ≠ Original fehlt.**
+- Manuelle Timeline-, Beteiligten-, Aufgaben- und Claim-Einträge werden auf
+  fehlende oder unbekannte Dokument-ID-Verknüpfungen geprüft. Diese Hinweise
+  sind organisatorisch und keine Aussagen über ein tatsächlich fehlendes
+  Beweismittel.
+- Der Bericht begrenzt den Scan auf 120 registrierte Quellen und die Anzeige
+  auf 40 Beispiele; nicht gescannte Quellen und Anzeigegrenzen werden offen
+  ausgewiesen. Ungeprüfte Quellen werden nicht als verifiziert gezählt.
+- Der Bediener gelangt zu den bestehenden Dokument-, Such- und Integritäts-
+  Ansichten. Alle Folgeaktionen bleiben separat und ausdrücklich.
+- Die Aktenvollständigkeit außerhalb des registrierten lokalen Bestands ist
+  **nicht ermittelbar**; keine Tatsachenbewertung, Rechtsberatung,
+  selbstständige Freigabe oder Modifikation des Dossier-Exports.
+- Entwicklungsnachweise sind von Zielsystem-/Betreiberabnahme zu trennen.
+
+## A14 – Prüfaufgaben mit Quellen- und Fragenbezug (Entwicklungsbranch)
+
+- Im vorhandenen lokalen Browser können aus **aktuell angebotenen** offenen
+  Dokument-, Claim- und Verknüpfungsprüfungen sowie fallbezogenen offenen
+  Organisationsfragen **nach ausdrücklicher Bestätigung** Aufgaben erstellt
+  werden. Die Anzeige ist begrenzt; Nichtanzeige beweist keine Erledigung.
+- Der bestehende Aufgaben-Store `data/register/tasks.csv` und sein
+  metadatenbasiertes Änderungsjournal bleiben die alleinige Datenhaltung.
+  Drei optionale Spalten (`review_kind`, `review_ref`, `review_token`)
+  verknüpfen Aufgaben mit ihrem ursprünglichen Prüfkontext. Bestehende
+  Aufgaben-CSV-Dateien bleiben lesbar und werden beim nächsten regulären
+  Schreiben ohne Verlust vorhandener Einträge erweitert.
+- Der Server validiert Typ, Referenz und aktuellen SHA-256-Kontext erneut.
+  Doppelte offene Aufgaben für denselben Prüfpunkt werden vermieden.
+  Bereits geschlossene Aufgaben dürfen durch ausdrückliche Bedienhandlung
+  neu erstellt werden.
+- Dokumentaufgaben berücksichtigen die gegen das Original geprüfte
+  Abdeckungsstufe und die registrierte SHA-256. Geänderte oder nicht mehr
+  sichtbare Prüfkontexte erscheinen als Hinweis zur erneuten manuellen
+  Betrachtung; Status oder Aufgabentext werden nicht stillschweigend geändert.
+- Die Umsetzung erstellt **keine** Termine, Erinnerungen, Rechtsfristen,
+  fachlichen Aussagen, Quellenfreigaben oder Exporte. Eine auf `done`
+  gestellte Aufgabe führt ausdrücklich zu keiner Review-Zustandsänderung.
+- Das Fall-Scope bleibt verbindlich. Andere Fälle, unabhängige Aufgaben,
+  Originale, KI-Vorschläge und die externe Anwalt-Übergabe werden nicht verändert.
+- GitHub-Tests sind Entwicklungsnachweise, keine Betreiber-/Runtime-Abnahme.
+
+## A15 – Kontrollierte Dossierübergabe und Qualitätshinweise (Entwicklungsbranch)
+
+- Der bestehende Browser-Hand-off bietet eine **nur lesende, fallbezogene
+  und auf ausdrücklich ausgewählte Originale begrenzte Vorprüfung**.
+  Sie zählt ausgewählte Anlagen, bis zu 120 erneut gehashte Originale,
+  noch nicht gescannte Quellen, offene manuelle Dokumentreviews und
+  mit exaktem Seitenzitat überprüfbare Aussagen.
+- Fehlende, geänderte oder unsichere ausgewählte Originale führen zu einem
+  sichtbaren Integritätshindernis. Der tatsächliche Export prüft beim
+  Kopieren die SHA-256-Summen aller ausgewählten Originale erneut.
+  Ein nicht vollständig gescannter Vorbericht ist **keine Freigabe**.
+- Ausgewählte Claims ohne aktuell nachweisbaren Originalhash und
+  wortgleichen Seitenbeleg erscheinen nicht in `claims.csv`, `DOSSIER.md`
+  oder dem Anwalt-Einstieg. Andere Ausgabeflächen übernehmen diese
+  unbestätigten Texte nicht automatisch.
+- Manuelle Timeline-, Beteiligten- und Aufgabenzeilen mit Verknüpfungen
+  zu gleichzeitig ausgewählten **und ausgeschlossenen** Dokumenten
+  werden vollständig zurückgehalten. Nur eine Teilmenge der IDs zu
+  exportieren wäre bei freien Textfeldern eine mögliche Datenpreisgabe.
+- `UEBERGABE_PRUEFPUNKTE.md` ergänzt das bestehende ZIP, das
+  SHA-256-Manifest und den Anwalt-Einstieg. Der Bericht dokumentiert
+  Auswahlumfang, nicht verifizierbare Claims und begrenzte
+  Prüfhinweise, **ohne** Daten ausgeschlossener Originale offenzulegen.
+- Offene Prüfungen erzeugen einen zusätzlichen bewussten Bestätigungs-
+  schritt. Weder Vorprüfung noch Nachweislücken lösen automatisch
+  externe Übertragungen, Freigaben, KI-Aufrufe oder rechtliche
+  Bewertungen aus.
+- Exportfehler entfernen neu angelegte unvollständige Exportordner
+  und temporäre ZIP-/Checksum-Dateien. Kein zweiter Startmechanismus.
+- Bereits zulässiger leerer CLI-Export bleibt aus
+  Kompatibilitätsgründen möglich; die einfache Browseroberfläche
+  verlangt weiterhin mindestens eine bewusste Auswahl.
+- Nachweise sind isolierte Entwicklungstests. Die Betreiber- und
+  Geräteabnahme bleibt ein eigener Schritt nach dem Ausbau.
+
+## A16 – Bedienbarkeit und Release-Kandidaten-Vorbereitung (Entwicklungsbranch)
+
+- Bestehende Dokumentliste: lokale Freitextfilterung nach Name/ID/Gruppe/Notiz,
+  40 Einträge pro Seite, Zugriff über die frühere 200-Zeilen-Grenze hinaus;
+  ungespeicherte Feldentwürfe bleiben während interner Seitenwechsel erhalten.
+- Der bestehende `doctor` meldet `ready` und liefert einen Fehlercode bei
+  nicht unterstütztem Python oder gescheiterten Grundprüfungen.
+- Bereits vorhandene Linux-/macOS-/Windows-Starter: Python >=3.11 prüfen;
+  Windows `py -3` vermeidet versehentlich gewähltes Python 2;
+  macOS `.command`-Dateien und Linux `.sh`-Dateien sind im Git
+  ausführbar markiert; macOS-Start bricht bei fehlgeschlagenem Setup ab.
+- GitHub-CI nutzt den existierenden Workflow zusätzlich für gezielte
+  Windows-/macOS-CLI-Starterprüfungen. Das ist **keine** Zielsystem-,
+  Browser-/Geräte- oder plattformweite Produktabnahme.
+- Benutzerhandbuch und zentrale Release-Checkliste sind an die tatsächliche
+  Browserbedienung, Starter und die A15-Übergabeprüfung angepasst.
+- **Nicht Bestandteil:** Eigenständige Installer, automatische
+  Veröffentlichungen, Cloud-Synchronisation, Multiuserberechtigung,
+  vollständige Runtime-Abnahme oder eine neue Repository-Startarchitektur.
+- **Übergang:** Funktionsausbau bis A16 ist vorbereitet. Verbleibend sind
+  finaler Merge-/Release-Entscheid von DOM und fehlende reale
+  Zielsystemnachweise gemäß `docs/release/release_checklist.md`.

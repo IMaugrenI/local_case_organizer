@@ -38,7 +38,7 @@ bash scripts/linux/start_here.sh
 ```powershell
 git clone https://github.com/IMaugrenI/local_case_organizer.git
 cd local_case_organizer
-pwsh ./scripts/windows/start_here.ps1
+.\scripts\windows\start_here.ps1
 ```
 
 ### macOS
@@ -50,6 +50,11 @@ cd local_case_organizer
 ```
 
 Die lokale Browserseite öffnet sich und zeigt dir den nächsten sinnvollen Schritt.
+
+Windows: Die Befehle laufen in einer geöffneten Windows-PowerShell. PowerShell 7 (`pwsh`) ist für die bestehenden `.ps1`-Skripte nicht erforderlich. Wenn die Skriptausführung durch eine Unternehmensrichtlinie gesperrt ist, die Richtlinie nicht stillschweigend umgehen.
+
+Der Starter verlangt Python 3.11 oder neuer. Auf macOS müssen die vorhandenen `.command`-Dateien ausführbar sein; bei einem Release werden sie mit ausführbarem Git-Dateimodus bereitgestellt.
+
 
 ## Dein erstes sinnvolles Ergebnis
 

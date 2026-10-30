@@ -9,6 +9,7 @@ from __future__ import annotations
 from local_case_organizer.claims import read_claims
 from local_case_organizer.ai_exchange import read_ai_suggestions
 from local_case_organizer.document_text import get_indexed
+from local_case_organizer.ui.connection_review import reviewed_document_hints
 from local_case_organizer.ui.document_triage import document_type_hints
 from local_case_organizer.comparison import comparison_report
 from local_case_organizer.entities.store import read_entity_rows
@@ -55,6 +56,59 @@ def case_briefing() -> dict[str, object]:
             "statement": str(item.get("statement", ""))[:450],
             "status": "pending_review",
         })
+    # A12: Bounded queue; retained review status does not override source proof.
+    claim_queue: list[dict[str, str]] = []
+    claim_pending = claim_stale = 0
+    for claim in claims[:1500]:
+        status = str(claim.get("review_status", "draft"))
+        file_id = str(claim.get("file_id", ""))
+        quote = str(claim.get("source_quote", "")).strip()
+        valid = False
+        if file_id and quote:
+            if file_id not in verified_pages:
+                try:
+                    verified_pages[file_id] = get_indexed(file_id, verify_original=True)
+                except (ValueError, OSError, TypeError):
+                    verified_pages[file_id] = None
+            indexed = verified_pages[file_id]
+            if indexed:
+                valid = any(
+                    str(page.get("page")) == str(claim.get("source_page", ""))
+                    and quote in str(page.get("text", ""))
+                    for page in indexed["pages"]
+                )
+        if not valid:
+            claim_stale += 1
+            if len(claim_queue) < 20:
+                claim_queue.append({
+                    "claim_id": str(claim.get("claim_id", "")),
+                    "file_id": file_id, "status": "recheck_required",
+                    "source_page": "", "source_quote": "", "statement": "",
+                })
+        elif status != "reviewed":
+            claim_pending += 1
+            if len(claim_queue) < 20:
+                claim_queue.append({
+                    "claim_id": str(claim.get("claim_id", "")),
+                    "file_id": file_id, "status": "pending_review",
+                    "source_page": str(claim.get("source_page", "")),
+                    "source_quote": quote[:300],
+                    "statement": str(claim.get("statement", ""))[:400],
+                })
+
+    linked = reviewed_document_hints() if documents else {"groups": [], "incomplete": False}
+    connection_queue = [
+        {
+            "group_id": str(group.get("group_id", "")),
+            "reference": str(group.get("reference", "")),
+            "reference_label": str(group.get("reference_label", "")),
+            "document_count": int(group.get("document_count", 0)),
+            "status": str(group.get("status", "pending_review")),
+        }
+        for group in linked["groups"]
+        if group.get("status") in {"pending_review", "recheck_required"}
+    ]
+
     types = document_type_hints() if documents else {"hints": [], "unknown_in_scan": 0}
 
     recorded_dates = {str(row.get("event_id", "")) for row in timeline}
@@ -97,6 +151,9 @@ def case_briefing() -> dict[str, object]:
             "potential_value_differences": len(issues),
             "unlinked_documents": len(unlinked),
             "unreviewed_ai_hints": len(ai_hints),
+            "claim_review_pending": claim_pending,
+            "claim_recheck_required": claim_stale,
+            "connection_review_pending": len(connection_queue),
             "selected_export": sum(
                 str(row.get("selected_for_export", "")).lower() == "yes"
                 for row in documents
@@ -106,10 +163,27 @@ def case_briefing() -> dict[str, object]:
             ([{"kind": "manual_date", "count": len(urgent)}] if urgent else [])
             + ([{"kind": "review_documents", "count": len(undecided)}] if undecided else [])
             + ([{"kind": "review_dates", "count": len(candidates)}] if candidates else [])
+            + ([{"kind": "review_claims", "count": claim_pending + claim_stale}] if claim_pending or claim_stale else [])
+            + ([{"kind": "review_connections", "count": len(connection_queue)}] if connection_queue else [])
             + ([{"kind": "review_ai", "count": len(ai_hints)}] if ai_hints else [])
             + ([{"kind": "review_comparisons", "count": len(issues)}] if issues else [])
             + ([{"kind": "organize_sources", "count": len(unlinked)}] if unlinked else [])
         )[:5],
+        "review_queue": {
+            "document_samples": [
+                {
+                    "file_id": str(row.get("file_id", "")),
+                    "original_name": str(row.get("original_name", ""))[:140],
+                    "review_status": str(row.get("review_status", "unreviewed"))[:50],
+                }
+                for row in undecided[:20]
+            ],
+            "claim_samples": claim_queue,
+            "connection_samples": connection_queue[:20],
+            "connection_scan_incomplete": bool(linked.get("incomplete", False)),
+            "bounded": True,
+            "operator_review_is_not_factual_or_legal_confirmation": True,
+        },
         "ai_review_samples": ai_hints[:8],
         "date_samples": [
             {

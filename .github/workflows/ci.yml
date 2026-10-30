@@ -59,3 +59,36 @@ jobs:
           python run.py --help
           python -m pytest -q tests/test_ui_multipart_python314.py
 
+
+  platform-launchers:
+    name: Existing launcher smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Windows PowerShell starter commands
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          & ./scripts/windows/setup.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & ./scripts/windows/doctor.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & ./scripts/windows/ui.ps1 --help
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: macOS executable starter commands
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./scripts/macos/setup.command
+          ./scripts/macos/doctor.command
+          ./scripts/macos/ui.command --help
