@@ -19,6 +19,7 @@ from local_case_organizer.ui.multipart_upload import parse_multipart_files
 from local_case_organizer.ui.quick_intake import quick_organize_inbox
 from local_case_organizer.ui.autopilot import autopilot_status, process_autopilot
 from local_case_organizer.ui.case_briefing import case_briefing
+from local_case_organizer.ui.case_coverage import case_coverage
 from local_case_organizer.ui.case_narrative import case_narrative
 from local_case_organizer.ui.connection_review import review_connection
 from local_case_organizer.local_model import installed_local_models, propose_with_local_model
@@ -1571,6 +1572,9 @@ def run_ui(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True)
                 return
             if parsed.path == "/api/case-briefing":
                 self._send(200, "application/json; charset=utf-8", _json_bytes(case_briefing()))
+                return
+            if parsed.path == "/api/case-coverage":
+                self._send(200, "application/json; charset=utf-8", _json_bytes(case_coverage()))
                 return
             if parsed.path == "/api/case-narrative":
                 self._send(200, "application/json; charset=utf-8", _json_bytes(case_narrative()))
