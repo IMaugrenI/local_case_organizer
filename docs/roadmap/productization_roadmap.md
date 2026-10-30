@@ -273,3 +273,29 @@ Target:
 - Keine zweite Datenhaltung, automatische Tatsachen- oder Rechtsfeststellung,
   unbemerkte Exportfreigabe, neue Runtime, Cloud-Dienste oder neuen Startweg.
 - CI-Nachweis ist eine Entwicklungsprüfung, nicht die Betreiberabnahme.
+
+## A13 – Lokale Quellenabdeckung und organisatorische Lücken (Entwicklungsbranch)
+
+- Der vorhandene lokale Browser zeigt nach ausdrücklichem Öffnen des Panels
+  einen **nur lesenden**, fallbezogenen Abdeckungsbericht. Keine Hintergrund-
+  Verarbeitung, OCR, LLM-Abfrage oder neue Runtime.
+- Ausschließlich registrierte Originale werden mit vorhandenen Provenienzdaten
+  abgeglichen. Für begrenzt große Dateien wird SHA-256 erneut geprüft.
+  Ein Textindex zählt nur dann als verfügbar, wenn er zum gehashten Original
+  passt und durchsuchbaren Text enthält.
+- Getrennte Befunde: Quelle fehlt/verändert, Provenienz unzureichend,
+  Quelle zu groß oder Textformat nicht unterstützt, Index fehlt oder
+  enthält keinen durchsuchbaren Text. **Index fehlt ≠ Original fehlt.**
+- Manuelle Timeline-, Beteiligten-, Aufgaben- und Claim-Einträge werden auf
+  fehlende oder unbekannte Dokument-ID-Verknüpfungen geprüft. Diese Hinweise
+  sind organisatorisch und keine Aussagen über ein tatsächlich fehlendes
+  Beweismittel.
+- Der Bericht begrenzt den Scan auf 120 registrierte Quellen und die Anzeige
+  auf 40 Beispiele; nicht gescannte Quellen und Anzeigegrenzen werden offen
+  ausgewiesen. Ungeprüfte Quellen werden nicht als verifiziert gezählt.
+- Der Bediener gelangt zu den bestehenden Dokument-, Such- und Integritäts-
+  Ansichten. Alle Folgeaktionen bleiben separat und ausdrücklich.
+- Die Aktenvollständigkeit außerhalb des registrierten lokalen Bestands ist
+  **nicht ermittelbar**; keine Tatsachenbewertung, Rechtsberatung,
+  selbstständige Freigabe oder Modifikation des Dossier-Exports.
+- Entwicklungsnachweise sind von Zielsystem-/Betreiberabnahme zu trennen.
