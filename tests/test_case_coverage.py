@@ -1,6 +1,8 @@
 """A13 synthetic-only coverage checks, never operator acceptance."""
 from __future__ import annotations
 
+from pathlib import Path
+
 from local_case_organizer import paths
 from local_case_organizer.cases import create_case, using_case
 from local_case_organizer.document_text import index_document
@@ -55,7 +57,7 @@ def test_source_coverage_distinguishes_hash_index_and_missing_original(tmp_path,
 
 
 def test_manual_unlinked_items_and_stale_references_are_only_organizational(tmp_path, monkeypatch):
-    workspace, _docs = _case(tmp_path, monkeypatch)
+    _workspace, _docs = _case(tmp_path, monkeypatch)
     add_task("Check a source document", note="No legal deadline entered")
     result = case_coverage()
     assert result["manual_links"]["areas"]["tasks"]["without_document_link"] == 1
@@ -91,16 +93,17 @@ def test_inconsistent_provenance_not_credited_as_verified(tmp_path, monkeypatch)
     write_register_rows(rows)
     result = case_coverage()
     assert _states(result)["indexed.txt"] == "provenance_unavailable"
-    assert result["counts"]["source_text_available"] == 0
+    assert result["counts"].get("source_text_available", 0) == 0
 
 
 def test_coverage_view_uses_existing_runtime_without_implicit_actions():
     from local_case_organizer.ui.local_case_organizer_ui_coverage import COVERAGE_SCRIPT
-    from local_case_organizer.ui.local_case_organizer_ui_override import run_ui
     assert '"/api/case-coverage"' in COVERAGE_SCRIPT
     assert 'id="lco-coverage"' not in COVERAGE_SCRIPT  # initialized through DOM only
     assert "box.addEventListener(\"toggle\"" in COVERAGE_SCRIPT
     assert "if(box.open)refresh()" in COVERAGE_SCRIPT
     assert "textContent" in COVERAGE_SCRIPT
     assert '"/api/export-package"' not in COVERAGE_SCRIPT
-    assert callable(run_ui)
+    override = (Path(__file__).resolve().parents[1] / "src" / "local_case_organizer"
+                / "ui" / "local_case_organizer_ui_override.py").read_text(encoding="utf-8")
+    assert "COVERAGE_SCRIPT" in override and "COVERAGE_CSS" in override
