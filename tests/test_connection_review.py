@@ -83,7 +83,7 @@ def test_registered_source_hash_drift_invalidates_accepted_connection(tmp_path, 
     _review()
     rows = read_register_rows()
     for row in rows:
-        if row["file_id"] == docs["klage.txt"]["file_id"]:
+        if row["file_id"] == docs["a.txt"]["file_id"]:
             row["sha256"] = "e" * 64
     write_register_rows(rows)
     changed = reviewed_document_hints()["groups"][0]
