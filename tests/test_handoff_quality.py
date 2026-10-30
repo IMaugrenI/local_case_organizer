@@ -59,6 +59,7 @@ def test_quality_preview_is_selected_only_read_only_and_warning_aware(tmp_path, 
     assert report["claims_quote_verified"] == 1
     assert report["included_timeline_entries"] == 1
     assert report["manual_review_pending_in_scan"] == 1
+    assert any(item["code"] == "selected_document_reviews_pending" for item in report["warnings"])
     assert private not in json.dumps(report)
     assert "SECRET-ONLY-8129" not in json.dumps(report)
     assert report["limits"]["no_external_data_completeness_claim"]
@@ -110,6 +111,17 @@ def test_missing_selected_original_blocks_before_creating_export(tmp_path, monke
     preview = handoff_quality()
     assert preview["export_blocked_in_scanned_sources"]
     assert preview["originals_needing_attention"] == 1
+    with pytest.raises(ValueError, match="Integrity"):
+        build_export_package()
+    assert list(workspace.exports_dir.iterdir()) == []
+
+
+def test_unverified_original_beyond_preview_limit_cleans_partial_package(tmp_path, monkeypatch):
+    workspace, docs = _fixture(tmp_path, monkeypatch)
+    import local_case_organizer.export.quality as quality
+    monkeypatch.setattr(quality, "MAX_PREVIEW_SOURCES", 0)
+    original = workspace.originals_dir / docs["selected.txt"]["relative_path"]
+    original.write_text("changed after import", encoding="utf-8")
     with pytest.raises(ValueError, match="Integrity"):
         build_export_package()
     assert list(workspace.exports_dir.iterdir()) == []
