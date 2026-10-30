@@ -8,6 +8,7 @@ from local_case_organizer.cases import create_case, using_case
 from local_case_organizer.document_text import index_document
 from local_case_organizer.register.store import read_register_rows, write_register_rows
 from local_case_organizer.tasks import add_task
+from local_case_organizer.timeline.store import TIMELINE_FIELDS, write_timeline_rows
 from local_case_organizer.ui.case_coverage import case_coverage
 from local_case_organizer.ui.quick_intake import quick_organize_inbox
 
@@ -64,6 +65,21 @@ def test_manual_unlinked_items_and_stale_references_are_only_organizational(tmp_
     assert result["manual_links"]["areas"]["tasks"]["with_unknown_document_link"] == 0
     assert result["manual_links"]["unknown_document_ids"] == []
     assert result["limitations"]["does_not_establish_truth_or_legal_findings"]
+
+
+def test_unknown_manual_document_id_remains_an_organizational_hint(tmp_path, monkeypatch):
+    _workspace, _docs = _case(tmp_path, monkeypatch)
+    synthetic = {field: "" for field in TIMELINE_FIELDS}
+    synthetic.update({
+        "event_id": "EV-ORPHAN", "event_title": "Source link no longer known",
+        "event_date": "2026-01-02", "linked_file_ids": "DOC-UNKNOWN-123",
+        "status": "draft",
+    })
+    write_timeline_rows([synthetic])
+    result = case_coverage()
+    assert result["manual_links"]["areas"]["timeline"]["with_unknown_document_link"] == 1
+    assert result["manual_links"]["unknown_document_ids"] == ["DOC-UNKNOWN-123"]
+    assert result["limitations"]["does_not_prove_real_world_file_completeness"]
 
 
 def test_source_coverage_is_bounded_and_case_private(tmp_path, monkeypatch):
