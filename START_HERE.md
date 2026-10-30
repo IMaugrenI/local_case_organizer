@@ -38,7 +38,7 @@ bash scripts/linux/start_here.sh
 ```powershell
 git clone https://github.com/IMaugrenI/local_case_organizer.git
 cd local_case_organizer
-pwsh ./scripts/windows/start_here.ps1
+.\scripts\windows\start_here.ps1
 ```
 
 ### macOS
@@ -50,6 +50,11 @@ cd local_case_organizer
 ```
 
 The local browser page opens and shows the next useful step.
+
+Windows: Run the `.ps1` file inside Windows PowerShell. PowerShell 7 (`pwsh`) is not required. If local script execution is blocked by an organization policy, do not silently bypass it.
+
+The starter requires Python 3.11+. macOS `.command` files are tracked as executable files in the repository.
+
 
 ## Your first useful result
 

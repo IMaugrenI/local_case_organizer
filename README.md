@@ -40,7 +40,7 @@ bash scripts/linux/start_here.sh
 ### Windows PowerShell
 
 ```powershell
-pwsh ./scripts/windows/start_here.ps1
+.\scripts\windows\start_here.ps1
 ```
 
 ### macOS
@@ -243,9 +243,10 @@ indexing, source-bound claims, manual mismatch comparisons, metadata-only
 edit journaling, browser case selection, neutral dossiers, manual reminders
 and an offline AI handoff interface.
 
-The independent **Structure** product still makes **no model calls**:
-AI packets can be prepared by explicit user action, but suggestions from
-an external local model must be manually imported and individually reviewed.
+The independent **Structure** product makes **no automatic model calls**.
+An optional, explicitly approved local Ollama exchange on loopback can propose
+source-linked suggestions; all proposals need separate human review and
+are never automatically promoted into confirmed facts.
 
 Example (private case selection, no alternate launcher):
 
@@ -261,6 +262,7 @@ by this repository. All private case data remain in ignored workspaces.
 
 [Development handoff and limitations](docs/roadmap/expansion_handoff.md).
 
-The A1–A10 code is on **main**, but GitHub CI is not device, operator,
-or release acceptance. A11 organizational connection review is being developed
-separately and does not imply a release or end-user acceptance.
+A1–A10 are on **main**. A11–A16 are being prepared in **draft PR #4**, including
+review queues, source-coverage, explicit review tasks, selected-only handoff
+quality checks and paginated document management. Development CI does **not**
+constitute operator, device, or release acceptance. Do not release private data.

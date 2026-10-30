@@ -361,3 +361,26 @@ Target:
   verlangt weiterhin mindestens eine bewusste Auswahl.
 - Nachweise sind isolierte Entwicklungstests. Die Betreiber- und
   Geräteabnahme bleibt ein eigener Schritt nach dem Ausbau.
+
+## A16 – Bedienbarkeit und Release-Kandidaten-Vorbereitung (Entwicklungsbranch)
+
+- Bestehende Dokumentliste: lokale Freitextfilterung nach Name/ID/Gruppe/Notiz,
+  40 Einträge pro Seite, Zugriff über die frühere 200-Zeilen-Grenze hinaus;
+  ungespeicherte Feldentwürfe bleiben während interner Seitenwechsel erhalten.
+- Der bestehende `doctor` meldet `ready` und liefert einen Fehlercode bei
+  nicht unterstütztem Python oder gescheiterten Grundprüfungen.
+- Bereits vorhandene Linux-/macOS-/Windows-Starter: Python >=3.11 prüfen;
+  Windows `py -3` vermeidet versehentlich gewähltes Python 2;
+  macOS `.command`-Dateien und Linux `.sh`-Dateien sind im Git
+  ausführbar markiert; macOS-Start bricht bei fehlgeschlagenem Setup ab.
+- GitHub-CI nutzt den existierenden Workflow zusätzlich für gezielte
+  Windows-/macOS-CLI-Starterprüfungen. Das ist **keine** Zielsystem-,
+  Browser-/Geräte- oder plattformweite Produktabnahme.
+- Benutzerhandbuch und zentrale Release-Checkliste sind an die tatsächliche
+  Browserbedienung, Starter und die A15-Übergabeprüfung angepasst.
+- **Nicht Bestandteil:** Eigenständige Installer, automatische
+  Veröffentlichungen, Cloud-Synchronisation, Multiuserberechtigung,
+  vollständige Runtime-Abnahme oder eine neue Repository-Startarchitektur.
+- **Übergang:** Funktionsausbau bis A16 ist vorbereitet. Verbleibend sind
+  finaler Merge-/Release-Entscheid von DOM und fehlende reale
+  Zielsystemnachweise gemäß `docs/release/release_checklist.md`.

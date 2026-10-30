@@ -1,32 +1,61 @@
-# Release checklist
+# Release readiness and operator acceptance (A16)
 
-Use this before calling a public release good enough for normal users.
+**Current state: development candidate only, not published or approved.**
+A1–A10 are already on `main`; A11–A16 remain under development in
+draft PR #4 until DOM decides integration. Do not label this GO.
 
-## Basic repo checks
+## Development evidence (automated, not a device acceptance)
 
-- README still matches the real start path
-- `docs/guides/install_and_first_test.md` still matches the real start path
-- `docs/guides/beginner_quickstart.md` still matches the browser UI
-- `docs/reference/commands.md` still matches the real command surface
-- no private or local test data is committed
+| Check | Evidence and status |
+| --- | --- |
+| Existing Python 3.11 CLI, isolated synthetic unit and smoke tests | GitHub CI `Python smoke checks`; verify latest PR head is green |
+| Python 3.14 compatibility subset | GitHub CI targeted compatibility job; not full 3.14 regression |
+| Existing Windows PowerShell launcher setup/doctor/help | GitHub CI `Existing launcher smoke (windows-latest)`; no browser/device proof |
+| Existing executable macOS launcher setup/doctor/help | GitHub CI `Existing launcher smoke (macos-latest)`; no browser/device proof |
+| Static source/project privacy | Git ignore and selected-only synthetic tests; operator must check final release contents |
 
-## Smoke path
+Use [PR #4](https://github.com/IMaugrenI/local_case_organizer/pull/4)
+as development evidence; record the **exact final commit** and CI run
+before merging. CI successes from earlier commits do not prove a later head.
 
-- fresh local clone works
-- the sorted launchers under `scripts/linux/`, `scripts/windows/`, and `scripts/macos/` still work on the intended platforms
-- browser UI opens
-- one small file can be imported
-- register can be built
-- timeline can be built
-- entities can be edited
-- export package creates folder, ZIP, and manifest
+## Missing target-device evidence — DOM
 
-## User-facing truth
+Record **status, target OS, date, evidence and residual issue** for each:
 
-- error messages are understandable
-- the next-step hints still make sense
-- the main path works without reading deep internal docs
+- [ ] Fresh checkout of the intended release commit, without private data
+- [ ] Python 3.11+ present; platform starter runs on the actual target system
+- [ ] `python run.py doctor` reports `ready: true` and exit code 0
+- [ ] Local-only browser interface opens and stays on loopback
+- [ ] Deliberate synthetic file upload/import, interrupted-resume workflow
+- [ ] Filter and page through a case with documents beyond the former 200-row limit
+- [ ] Source review, task, timeline, participant and case separation work
+- [ ] Export with explicitly selected original only; inspect ZIP, manifest and SHA-256
+- [ ] Mixed selected/unselected case does not leak excluded names or free-text
+- [ ] Modified or absent selected original is rejected before handoff
+- [ ] Restore or backup operational decision for the target device is documented
+- [ ] Optional PDF/OCR and separately approved local AI setup are evaluated only if required for the release scope
 
-## Final rule
+Do not repeat green automated checks without a concrete reason.
+Use synthetic evidence; never commit personal real-case content or local
+exports/screenshots with personal data.
 
-If a normal first-time user would still need to guess the next step, the release is not ready enough.
+## Deliverable and release decisions
+
+- **Delivery model:** The existing repository can be downloaded/cloned and
+  started by its OS-specific scripts. A GitHub source archive is not a
+  signed native installer, and no MSI/DMG/AppImage is currently claimed.
+- **Distribution:** Do not create a public release, tag, alternative
+  installer, second runtime or signed-artifact claim before explicit DOM GO.
+- **Security:** Loopback is not multi-user authentication; no guarantee
+  of encrypted storage, malware scanning or legal/GDPR compliance.
+- **Optional dependencies:** Local PDF extraction, OCR and local Ollama
+  are not installed or authorized automatically.
+- **Evidence:** Record which tasks are product defects, environmental
+  problems, absent proofs or operator decisions.
+- **P0/P1:** Correct before dependent release work. **P2:** Document
+  and decide no later than feature freeze.
+- **Final decision:** DOM records GO or NO-GO after reviewing the
+  central acceptance list and missing actual runtime proofs.
+
+**Rule:** No release GO based only on GitHub CI, and no presumed
+completeness of real-world case evidence.
