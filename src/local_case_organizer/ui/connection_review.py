@@ -16,6 +16,7 @@ from threading import RLock
 
 from local_case_organizer.audit import MAX_TABLE_BYTES, write_audited_csv
 from local_case_organizer.paths import create_local_workspace, get_workspace_paths
+from local_case_organizer.register.store import read_register_rows
 from local_case_organizer.ui.case_connections import linked_document_hints
 
 _FIELDS = ["group_id", "source_signature", "review_status", "reviewed_at"]
@@ -54,16 +55,17 @@ def _read() -> dict[str, dict[str, str]]:
         return result
 
 
-def _identity(group: dict[str, object]) -> tuple[str, str]:
+def _identity(group: dict[str, object], source_hashes: dict[str, str]) -> tuple[str, str]:
     # The ID tracks one typed reference. The signature tracks its *current*
-    # verified members and exact citations, including page and quotation.
+    # verified members, registered original SHA-256 and exact citations.
     kind = str(group["reference_kind"])
     ref = str(group["reference"])
     group_id = hashlib.sha256(
         json.dumps([kind, ref], ensure_ascii=False).encode("utf-8")
     ).hexdigest()[:24]
     evidence = sorted(
-        (str(doc["file_id"]), int(doc["page"]), str(doc["source_quote"]))
+        (str(doc["file_id"]), source_hashes.get(str(doc["file_id"]), ""),
+         int(doc["page"]), str(doc["source_quote"]))
         for doc in group["documents"]
     )
     signature = hashlib.sha256(
@@ -78,8 +80,10 @@ def reviewed_document_hints(selected_ids: set[str] | None = None) -> dict[str, o
     """
     report = linked_document_hints(selected_ids)
     reviewed = _read()
+    source_hashes = {str(row.get("file_id", "")): str(row.get("sha256", ""))
+                     for row in read_register_rows()}
     for group in report["groups"]:
-        group_id, signature = _identity(group)
+        group_id, signature = _identity(group, source_hashes)
         record = reviewed.get(group_id)
         group["group_id"] = group_id
         group["source_signature"] = signature
