@@ -109,6 +109,11 @@ def handoff_quality() -> dict[str, object]:
         })
         if status != "verified" and len(warnings) < MAX_WARNINGS:
             warnings.append({"code": status, "file_id": fid})
+    if counts.get("manual_review_pending", 0):
+        warnings.append({
+            "code": "selected_document_reviews_pending",
+            "count": str(counts["manual_review_pending"]),
+        })
     selected_claims = [
         row for row in read_claims()[:1500]
         if str(row.get("file_id", "")) in selected
