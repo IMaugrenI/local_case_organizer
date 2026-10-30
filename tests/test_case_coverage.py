@@ -99,7 +99,7 @@ def test_inconsistent_provenance_not_credited_as_verified(tmp_path, monkeypatch)
 def test_coverage_view_uses_existing_runtime_without_implicit_actions():
     from local_case_organizer.ui.local_case_organizer_ui_coverage import COVERAGE_SCRIPT
     assert '"/api/case-coverage"' in COVERAGE_SCRIPT
-    assert 'id="lco-coverage"' not in COVERAGE_SCRIPT  # initialized through DOM only
+    assert 'box.id="lco-coverage"' in COVERAGE_SCRIPT  # initialized through DOM only
     assert "box.addEventListener(\"toggle\"" in COVERAGE_SCRIPT
     assert "if(box.open)refresh()" in COVERAGE_SCRIPT
     assert "textContent" in COVERAGE_SCRIPT
