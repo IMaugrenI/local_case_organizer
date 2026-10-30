@@ -326,3 +326,38 @@ Target:
 - Das Fall-Scope bleibt verbindlich. Andere Fälle, unabhängige Aufgaben,
   Originale, KI-Vorschläge und die externe Anwalt-Übergabe werden nicht verändert.
 - GitHub-Tests sind Entwicklungsnachweise, keine Betreiber-/Runtime-Abnahme.
+
+## A15 – Kontrollierte Dossierübergabe und Qualitätshinweise (Entwicklungsbranch)
+
+- Der bestehende Browser-Hand-off bietet eine **nur lesende, fallbezogene
+  und auf ausdrücklich ausgewählte Originale begrenzte Vorprüfung**.
+  Sie zählt ausgewählte Anlagen, bis zu 120 erneut gehashte Originale,
+  noch nicht gescannte Quellen, offene manuelle Dokumentreviews und
+  mit exaktem Seitenzitat überprüfbare Aussagen.
+- Fehlende, geänderte oder unsichere ausgewählte Originale führen zu einem
+  sichtbaren Integritätshindernis. Der tatsächliche Export prüft beim
+  Kopieren die SHA-256-Summen aller ausgewählten Originale erneut.
+  Ein nicht vollständig gescannter Vorbericht ist **keine Freigabe**.
+- Ausgewählte Claims ohne aktuell nachweisbaren Originalhash und
+  wortgleichen Seitenbeleg erscheinen nicht in `claims.csv`, `DOSSIER.md`
+  oder dem Anwalt-Einstieg. Andere Ausgabeflächen übernehmen diese
+  unbestätigten Texte nicht automatisch.
+- Manuelle Timeline-, Beteiligten- und Aufgabenzeilen mit Verknüpfungen
+  zu gleichzeitig ausgewählten **und ausgeschlossenen** Dokumenten
+  werden vollständig zurückgehalten. Nur eine Teilmenge der IDs zu
+  exportieren wäre bei freien Textfeldern eine mögliche Datenpreisgabe.
+- `UEBERGABE_PRUEFPUNKTE.md` ergänzt das bestehende ZIP, das
+  SHA-256-Manifest und den Anwalt-Einstieg. Der Bericht dokumentiert
+  Auswahlumfang, nicht verifizierbare Claims und begrenzte
+  Prüfhinweise, **ohne** Daten ausgeschlossener Originale offenzulegen.
+- Offene Prüfungen erzeugen einen zusätzlichen bewussten Bestätigungs-
+  schritt. Weder Vorprüfung noch Nachweislücken lösen automatisch
+  externe Übertragungen, Freigaben, KI-Aufrufe oder rechtliche
+  Bewertungen aus.
+- Exportfehler entfernen neu angelegte unvollständige Exportordner
+  und temporäre ZIP-/Checksum-Dateien. Kein zweiter Startmechanismus.
+- Bereits zulässiger leerer CLI-Export bleibt aus
+  Kompatibilitätsgründen möglich; die einfache Browseroberfläche
+  verlangt weiterhin mindestens eine bewusste Auswahl.
+- Nachweise sind isolierte Entwicklungstests. Die Betreiber- und
+  Geräteabnahme bleibt ein eigener Schritt nach dem Ausbau.
