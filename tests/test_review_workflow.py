@@ -75,6 +75,21 @@ def test_review_task_is_explicit_deduplicated_audited_and_never_approves(tmp_pat
     assert _create(item)["created"] is True  # deliberately new after closing
 
 
+def test_source_bytes_changed_flag_document_task_for_manual_recheck(tmp_path, monkeypatch):
+    home, docs = _case(tmp_path, monkeypatch)
+    item = _candidate("document", docs["alpha.txt"]["file_id"])
+    linked = _create(item)["task"]
+    original = home.originals_dir / docs["alpha.txt"]["relative_path"]
+    original.write_text("Inhalt nach Import verändert", encoding="utf-8")
+    workflow = review_workflow()
+    task = next(x for x in workflow["review_tasks"]
+                if x["task_id"] == linked["task_id"])
+    assert task["source_status"] == "review_context_changed"
+    assert task["task_status"] == "open"
+    with pytest.raises(ValueError, match="changed"):
+        _create(item)
+
+
 def test_review_status_change_marks_context_drift_not_approval(tmp_path, monkeypatch):
     _home, docs = _case(tmp_path, monkeypatch)
     claim = add_claim(docs["alpha.txt"]["file_id"], 1, "Betrag: 120 EUR",
