@@ -11,6 +11,8 @@ from local_case_organizer.export.helpers import (
     write_zip_checksum,
 )
 from local_case_organizer.export.dossier import write_dossier
+from local_case_organizer.export.quality import handoff_quality
+from local_case_organizer.export.quality_report import write_quality_report
 from local_case_organizer.export.handoff import write_lawyer_start_here
 from local_case_organizer.ui.case_narrative import write_case_narrative
 from local_case_organizer.paths import create_local_workspace, get_workspace_paths
@@ -26,6 +28,10 @@ EXPORT_FILES = [
 
 def build_export_package() -> Path:
     create_local_workspace()
+    # A fresh selected-only preview checks sources before creating an export.
+    quality = handoff_quality()
+    if quality["export_blocked_in_scanned_sources"]:
+        raise ValueError("Integrity preflight failed for selected originals; review the handoff preview")
     paths = get_workspace_paths()
     timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
     export_dir = paths.exports_dir / f"case_export_{timestamp}"
@@ -47,6 +53,7 @@ def build_export_package() -> Path:
     write_dossier(export_dir, copied_selected)
     write_lawyer_start_here(export_dir, selected_ids)
     write_case_narrative(export_dir, selected_ids)
+    write_quality_report(export_dir, quality)
 
     readme = export_dir / "README.txt"
     readme.write_text(
