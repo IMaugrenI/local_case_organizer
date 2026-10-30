@@ -115,9 +115,9 @@ async function createTask(item){
   });
   const result=await response.json();
   if(!response.ok)throw Error(result.error||"HTTP "+response.status);
-  el("lco-flow-status").textContent=t(result.created?"created":"already");
-  await refresh();
   if(typeof window.LCORefreshWorkspace==="function")await window.LCORefreshWorkspace();
+  else await refresh();
+  el("lco-flow-status").textContent=t(result.created?"created":"already");
  }catch(error){el("lco-flow-status").textContent=t("error")+String(error.message||error)}
  finally{creating=false;draw()}
 }
