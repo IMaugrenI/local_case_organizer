@@ -44,6 +44,8 @@ def test_lawyer_bundle_excludes_unselected_metadata_and_includes_readme(tmp_path
          "linked_file_ids": "DOC-A,DOC-B", "status": "draft"},
         {"event_id": "EV-B", "event_date": "2021-01-01", "event_title": "TOP SECRET EVENT",
          "linked_file_ids": "DOC-B", "status": "draft"},
+        {"event_id": "EV-C", "event_date": "2022-01-01", "event_title": "Allowed event",
+         "linked_file_ids": "DOC-A", "status": "draft"},
     ])
     folder = build_export_package()
     with ZipFile(folder.with_suffix(".zip")) as z:
@@ -57,7 +59,9 @@ def test_lawyer_bundle_excludes_unselected_metadata_and_includes_readme(tmp_path
             assert "secret.txt" not in body
             assert "TOP SECRET" not in body
             assert "/private/work/" not in body
-        assert "Shared event" in z.read("ANWALT_START_HERE.md").decode()
+        assert "Allowed event" in z.read("ANWALT_START_HERE.md").decode()
+        assert "Shared event" not in z.read("ANWALT_START_HERE.md").decode()
+        assert "Shared event" not in z.read("DOSSIER.md").decode()
         assert "TOP SECRET EVENT" not in z.read("DOSSIER.md").decode()
     with (folder / "timeline.csv").open(encoding="utf-8", newline="") as stream:
         rows = list(csv.DictReader(stream))
