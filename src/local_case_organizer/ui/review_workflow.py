@@ -55,7 +55,9 @@ def _candidates() -> list[dict[str, object]]:
             "kind": "document", "ref": fid, "status": "pending_review",
             "title": title[:180], "file_ids": [fid],
             "token": _token("document", fid, status, [fid],
-                            str(row["original_name"]) + "|" + original_state),
+                            str(row["original_name"]) + "|" + original_state + "|" +
+                            str(document_row.get("sha256", "")) if document_row is not None
+                            else str(row["original_name"]) + "|unknown_document"),
             "note": "Dokumentstatus und Quelle im bestehenden Register manuell kontrollieren. Keine Tatsachenbestätigung.",
         })
 
@@ -70,7 +72,8 @@ def _candidates() -> list[dict[str, object]]:
                 "claim", ref, status, [fid],
                 str(row.get("source_page", "")) + "|" +
                 str(row.get("source_quote", "")) + "|" +
-                str(row.get("statement", "")),
+                str(row.get("statement", "")) + "|" +
+                str(doc_rows.get(fid, {}).get("sha256", "")),
             ),
             "note": ("Original oder Seitenzitat erneut prüfen; keine unbestätigten Texte übernehmen."
                      if status == "recheck_required"
