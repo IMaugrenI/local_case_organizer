@@ -11,6 +11,10 @@ import json
 import re
 
 from local_case_organizer.tasks import add_review_task, read_tasks
+from local_case_organizer.export.helpers import load_provenance_index
+from local_case_organizer.paths import get_workspace_paths
+from local_case_organizer.register.store import read_register_rows
+from local_case_organizer.ui.case_coverage import _source_status
 from local_case_organizer.ui.case_briefing import case_briefing
 from local_case_organizer.ui.case_narrative import case_narrative
 from local_case_organizer.ui.connection_review import reviewed_document_hints
@@ -36,15 +40,22 @@ def _candidates() -> list[dict[str, object]]:
         if group["status"] in {"pending_review", "recheck_required"}
     }
     suggestions: list[dict[str, object]] = []
+    paths = get_workspace_paths()
+    doc_rows = {str(row.get("file_id", "")): row for row in read_register_rows()}
+    provenance = load_provenance_index(paths.register_dir)
 
     for row in briefing["document_samples"][:_MAX_PER_KIND]:
         fid = str(row["file_id"])
         status = str(row["review_status"])
         title = "Dokument organisatorisch prüfen: " + str(row["original_name"])[:100]
+        document_row = doc_rows.get(fid)
+        original_state = (_source_status(document_row, provenance, paths.originals_dir)
+                          if document_row is not None else "unknown_document")
         suggestions.append({
             "kind": "document", "ref": fid, "status": "pending_review",
             "title": title[:180], "file_ids": [fid],
-            "token": _token("document", fid, status, [fid], str(row["original_name"])),
+            "token": _token("document", fid, status, [fid],
+                            str(row["original_name"]) + "|" + original_state),
             "note": "Dokumentstatus und Quelle im bestehenden Register manuell kontrollieren. Keine Tatsachenbestätigung.",
         })
 
