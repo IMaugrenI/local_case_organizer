@@ -51,6 +51,7 @@ WORKSPACE_SCRIPT = r'''<script>
 const de={
  documents:"Dokumente bearbeiten",docHelp:"Ordne Dokumente ein, ergänze Notizen und wähle bewusst aus, was später in eine Übergabe darf.",
  documentEmpty:"Noch keine Dokumente im Register.",
+ docFilter:"Dokumentname, ID, Gruppe oder Notiz filtern",docPaging:"{shown} von {matched} Treffern auf Seite {page}/{pages} · {total} Dokumente insgesamt",docPrevious:"Zurück",docNext:"Weiter",docNoMatch:"Keine passenden Dokumente im Register. Filter ändern oder löschen.",
  selectAll:"Alle Dokumente markieren",selectNone:"Auswahl aufheben",
  confirmAll:"Alle {n} Dokumente für eine mögliche Übergabe markieren? Enthaltene sensible Daten vor dem Export einzeln prüfen. Es wird noch nichts versendet.",
  confirmNone:"Alle ausgewählten Dokumente für die Übergabe abwählen?",
@@ -98,6 +99,7 @@ const de={
 const en={
  documents:"Manage documents",docHelp:"Organize documents, add notes and explicitly select files for a handoff.",
  documentEmpty:"No registered documents yet.",
+ docFilter:"Filter filename, ID, group or note",docPaging:"{shown} of {matched} matches on page {page}/{pages} · {total} documents total",docPrevious:"Previous",docNext:"Next",docNoMatch:"No matching registered documents. Change or clear the filter.",
  selectAll:"Select all documents",selectNone:"Clear selection",
  confirmAll:"Mark all {n} documents for possible handoff? Review sensitive material individually before export. Nothing is transmitted now.",
  confirmNone:"Clear all selected handoff documents?",
@@ -146,6 +148,9 @@ const el=id=>document.getElementById(id);
 const t=key=>(String(localStorage.getItem("local_case_organizer_ui_lang")||"de").startsWith("de")?de:en)[key]||key;
 const fmt=(key,vars={})=>Object.entries(vars).reduce((text,[name,value])=>text.replace("{"+name+"}",String(value)),t(key));
 let cachedDocs=[],timelineRows=[],taskRows=[],entityRows=[],suggestions=[];
+const DOCS_PER_PAGE=40;
+let docPage=0,docQuery="";
+const docDrafts=new Map();
 function newNode(tag,content,cls){
  const item=document.createElement(tag);if(cls)item.className=cls;
  if(content!==undefined&&content!==null)item.textContent=String(content);
@@ -196,8 +201,21 @@ function populateDocSelect(nodeId,keepValue=""){
 function renderDocs(){
  const list=el("lco-ws-doc-list");if(!list)return;
  list.replaceChildren();
+ const filtered=cachedDocs.filter(row=>[row.original_name,row.file_id,row.document_group,row.note]
+   .some(value=>String(value||"").toLocaleLowerCase().includes(docQuery)));
+ const pages=Math.max(1,Math.ceil(filtered.length/DOCS_PER_PAGE));
+ docPage=Math.min(docPage,pages-1);
+ const shown=filtered.slice(docPage*DOCS_PER_PAGE,(docPage+1)*DOCS_PER_PAGE);
+ const info=el("lco-ws-doc-page-info");
+ if(info)info.textContent=fmt("docPaging",{
+  shown:shown.length,matched:filtered.length,page:docPage+1,pages,total:cachedDocs.length
+ });
+ const prev=el("lco-ws-doc-prev"),next=el("lco-ws-doc-next");
+ if(prev)prev.disabled=docPage===0;
+ if(next)next.disabled=docPage>=pages-1;
  if(!cachedDocs.length){list.append(newNode("li",t("documentEmpty")));return;}
- for(const row of cachedDocs.slice(0,200)){
+ if(!filtered.length){list.append(newNode("li",t("docNoMatch")));return;}
+ for(const row of shown){
   const li=newNode("li"),name=newNode("strong",row.original_name||row.file_id,"lco-ws-document-title");
   const small=newNode("small",row.file_id+" · "+(row.suffix||""));
   li.append(name,small);
@@ -216,10 +234,15 @@ function renderDocs(){
   reviewLabel.append(reviewText,status);controls.append(cbLabel,reviewLabel);
   const fields=newNode("div",null,"lco-ws-doc-fields");
   const groupLabel=newNode("label"),groupText=newNode("span");groupText.dataset.wsCopy="group";
-  const group=newNode("input");group.type="text";group.maxLength=120;group.value=row.document_group||"";
+  const group=newNode("input");group.type="text";group.maxLength=120;
+  const draft=docDrafts.get(row.file_id)||{};
+  group.value=draft.group!==undefined?draft.group:row.document_group||"";
   groupLabel.append(groupText,group);
   const noteLabel=newNode("label"),noteText=newNode("span");noteText.dataset.wsCopy="note";
-  const note=newNode("textarea");note.maxLength=1200;note.value=row.note||"";
+  const note=newNode("textarea");note.maxLength=1200;
+  note.value=draft.note!==undefined?draft.note:row.note||"";
+  group.addEventListener("input",()=>docDrafts.set(row.file_id,{group:group.value,note:note.value}));
+  note.addEventListener("input",()=>docDrafts.set(row.file_id,{group:group.value,note:note.value}));
   noteLabel.append(noteText,note);fields.append(groupLabel,noteLabel);
   const save=newNode("button",t("save"),"secondary");save.type="button";save.dataset.wsCopy="save";
   const feedback=newNode("p",null,"lco-ws-feedback");
@@ -237,11 +260,11 @@ function renderDocs(){
   save.addEventListener("click",async()=>{
    if(group.value!==row.document_group)await change("document_group",group.value);
    if(note.value!==row.note)await change("note",note.value);
+   if(group.value===row.document_group && note.value===row.note)docDrafts.delete(row.file_id);
   });
   li.append(controls,fields,save,feedback);list.append(li);
  }
  localize(list);
- if(cachedDocs.length>200)list.append(newNode("li","+"+(cachedDocs.length-200)+" …"));
  for(const id of ["lco-ws-event-file","lco-ws-task-file","lco-ws-entity-file"])populateDocSelect(id);
 }
 async function loadDocs(){
@@ -343,6 +366,11 @@ function resetText(id){const node=el(id);if(node)node.value=""}
 function openPanel(id){const node=el(id);if(node){node.open=true;node.scrollIntoView({block:"start",behavior:"smooth"})}}
 function bind(){
  el("lco-ws-doc-reload").addEventListener("click",()=>loadDocs().catch(console.warn));
+ el("lco-ws-doc-filter").addEventListener("input",event=>{
+  docQuery=String(event.target.value||"").trim().toLocaleLowerCase();docPage=0;renderDocs();
+ });
+ el("lco-ws-doc-prev").addEventListener("click",()=>{if(docPage>0){docPage--;renderDocs()}});
+ el("lco-ws-doc-next").addEventListener("click",()=>{docPage++;renderDocs()});
  for(const [buttonId,mode] of [["lco-ws-select-all","all"],["lco-ws-select-none","none"]]){
   bindButton(buttonId,async()=>{
    const count=cachedDocs.length;
@@ -456,7 +484,11 @@ function init(){
  '<button type="button" id="lco-ws-select-all" class="secondary" data-ws-copy="selectAll"></button>',
  '<button type="button" id="lco-ws-select-none" class="ghost" data-ws-copy="selectNone"></button></div>',
  '<p id="lco-ws-selection-msg" class="lco-ws-feedback" role="status" aria-live="polite"></p>',
- '<ul class="lco-ws-list" id="lco-ws-doc-list"></ul></div></details>',
+ '<label><span data-ws-copy="docFilter"></span><input type="search" id="lco-ws-doc-filter" maxlength="160" autocomplete="off" style="width:100%;max-width:540px"></label>',
+ '<p id="lco-ws-doc-page-info" aria-live="polite"></p>',
+ '<ul class="lco-ws-list" id="lco-ws-doc-list"></ul>',
+ '<div class="lco-ws-btns"><button type="button" id="lco-ws-doc-prev" class="secondary" data-ws-copy="docPrevious"></button>',
+ '<button type="button" id="lco-ws-doc-next" class="secondary" data-ws-copy="docNext"></button></div></div></details>',
  '<details class="lco-ws-panel" id="lco-ws-search"><summary data-ws-copy="search"></summary><div class="lco-ws-body">',
  '<p data-ws-copy="searchHelp"></p><form id="lco-ws-search-form"><div class="lco-ws-grid">',
  '<label><span data-ws-copy="query"></span><input id="lco-ws-query" type="text" minlength="2" maxlength="100" required></label>',
