@@ -548,7 +548,7 @@ function init(){
  loadDocs().catch(error=>console.warn("Document overview unavailable",error));
  // Reuse the existing language toggle; never replace or add another switch.
  const prior=window.LCOApplyExtraCopy;
- window.LCOApplyExtraCopy=function(){if(typeof prior==="function")prior();localize(home);resetMessageTranslations();refreshExportPreview()};
+ window.LCOApplyExtraCopy=function(){if(typeof prior==="function")prior();localize(home);resetMessageTranslations();refreshExportPreview();renderDocs()};
 }
 document.addEventListener("DOMContentLoaded",init);
 })();
